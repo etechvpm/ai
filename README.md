@@ -23,6 +23,9 @@ pip install pytest markdown pygments
 python tools/build_site.py            # notes/*.md  ->  site/*.html
 python -m http.server 8123 --bind 0.0.0.0 --directory site
 
+# take it offline: one self-contained HTML file + downloadable zips
+python tools/build_offline.py     # -> dist/python-course-offline.html, dist/*.zip
+
 # do the exercises
 pytest exercises/06_data_structures -q      # grade one module
 pytest exercises -q                         # grade everything you've written
@@ -44,6 +47,8 @@ sources under `notes/` read fine on GitHub; the website is a rebuild away.
 | `tools/make_diagrams.py` | regenerate every figure (`python tools/make_diagrams.py gil`) |
 | `tools/build_site.py` | Markdown → HTML site with sidebar, TOC, search index |
 | `tools/check_figures.py` | validates figure XML and text overflow |
+| `tools/build_offline.py` | single-file offline edition + zip bundles in `dist/` |
+| `OFFLINE.md` | how to download, read and study the course without a network |
 
 ## The modules
 
