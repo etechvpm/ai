@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modules, packages &amp; the import system &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link active" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">28 min</span><span class="chip tag">imports</span><span class="chip tag">packages</span><span class="chip tag">sys.path</span><span class="chip tag">entry-points</span><span class="chip tag">layout</span></div>
+      <h1 id="8-modules-packages-the-import-system">8. Modules, packages &amp; the import system</h1>
+<blockquote>
+<p>&ldquo;ModuleNotFoundError&rdquo; is not a mystery; it is the import machinery telling
+you exactly which step failed. Learn the steps and every import error
+becomes a two-minute fix.</p>
+</blockquote>
+<h2 id="81-definition">8.1 Definition</h2>
+<p><strong>Plain version.</strong> A <em>module</em> is a <code>.py</code> file you can import; a <em>package</em> is a
+folder of modules.</p>
+<p><strong>Precise version.</strong> A module is any object that can be imported and used as a
+namespace — usually a compiled <code>.py</code> file, but also C extensions and builtins.
+A <em>regular package</em> is a directory containing <code>__init__.py</code> (itself a module,
+executed on first import of the package); a <em>namespace package</em> (PEP 420) is a
+directory <strong>without</strong> <code>__init__.py</code> that can be spread across several
+locations on <code>sys.path</code>. Importing executes the module&rsquo;s top level <strong>once</strong>,
+caches the resulting module object in <code>sys.modules</code>, and binds it (or selected
+attributes) into your namespace.</p>
+<h2 id="82-syntax">8.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>                     <span class="c1"># binds the MODULE object as 'math'</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>              <span class="c1"># alias</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>        <span class="c1"># binds the ATTRIBUTE Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">deque</span> <span class="k">as</span> <span class="n">dq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mypkg</span><span class="w"> </span><span class="kn">import</span> <span class="n">submod</span>        <span class="c1"># binds submod; mypkg.__init__ runs first</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mypkg.mod</span><span class="w"> </span><span class="kn">import</span> <span class="n">func</span>      <span class="c1"># binds func</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">sibling</span>           <span class="c1"># relative: same package</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">helper</span>      <span class="c1"># relative: parent package's utils</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">mypkg.mod</span>                <span class="c1"># needed before mypkg.mod is an attribute?</span>
+<span class="n">mypkg</span><span class="o">.</span><span class="n">mod</span>                       <span class="c1">#   (see gotcha: attribute vs submodule)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"public_thing"</span><span class="p">]</span>      <span class="c1"># controls `from module import *`</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>      <span class="c1"># "am I the entry point?"</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+
+<h2 id="83-first-examples">8.3 First examples</h2>
+<p><strong>Example 1 — a module is just a file.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># prices.py</span>
+<span class="n">VAT</span> <span class="o">=</span> <span class="mf">0.18</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">with_vat</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">amount</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">VAT</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># app.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">prices</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">prices</span><span class="o">.</span><span class="n">with_vat</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>        <span class="c1"># 118.0</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">prices</span><span class="o">.</span><span class="n">VAT</span><span class="p">)</span>                  <span class="c1"># 0.18</span>
+</code></pre></div>
+
+<p><strong>Example 2 — <code>__name__</code> tells the story.</strong></p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>python<span class="w"> </span>prices.py<span class="w">        </span><span class="c1"># __name__ == "__main__"</span>
+$<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import prices"</span><span class="w">   </span><span class="c1"># __name__ == "prices"</span>
+</code></pre></div>
+
+<p><strong>Example 3 — where did that module come from?</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span>          <span class="c1"># .../json/__init__.py</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">__spec__</span><span class="o">.</span><span class="n">origin</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s2">"json"</span><span class="p">]</span> <span class="ow">is</span> <span class="n">json</span><span class="p">)</span>      <span class="c1"># True: the cache</span>
+</code></pre></div>
+
+<h2 id="84-the-picture">8.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 404" width="990" height="404" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>What happens on import</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">The import machinery</text>
+<rect x="29.0" y="74" width="142" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<rect x="29.0" y="74" width="142" height="26" rx="10" fill="var(--dg-slate, #475569)"/>
+<rect x="29.0" y="90" width="142" height="10" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="100.0" y="92" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">import reports</text>
+<text x="100.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">the statement</text>
+<rect x="187.0" y="74" width="142" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="187.0" y="74" width="142" height="26" rx="10" fill="var(--dg-violet, #7c3aed)"/>
+<rect x="187.0" y="90" width="142" height="10" rx="0" fill="var(--dg-violet, #7c3aed)"/>
+<text x="258.0" y="92" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">sys.modules</text>
+<text x="258.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">cache checked FIRST -</text>
+<text x="258.0" y="140" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">already imported?</text>
+<line x1="171.0" y1="126.0" x2="187.0" y2="126.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="345.0" y="74" width="142" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="345.0" y="74" width="142" height="26" rx="10" fill="var(--dg-blue, #2563eb)"/>
+<rect x="345.0" y="90" width="142" height="10" rx="0" fill="var(--dg-blue, #2563eb)"/>
+<text x="416.0" y="92" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">sys.path</text>
+<text x="416.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">list of directories</text>
+<text x="416.0" y="140" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">searched in order</text>
+<line x1="329.0" y1="126.0" x2="345.0" y2="126.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="503.0" y="74" width="142" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="503.0" y="74" width="142" height="26" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="503.0" y="90" width="142" height="10" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="574.0" y="92" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">Finder</text>
+<text x="574.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">locates the module:</text>
+<text x="574.0" y="140" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">.py, package, zip, C ext</text>
+<line x1="487.0" y1="126.0" x2="503.0" y2="126.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="661.0" y="74" width="142" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="661.0" y="74" width="142" height="26" rx="10" fill="var(--dg-amber, #d97706)"/>
+<rect x="661.0" y="90" width="142" height="10" rx="0" fill="var(--dg-amber, #d97706)"/>
+<text x="732.0" y="92" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">Loader</text>
+<text x="732.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">executes the module</text>
+<text x="732.0" y="140" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">top-to-bottom ONCE</text>
+<line x1="645.0" y1="126.0" x2="661.0" y2="126.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="819.0" y="74" width="142" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<rect x="819.0" y="74" width="142" height="26" rx="10" fill="var(--dg-cyan, #0891b2)"/>
+<rect x="819.0" y="90" width="142" height="10" rx="0" fill="var(--dg-cyan, #0891b2)"/>
+<text x="890.0" y="92" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">module object</text>
+<text x="890.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">bound to the name</text>
+<text x="890.0" y="140" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">in your namespace</text>
+<line x1="803.0" y1="126.0" x2="819.0" y2="126.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<line x1="179.0" y1="178" x2="179.0" y2="212" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.8" marker-end="url(#arviolet)"/>
+<path d="M 179.0,212 L 100.0,212 L 100.0,212" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.8" fill="none" marker-end="url(#arviolet)" stroke-linecap="round"/>
+<rect x="211.055" y="194.025" width="135.89" height="15.75" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="279.0" y="204" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">hit -&gt; done instantly</text>
+<rect x="29.0" y="230" width="452" height="150" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="45.0" y="252" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">sys.path order (first match wins)</text>
+<text x="45.0" y="276" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1.  directory of the running script (or cwd)</text>
+<text x="45.0" y="294" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">2.  PYTHONPATH entries</text>
+<text x="45.0" y="312" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">3.  installation-dependent defaults</text>
+<text x="45.0" y="330" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">4.  site-packages of the ACTIVE virtualenv</text>
+<rect x="497.0" y="230" width="452" height="150" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="513.0" y="252" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">Circular imports</text>
+<text x="513.0" y="276" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">a.py imports b.py, b.py imports a.py -&gt; one of</text>
+<text x="513.0" y="294" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">them sees a HALF-INITIALISED module and you get</text>
+<text x="513.0" y="312" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">ImportError / AttributeError. Fix by moving the</text>
+<text x="513.0" y="330" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">shared code into a third module, importing inside</text>
+<text x="513.0" y="348" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">the function, or restructuring with Protocols.</text>
+</svg>
+<figcaption>The import pipeline: sys.modules cache, sys.path search, finder, loader, module object - and where each failure mode happens.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 470" width="990" height="470" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Package layout</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">From a folder of scripts to an installable package</text>
+<text x="44" y="76" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">📁 myproject/</text>
+<text x="470" y="76" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">the repository root</text>
+<line x1="52" y1="94" x2="64" y2="94" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="70" y="99" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 pyproject.toml</text>
+<text x="470" y="99" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">metadata, deps, tool config - the modern standard</text>
+<line x1="52" y1="117" x2="64" y2="117" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="70" y="122" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">📁 src/</text>
+<text x="470" y="122" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">src-layout keeps the package out of the cwd</text>
+<line x1="78" y1="140" x2="90" y2="140" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="96" y="145" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">📁 myproject/</text>
+<text x="470" y="145" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">the importable package</text>
+<line x1="104" y1="163" x2="116" y2="163" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="122" y="168" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 __init__.py</text>
+<text x="470" y="168" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">makes it a package; re-export the public API</text>
+<line x1="104" y1="186" x2="116" y2="186" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="122" y="191" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 py.typed</text>
+<text x="470" y="191" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">marker telling mypy this package ships type hints</text>
+<line x1="104" y1="209" x2="116" y2="209" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="122" y="214" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 models.py</text>
+<text x="470" y="214" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">domain objects</text>
+<line x1="104" y1="232" x2="116" y2="232" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="122" y="237" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 service.py</text>
+<text x="470" y="237" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">business logic</text>
+<line x1="104" y1="255" x2="116" y2="255" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="122" y="260" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 cli.py</text>
+<text x="470" y="260" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">entry point: def main() -&gt; int</text>
+<line x1="130" y1="278" x2="142" y2="278" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="148" y="283" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">📁 utils/</text>
+<text x="470" y="283" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">subpackage</text>
+<line x1="156" y1="301" x2="168" y2="301" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="174" y="306" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 __init__.py</text>
+<line x1="156" y1="324" x2="168" y2="324" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="174" y="329" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 text.py</text>
+<text x="470" y="329" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">from myproject.utils.text import slugify</text>
+<line x1="52" y1="347" x2="64" y2="347" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="70" y="352" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">📁 tests/</text>
+<text x="470" y="352" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">mirrors src/ ; never shipped to users</text>
+<line x1="78" y1="370" x2="90" y2="370" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="96" y="375" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 test_service.py</text>
+<text x="470" y="375" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">pytest discovers test_*.py automatically</text>
+<line x1="52" y1="393" x2="64" y2="393" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="70" y="398" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">📄 README.md</text>
+<text x="470" y="398" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">the PyPI landing page</text>
+<line x1="52" y1="416" x2="64" y2="416" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="70" y="421" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">📁 .venv/</text>
+<text x="470" y="421" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">local virtualenv - ALWAYS gitignored</text>
+<line x1="40" y1="62" x2="40" y2="416" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<rect x="500" y="210" width="462" height="120" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="516" y="234" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">Why src-layout?</text>
+<text x="516" y="258" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">With a flat layout `import myproject` silently picks up the</text>
+<text x="516" y="275" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">folder in your cwd, so tests can pass while the INSTALLED</text>
+<text x="516" y="292" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">package is broken. src-layout forces you to install first -</text>
+<text x="516" y="309" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">pip install -e . - and catches that class of bug for free.</text>
+<rect x="500" y="344" width="462" height="96" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="516" y="368" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Relative vs absolute imports</text>
+<text x="516" y="390" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">from .models import User      # relative, inside a package</text>
+<text x="516" y="406" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">from myproject.models import User   # absolute</text>
+<text x="516" y="422" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Industry default: absolute imports everywhere - they are</text>
+<text x="516" y="438" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">unambiguous and survive refactors.</text>
+</svg>
+<figcaption>From folder of scripts to installable src-layout package, with pyproject.toml, py.typed and mirrored tests.</figcaption></figure>
+
+<h2 id="85-going-deeper">8.5 Going deeper</h2>
+<h3 id="851-the-four-steps-of-import-x">8.5.1 The four steps of <code>import x</code></h3>
+<ol>
+<li><strong><code>sys.modules</code> check</strong> — already imported? return the cached object
+   (this is why edits need a restart, and why <code>importlib.reload</code> exists).</li>
+<li><strong>Find</strong> — walk <code>sys.path</code> (a list of strings/paths): the script&rsquo;s
+   directory (or cwd for <code>-m</code>/REPL), <code>PYTHONPATH</code>, stdlib, then the active
+   environment&rsquo;s <code>site-packages</code>. Finders handle files, packages, zips, C
+   extensions.</li>
+<li><strong>Load</strong> — execute the module top-to-bottom in a fresh namespace; the
+   resulting module object is stored in <code>sys.modules</code> <strong>before</strong> its body
+   finishes (which is what makes some circular imports half-work).</li>
+<li><strong>Bind</strong> — attach the name(s) in <em>your</em> namespace.</li>
+</ol>
+<p>Every import error is a failure at step 2 (not found), step 3 (the module
+crashed while executing — read the traceback, it is <em>your</em> code), or a name
+error at step 4 (attribute missing, often a half-initialised circular import).</p>
+<h3 id="852-syspath0-and-the-two-ways-to-run">8.5.2 <code>sys.path[0]</code> and the two ways to run</h3>
+<ul>
+<li><code>python app.py</code> → <code>sys.path[0]</code> = the <strong>script&rsquo;s directory</strong>;</li>
+<li><code>python -m pkg.mod</code> → <code>sys.path[0]</code> = <strong>cwd</strong>, and the module is imported
+  properly with its package context (<code>__package__</code> set), so relative imports
+  work;</li>
+<li>REPL/notebook → cwd.</li>
+</ul>
+<p>This is why &ldquo;works when I run the file, breaks when I run the tests&rdquo; happens:
+the tests import the <em>package</em>, your ad-hoc run imported a bare file. Rule:
+run package code with <code>-m</code>, and keep imports absolute from the package root.</p>
+<h3 id="853-packages-what-__init__py-is-for">8.5.3 Packages: what <code>__init__.py</code> is for</h3>
+<p>It is executed on first import of the package, and its namespace <strong>is</strong> the
+package object. Uses:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># mypkg/__init__.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mypkg.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">User</span>          <span class="c1"># re-export the public API</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mypkg.service</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderService</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"User"</span><span class="p">,</span> <span class="s2">"OrderService"</span><span class="p">]</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">"1.4.0"</span>
+</code></pre></div>
+
+<p>Callers then write <code>from mypkg import User</code>. Keep <code>__init__</code> thin: re-exports
+and version, no logic, no heavy imports (import cost is paid by everyone).
+An empty <code>__init__.py</code> is also fine and common.</p>
+<h3 id="854-relative-vs-absolute-imports">8.5.4 Relative vs absolute imports</h3>
+<p>Relative imports (<code>from .models import User</code>) are resolved against
+<code>__package__</code>; they only work <strong>inside a package</strong>, and break when the file is
+run as a script (<code>ImportError: attempted relative import with no known parent
+package</code>). Absolute imports (<code>from mypkg.models import User</code>) work everywhere
+and survive file moves. Industry default: absolute everywhere; relative only
+inside tightly-coupled subpackages.</p>
+<h3 id="855-circular-imports-diagnosed-and-cured">8.5.5 Circular imports, diagnosed and cured</h3>
+<p><code>a.py</code> imports <code>b.py</code> which imports <code>a.py</code>: whichever is imported second sees
+the first <em>half-executed</em> (its <code>sys.modules</code> entry exists but its later names
+don&rsquo;t) → <code>ImportError</code>/<code>AttributeError</code> at import time, often only under a
+specific entry point. Cures, in order of preference:</p>
+<ol>
+<li><strong>extract</strong> the shared thing into a third module both import;</li>
+<li><strong>invert</strong> the dependency (dependency inversion: depend on a Protocol,
+   module 09/14);</li>
+<li><strong>import inside the function</strong> that needs it (late binding);</li>
+<li>never: <code>sys.path</code> hacks, <code>importlib.reload</code>, try/except around imports.</li>
+</ol>
+<p>Detect quickly: <code>python -X importtime -c "import mypkg"</code> shows the import
+graph timing; <code>pydeps</code>/<code>import-linter</code> enforce layering in CI.</p>
+<h3 id="856-namespace-packages-and-plugins">8.5.6 Namespace packages and plugins</h3>
+<p>A directory <strong>without</strong> <code>__init__.py</code> on <code>sys.path</code> can still be a package,
+and several such directories <em>merge</em> into one namespace. That is the mechanism
+behind plugin ecosystems (<code>mypkg.plugins</code> contributed by separate
+distributions) and modern tooling layouts. Discovery then uses
+<code>importlib.metadata.entry_points()</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">entry_points</span>
+<span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="n">entry_points</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">"mypkg.plugins"</span><span class="p">):</span>
+    <span class="n">plugin</span> <span class="o">=</span> <span class="n">ep</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+</code></pre></div>
+
+<h3 id="857-entry-points-from-python-m-to-a-real-command">8.5.7 Entry points: from <code>python -m</code> to a real command</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">[project.scripts]</span>
+<span class="n">mytool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mypkg.cli:main"</span>
+</code></pre></div>
+
+<p>After <code>pip install -e .</code>, the shell gets a <code>mytool</code> command that calls
+<code>mypkg.cli.main()</code>. <code>main()</code> should return an int exit code and parse args
+with <code>argparse</code>/<code>click</code>/<code>typer</code>. This is how every CLI you use is wired.</p>
+<h2 id="86-industry-level">8.6 Industry level</h2>
+<h3 id="the-src-layout-defended">The src-layout, defended</h3>
+<div class="codehilite"><pre><span></span><code>myproject/
+    pyproject.toml
+    src/mypkg/…
+    tests/…
+</code></pre></div>
+
+<p>With a flat layout (<code>mypkg/</code> at the repo root), <code>pytest</code> and ad-hoc scripts can
+import the <em>source folder</em> from cwd while the installed wheel is broken —
+tests green, production red. The src-layout makes the package importable only
+after installation (<code>pip install -e .</code>), so CI tests exactly what ships.</p>
+<h3 id="the-public-api-is-a-contract">The public API is a contract</h3>
+<p>Reviewers treat <code>__init__.py</code> re-exports as the supported surface; everything
+else may change. <code>__all__</code> documents it and tames <code>import *</code>. Type checkers
+honour it too (module 14). Deprecations go through wrappers with
+<code>warnings.warn(..., DeprecationWarning)</code> for at least one release cycle.</p>
+<h3 id="import-hygiene-teams-lint-for">Import hygiene teams lint for</h3>
+<table>
+<thead>
+<tr>
+<th>Smell</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>import at function scope &ldquo;for speed&rdquo;</td>
+<td>move to top unless genuinely circular or enormous</td>
+</tr>
+<tr>
+<td><code>from x import *</code></td>
+<td>explicit names (breaks static analysis)</td>
+</tr>
+<tr>
+<td>module named <code>random.py</code>, <code>email.py</code>, <code>json.py</code></td>
+<td>never shadow stdlib; rename</td>
+</tr>
+<tr>
+<td>side effects at import (network, DB)</td>
+<td>move into functions/<code>main()</code></td>
+</tr>
+<tr>
+<td><code>sys.path.append("..")</code></td>
+<td>install the package; fix <code>pyproject</code></td>
+</tr>
+<tr>
+<td>version hardcoded in several places</td>
+<td>single source: <code>importlib.metadata.version</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="measuring-import-cost">Measuring import cost</h3>
+<p>Startup-sensitive CLIs audit imports: <code>python -X importtime -c "import app"</code>
+prints a tree with self+cumulative times; heavy optional deps become lazy
+(<code>importlib.import_module</code> inside the command) or optional extras
+(<code>pip install mypkg[excel]</code>).</p>
+<h2 id="87-comparison-tables">8.7 Comparison tables</h2>
+<p><strong>Import forms:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Binds</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>import a.b</code></td>
+<td><code>a</code></td>
+<td>access as <code>a.b.x</code>; runs both <code>__init__</code>s</td>
+</tr>
+<tr>
+<td><code>import a.b as b</code></td>
+<td><code>b</code></td>
+<td>preferred when you use <code>b</code> a lot</td>
+</tr>
+<tr>
+<td><code>from a.b import x</code></td>
+<td><code>x</code></td>
+<td>the name, not the module</td>
+</tr>
+<tr>
+<td><code>from a import *</code></td>
+<td><code>__all__</code> or public names</td>
+<td>avoid; opaque</td>
+</tr>
+<tr>
+<td><code>from . import m</code></td>
+<td><code>m</code></td>
+<td>only inside a package</td>
+</tr>
+<tr>
+<td><code>importlib.import_module("a.b")</code></td>
+<td>returned object</td>
+<td>dynamic names, plugins</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Module vs package vs namespace package:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>module</th>
+<th>regular package</th>
+<th>namespace package</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>on disk</td>
+<td><code>m.py</code></td>
+<td><code>p/__init__.py</code></td>
+<td><code>p/</code> (no <code>__init__.py</code>)</td>
+</tr>
+<tr>
+<td><code>__file__</code></td>
+<td>yes</td>
+<td>yes (<code>__init__</code>)</td>
+<td>None</td>
+</tr>
+<tr>
+<td>can span paths</td>
+<td>no</td>
+<td>no</td>
+<td><strong>yes</strong> (merged)</td>
+</tr>
+<tr>
+<td>typical use</td>
+<td>code file</td>
+<td>library unit</td>
+<td>plugin roots, monorepos</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Flat vs src layout:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>flat (<code>mypkg/</code> at root)</th>
+<th>src (<code>src/mypkg/</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>importable pre-install</td>
+<td>yes (cwd shadowing risk)</td>
+<td>no</td>
+</tr>
+<tr>
+<td>tests run installed code</td>
+<td>not guaranteed</td>
+<td>guaranteed</td>
+</tr>
+<tr>
+<td>tooling config</td>
+<td>slightly simpler</td>
+<td>one extra line</td>
+</tr>
+<tr>
+<td>industry default</td>
+<td>legacy</td>
+<td><strong>modern</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="88-mistakes-gotchas">8.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">Shadowing a stdlib module</p>
+<p>A local <code>random.py</code> or <code>types.py</code> hijacks the stdlib import and produces
+bizarre errors <em>inside</em> library code. Name your modules specifically.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Submodule not an attribute until imported</p>
+<p><code>import mypkg</code> does NOT give <code>mypkg.mod</code> unless <code>__init__</code> imported it.
+Either <code>import mypkg.mod</code> or re-export in <code>__init__</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Relative import run as a script</p>
+<p><code>python mypkg/mod.py</code> → &ldquo;attempted relative import with no known parent
+package&rdquo;. Run <code>python -m mypkg.mod</code> instead.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Import side effects</p>
+<p>Code at module top level runs on <em>every</em> import, including from tests and
+tooling. Keep top level to definitions and constants.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>from x import y</code> copies the reference, not a live link</p>
+<p>After <code>from conf import TIMEOUT</code>, rebinding <code>conf.TIMEOUT = 9</code> does not change
+your local <code>TIMEOUT</code>. Import the module when the value may change.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title"><code>importlib.reload</code> is a debugging tool, not a design</p>
+<p>Reload re-executes top level; old class objects from the previous version stay
+alive in existing instances (<code>isinstance</code> breaks). Restart the process.</p>
+</div>
+<h2 id="89-interview-questions">8.9 Interview questions</h2>
+<ol>
+<li><strong>What happens on <code>import x</code>?</strong> — sys.modules cache → finders over
+   sys.path → loader executes top level once → module object cached → names
+   bound.</li>
+<li><strong><code>import a.b</code> vs <code>from a.b import c</code>?</strong> — binds the package root vs binds
+   the attribute; both execute the same modules.</li>
+<li><strong>Why does <code>python -m pkg.mod</code> differ from <code>python pkg/mod.py</code>?</strong> — package
+   context (<code>__package__</code>), sys.path[0], and therefore relative imports.</li>
+<li><strong>What is <code>__init__.py</code> for?</strong> — marks a regular package, runs on first
+   import, defines the package namespace/public API.</li>
+<li><strong>How do you break a circular import?</strong> — extract shared module, invert the
+   dependency, or import inside the function.</li>
+<li><strong>What is a namespace package?</strong> — a package without <code>__init__.py</code> that can
+   merge across sys.path entries; the plugin mechanism.</li>
+<li><strong>How is a CLI command installed?</strong> — <code>[project.scripts]</code> entry point
+   mapping a command to <code>module:function</code>.</li>
+</ol>
+<h2 id="810-practice-exercises">8.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-08-a</span></div><p>Implement <code>load_module_from_file(path, name)</code> using <code>importlib.util</code>
+(spec_from_file_location), returning the module object, and
+<code>module_report(mod)</code> returning <code>{"name", "file", "has_main_guard"}</code> where
+<code>has_main_guard</code> detects the <code>if __name__ == "__main__":</code> idiom in the source.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/08_modules/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-08-b</span></div><p>Implement <code>build_package(root, files: dict)</code> writing a package tree from a
+<code>{"pkg/mod.py": "source", …}</code> mapping (creating <code>__init__.py</code> where missing),
+then <code>import_from(root, "pkg.mod")</code> that inserts <code>root</code> at the front of
+<code>sys.path</code>, imports, and <strong>always restores <code>sys.path</code></strong> afterwards (context
+manager or try/finally).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/08_modules/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-08-c</span></div><p>Implement <code>discover_plugins(directory)</code> mimicking entry-point discovery:
+import every top-level <code>.py</code> in the directory (isolated names, failures
+collected not raised), return <code>(registry, errors)</code> where registry maps
+<code>plugin.PLUGIN_NAME -&gt; plugin</code> for modules exposing a <code>PLUGIN_NAME</code> attribute.
+Then implement <code>find_import_cycle(modules: dict[str, set[str]])</code> returning one
+cyclic chain (list of names) or <code>None</code>, over a static dependency graph — the
+check <code>import-linter</code> runs in CI.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/08_modules/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/08_modules/solution.py)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">contextlib</span>
+
+<span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_path_front</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">root</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">root</span><span class="p">))</span>          <span class="c1"># always restore</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">import_from</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">dotted</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">_path_front</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">dotted</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">find_import_cycle</span><span class="p">(</span><span class="n">modules</span><span class="p">):</span>
+    <span class="n">WHITE</span><span class="p">,</span> <span class="n">GREY</span><span class="p">,</span> <span class="n">BLACK</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span>
+    <span class="n">color</span><span class="p">,</span> <span class="n">stack</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">[]</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+        <span class="n">color</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">GREY</span><span class="p">;</span> <span class="n">stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">nxt</span> <span class="ow">in</span> <span class="n">modules</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">()):</span>
+            <span class="k">if</span> <span class="n">color</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">nxt</span><span class="p">,</span> <span class="n">WHITE</span><span class="p">)</span> <span class="o">==</span> <span class="n">GREY</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">stack</span><span class="p">[</span><span class="n">stack</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">nxt</span><span class="p">):]</span> <span class="o">+</span> <span class="p">[</span><span class="n">nxt</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">color</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">nxt</span><span class="p">,</span> <span class="n">WHITE</span><span class="p">)</span> <span class="o">==</span> <span class="n">WHITE</span><span class="p">:</span>
+                <span class="n">found</span> <span class="o">=</span> <span class="n">visit</span><span class="p">(</span><span class="n">nxt</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">found</span>
+        <span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="p">();</span> <span class="n">color</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">BLACK</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">modules</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">color</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">WHITE</span><span class="p">)</span> <span class="o">==</span> <span class="n">WHITE</span><span class="p">:</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">found</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div></details>
+<h2 id="811-cheatsheet">8.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Import module / attribute</td>
+<td><code>import m</code> / <code>from m import x</code></td>
+</tr>
+<tr>
+<td>Alias</td>
+<td><code>import numpy as np</code></td>
+</tr>
+<tr>
+<td>Run package code</td>
+<td><code>python -m pkg.mod</code></td>
+</tr>
+<tr>
+<td>Dynamic import</td>
+<td><code>importlib.import_module(name)</code></td>
+</tr>
+<tr>
+<td>Reload (debugging)</td>
+<td><code>importlib.reload(mod)</code></td>
+</tr>
+<tr>
+<td>Where is it from?</td>
+<td><code>mod.__file__</code>, <code>mod.__spec__.origin</code></td>
+</tr>
+<tr>
+<td>Already imported?</td>
+<td><code>"m" in sys.modules</code></td>
+</tr>
+<tr>
+<td>Search path</td>
+<td><code>sys.path</code> (list), <code>PYTHONPATH</code> env</td>
+</tr>
+<tr>
+<td>Public API</td>
+<td><code>__init__.py</code> re-exports + <code>__all__</code></td>
+</tr>
+<tr>
+<td>Entry guard</td>
+<td><code>if __name__ == "__main__":</code></td>
+</tr>
+<tr>
+<td>CLI command</td>
+<td><code>[project.scripts]</code> in pyproject</td>
+</tr>
+<tr>
+<td>Version at runtime</td>
+<td><code>importlib.metadata.version("pkg")</code></td>
+</tr>
+<tr>
+<td>Plugin discovery</td>
+<td><code>importlib.metadata.entry_points(group=…)</code></td>
+</tr>
+<tr>
+<td>Import timing</td>
+<td><code>python -X importtime -c "import pkg"</code></td>
+</tr>
+<tr>
+<td>Enforce layers</td>
+<td><code>import-linter</code> / <code>pydeps</code> in CI</td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="07-functions.html"><span>&larr; previous</span><strong>Functions: signatures, scope, closures, first-class everything</strong></a><a class="next" href="09-oop.html"><span>next &rarr;</span><strong>Object-oriented Python: classes, protocols, dataclasses</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#81-definition">8.1 Definition</a></li>
+<li><a href="#82-syntax">8.2 Syntax</a></li>
+<li><a href="#83-first-examples">8.3 First examples</a></li>
+<li><a href="#84-the-picture">8.4 The picture</a></li>
+<li><a href="#85-going-deeper">8.5 Going deeper</a><ul>
+<li><a href="#851-the-four-steps-of-import-x">8.5.1 The four steps of import x</a></li>
+<li><a href="#852-syspath0-and-the-two-ways-to-run">8.5.2 sys.path[0] and the two ways to run</a></li>
+<li><a href="#853-packages-what-__init__py-is-for">8.5.3 Packages: what __init__.py is for</a></li>
+<li><a href="#854-relative-vs-absolute-imports">8.5.4 Relative vs absolute imports</a></li>
+<li><a href="#855-circular-imports-diagnosed-and-cured">8.5.5 Circular imports, diagnosed and cured</a></li>
+<li><a href="#856-namespace-packages-and-plugins">8.5.6 Namespace packages and plugins</a></li>
+<li><a href="#857-entry-points-from-python-m-to-a-real-command">8.5.7 Entry points: from python -m to a real command</a></li>
+</ul>
+</li>
+<li><a href="#86-industry-level">8.6 Industry level</a><ul>
+<li><a href="#the-src-layout-defended">The src-layout, defended</a></li>
+<li><a href="#the-public-api-is-a-contract">The public API is a contract</a></li>
+<li><a href="#import-hygiene-teams-lint-for">Import hygiene teams lint for</a></li>
+<li><a href="#measuring-import-cost">Measuring import cost</a></li>
+</ul>
+</li>
+<li><a href="#87-comparison-tables">8.7 Comparison tables</a></li>
+<li><a href="#88-mistakes-gotchas">8.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#89-interview-questions">8.9 Interview questions</a></li>
+<li><a href="#810-practice-exercises">8.10 Practice exercises</a></li>
+<li><a href="#811-cheatsheet">8.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

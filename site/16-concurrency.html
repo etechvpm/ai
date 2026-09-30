@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concurrency: threads, processes, asyncio and the GIL &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link active" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Intermediate → Industry</span><span class="chip read">35 min</span><span class="chip tag">threads</span><span class="chip tag">multiprocessing</span><span class="chip tag">asyncio</span><span class="chip tag">gil</span><span class="chip tag">executors</span></div>
+      <h1 id="16-concurrency">16. Concurrency</h1>
+<blockquote>
+<p>Concurrency is <em>dealing with</em> many things at once; parallelism is <em>doing</em>
+many things at once. Python gives you three models, and choosing between
+them is a two-question decision: is the work CPU-bound or I/O-bound, and how
+much state must be shared?</p>
+</blockquote>
+<h2 id="161-definition">16.1 Definition</h2>
+<p><strong>Plain version.</strong> Running several tasks &ldquo;at the same time&rdquo;: threads for
+waiting, processes for computing, asyncio for thousands of network calls.</p>
+<p><strong>Precise version.</strong> CPython executes bytecode under a <strong>Global Interpreter
+Lock (GIL)</strong>: one thread runs Python bytecode per interpreter at a time.
+Threads therefore give <strong>concurrency without parallelism</strong> — but the GIL is
+<strong>released during I/O</strong> and around C extensions that opt out, so threads shine
+for I/O-bound work. <strong>Processes</strong> sidestep the GIL entirely (separate
+interpreters, memory shared only by explicit IPC) and give true parallelism
+for CPU-bound work. <strong>asyncio</strong> runs one thread with many <em>tasks</em> that
+cooperatively yield at <code>await</code> points — the cheapest way to hold tens of
+thousands of in-flight I/O operations.</p>
+<h2 id="162-syntax">16.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># threads ---------------------------------------------------------------</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span><span class="o">,</span><span class="w"> </span><span class="nn">queue</span>
+<span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">lock</span><span class="p">:</span>                      <span class="c1"># mutual exclusion</span>
+    <span class="n">shared</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+<span class="n">q</span><span class="p">:</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>  <span class="c1"># thread-safe handoff</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">worker</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">q</span><span class="p">,),</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">t</span><span class="o">.</span><span class="n">start</span><span class="p">();</span> <span class="n">t</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+
+<span class="c1"># executors (preferred over raw threads) ----------------------------------</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span><span class="p">,</span> <span class="n">ProcessPoolExecutor</span>
+<span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">download</span><span class="p">,</span> <span class="n">urls</span><span class="p">))</span>        <span class="c1"># order preserved</span>
+    <span class="n">fut</span> <span class="o">=</span> <span class="n">ex</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">download</span><span class="p">,</span> <span class="n">urls</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>            <span class="c1"># or fire-and-track</span>
+    <span class="n">fut</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># processes ---------------------------------------------------------------</span>
+<span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+    <span class="n">squares</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">crunch</span><span class="p">,</span> <span class="n">chunks</span><span class="p">))</span>        <span class="c1"># real parallelism</span>
+
+<span class="c1"># asyncio -------------------------------------------------------------------</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="k">as</span> <span class="n">resp</span><span class="p">:</span>          <span class="c1"># awaits I/O, yields control</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+        <span class="n">pages</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">fetch</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">))</span>
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="163-first-examples">16.3 First examples</h2>
+<p><strong>Example 1 — threads speed up waiting, not computing.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span><span class="o">,</span><span class="w"> </span><span class="nn">urllib.request</span>
+<span class="n">urls</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">*</span> <span class="mi">20</span>
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+    <span class="nb">list</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">,</span> <span class="n">urls</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>      <span class="c1"># ~slowest single request, not the sum</span>
+</code></pre></div>
+
+<p><strong>Example 2 — a race condition, and the lock that fixes it.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">bump</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">total</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100_000</span><span class="p">):</span>
+        <span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>            <span class="c1"># NOT atomic: read-modify-write</span>
+
+<span class="n">threads</span> <span class="o">=</span> <span class="p">[</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">bump</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
+<span class="c1"># without a lock: total ends up &lt; 400000, nondeterministically</span>
+</code></pre></div>
+
+<p><strong>Example 3 — asyncio: 100 &ldquo;slow&rdquo; calls in ~1 unit of time.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">slow</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>          <span class="c1"># yields; others run meanwhile</span>
+    <span class="k">return</span> <span class="n">i</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">slow</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)))</span>
+<span class="c1"># asyncio.run(main())  -&gt;  ~1 s total, not 100 s</span>
+</code></pre></div>
+
+<h2 id="164-the-picture">16.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 470" width="990" height="470" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The GIL</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">The Global Interpreter Lock: one thread runs bytecode at a time</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Threads still help enormously - they release the GIL while waiting on I/O.</text>
+<text x="192" y="118" text-anchor="end" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">single thread</text>
+<rect x="210" y="96" width="560" height="34" rx="6" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<rect x="210.0" y="96" width="560.0" height="34" rx="4" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.2"/>
+<text x="490.0" y="117.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">run</text>
+<text x="784" y="118" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">1.0x</text>
+<text x="192" y="180" text-anchor="end" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">2 threads - CPU bound</text>
+<rect x="210" y="158" width="560" height="34" rx="6" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<rect x="210.0" y="158" width="280.0" height="34" rx="4" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.2"/>
+<text x="350.0" y="179.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">A</text>
+<rect x="490.0" y="158" width="280.0" height="34" rx="4" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.2"/>
+<text x="630.0" y="179.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">B</text>
+<text x="784" y="180" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">~1.0x - no speedup</text>
+<text x="192" y="242" text-anchor="end" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">2 threads - I/O bound</text>
+<rect x="210" y="220" width="560" height="34" rx="6" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<rect x="210.0" y="220" width="112.0" height="34" rx="4" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.2"/>
+<text x="266.0" y="241.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">A run</text>
+<rect x="322.0" y="220" width="168.0" height="34" rx="4" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.2"/>
+<text x="406.0" y="241.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">A waits (GIL released)</text>
+<rect x="490.0" y="220" width="67.2" height="34" rx="4" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.2"/>
+<text x="523.6" y="241.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">A run</text>
+<rect x="557.2" y="220" width="112.0" height="34" rx="4" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.2"/>
+<text x="613.2" y="241.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">waits</text>
+<rect x="322.0" y="220" width="168.0" height="34" rx="4" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.2"/>
+<text x="406.0" y="241.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">B run</text>
+<rect x="669.2" y="220" width="100.8" height="34" rx="4" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.2"/>
+<text x="719.6" y="241.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">B run</text>
+<text x="784" y="242" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">up to Nx - waits overlap</text>
+<rect x="60" y="290" width="910" height="28" rx="6" fill="var(--dg-slate, #475569)"/>
+<rect x="60" y="312" width="910" height="6" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="70" y="308.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">workload</text>
+<text x="330" y="308.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">best tool</text>
+<text x="580" y="308.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">why</text>
+<rect x="60" y="318" width="910" height="26" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="70" y="335.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">CPU-heavy (math, images, parsing)</text>
+<text x="330" y="335.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">multiprocessing / ProcessPool</text>
+<text x="580" y="335.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">separate interpreters, separate GILs, real parallelism on N cores</text>
+<rect x="60" y="344" width="910" height="26" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="70" y="361.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Many slow network calls</text>
+<text x="330" y="361.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">asyncio (or ThreadPoolExecutor)</text>
+<text x="580" y="361.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">the thread/task is idle while waiting - the GIL is released</text>
+<rect x="60" y="370" width="910" height="26" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="70" y="387.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Reading lots of files</text>
+<text x="330" y="387.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">threads</text>
+<text x="580" y="387.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">file I/O releases the GIL</text>
+<rect x="60" y="396" width="910" height="26" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="70" y="413.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Simple script, one job</text>
+<text x="330" y="413.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">plain synchronous code</text>
+<text x="580" y="413.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">concurrency is a cost; only pay it when it buys something</text>
+<rect x="60" y="290" width="910" height="132" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<line x1="320" y1="318" x2="320" y2="422" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="570" y1="318" x2="570" y2="422" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<text x="495" y="440" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">PEP 703 (free-threaded CPython, 3.13+) makes a no-GIL build available - it is optional and not yet the default.</text>
+</svg>
+<figcaption>The GIL timeline: CPU-bound threads serialise (no speedup), I/O-bound threads overlap because the lock is released while waiting.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 478" width="990" height="478" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Three concurrency models</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">threading  vs  multiprocessing  vs  asyncio</text>
+<rect x="22.0" y="62" width="306" height="250" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="22.0" y="62" width="306" height="34" rx="10" fill="var(--dg-blue, #2563eb)"/>
+<rect x="22.0" y="84" width="306" height="12" rx="0" fill="var(--dg-blue, #2563eb)"/>
+<text x="175.0" y="84" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">threading</text>
+<text x="38.0" y="120" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* OS threads in ONE process</text>
+<text x="38.0" y="139" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* share memory (need Lock)</text>
+<text x="38.0" y="158" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* concurrent, NOT parallel</text>
+<text x="38.0" y="177" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* cheap: ~8 MB stack each</text>
+<text x="38.0" y="196" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* pre-emptive switching</text>
+<rect x="34.0" y="232" width="282" height="66" rx="8" fill="var(--dg-bluebg, #dbeafe)"/>
+<text x="175.0" y="254" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">best for:</text>
+<text x="175.0" y="270" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">I/O bound work, GUIs,</text>
+<text x="175.0" y="286" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">talking to many services</text>
+<rect x="342.0" y="62" width="306" height="250" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="342.0" y="62" width="306" height="34" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="342.0" y="84" width="306" height="12" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="495.0" y="84" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">multiprocessing</text>
+<text x="358.0" y="120" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* separate processes + interpreters</text>
+<text x="358.0" y="139" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* NO shared memory (use Queue/pipe)</text>
+<text x="358.0" y="158" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* true parallelism on N cores</text>
+<text x="358.0" y="177" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* expensive: ~MBs + startup cost</text>
+<text x="358.0" y="196" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* no GIL contention</text>
+<rect x="354.0" y="232" width="282" height="66" rx="8" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="495.0" y="254" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">best for:</text>
+<text x="495.0" y="270" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">CPU bound work: images,</text>
+<text x="495.0" y="286" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">ML features, data crunching</text>
+<rect x="662.0" y="62" width="306" height="250" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="662.0" y="62" width="306" height="34" rx="10" fill="var(--dg-violet, #7c3aed)"/>
+<rect x="662.0" y="84" width="306" height="12" rx="0" fill="var(--dg-violet, #7c3aed)"/>
+<text x="815.0" y="84" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">asyncio</text>
+<text x="678.0" y="120" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* ONE thread, cooperative tasks</text>
+<text x="678.0" y="139" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* switch only at await points</text>
+<text x="678.0" y="158" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* 10k+ concurrent connections</text>
+<text x="678.0" y="177" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* cheapest: ~KBs per task</text>
+<text x="678.0" y="196" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* one blocking call freezes all</text>
+<rect x="674.0" y="232" width="282" height="66" rx="8" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="815.0" y="254" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">best for:</text>
+<text x="815.0" y="270" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">high-fanout network servers,</text>
+<text x="815.0" y="286" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">websockets, scraping at scale</text>
+<rect x="22.0" y="330" width="916" height="26" rx="6" fill="var(--dg-slate, #475569)"/>
+<rect x="22.0" y="350" width="916" height="6" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="32.0" y="347.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)"></text>
+<text x="272.0" y="347.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">threading</text>
+<text x="482.0" y="347.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">multiprocessing</text>
+<text x="712.0" y="347.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">asyncio</text>
+<rect x="22.0" y="356" width="916" height="24" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="32.0" y="372.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">parallel on many cores?</text>
+<text x="272.0" y="372.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no (GIL)</text>
+<text x="482.0" y="372.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">yes</text>
+<text x="712.0" y="372.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<rect x="22.0" y="380" width="916" height="24" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="32.0" y="396.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">handles 10k connections?</text>
+<text x="272.0" y="396.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-amber, #d97706)">hard (memory)</text>
+<text x="482.0" y="396.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">very expensive</text>
+<text x="712.0" y="396.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">yes</text>
+<rect x="22.0" y="404" width="916" height="24" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="32.0" y="420.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">shares objects freely?</text>
+<text x="272.0" y="420.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">yes</text>
+<text x="482.0" y="420.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no, must pickle</text>
+<text x="712.0" y="420.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">yes</text>
+<rect x="22.0" y="428" width="916" height="24" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="32.0" y="444.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">needs async/await syntax?</text>
+<text x="272.0" y="444.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<text x="482.0" y="444.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<text x="712.0" y="444.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">yes, all the way down</text>
+<rect x="22.0" y="330" width="916" height="122" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<line x1="262.0" y1="356" x2="262.0" y2="452" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="472.0" y1="356" x2="472.0" y2="452" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="702.0" y1="356" x2="702.0" y2="452" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+</svg>
+<figcaption>The three models side by side: cost, sharing, and the workloads each wins.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 400" width="990" height="400" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The asyncio event loop</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">One thread, many tasks: the event loop</text>
+<circle cx="300" cy="210" r="118" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-violet, #7c3aed)" stroke-width="2.4"/>
+<text x="300" y="196" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">event loop</text>
+<text x="300" y="218" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ready queue</text>
+<text x="300" y="236" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">await -&gt; park -&gt; resume</text>
+<rect x="208.0" y="6.0" width="184" height="32" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="300.0" y="27.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">task A  fetch /users</text>
+<line x1="392.0" y1="22.0" x2="300" y2="210" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" stroke-dasharray="5 4"/>
+<rect x="393.3294364098699" y="288.0" width="184" height="32" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="485.3294364098699" y="309.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">task B  fetch /orders</text>
+<line x1="393.3294364098699" y1="304.0" x2="300" y2="210" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" stroke-dasharray="5 4"/>
+<rect x="22.670563590130115" y="288.0" width="184" height="32" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="114.67056359013012" y="309.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">task C  sleep(1)</text>
+<line x1="206.67056359013012" y1="304.0" x2="300" y2="210" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" stroke-dasharray="5 4"/>
+<rect x="560" y="62" width="402" height="160" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="576" y="86" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">The one rule that breaks everything</text>
+<text x="576" y="110" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">NEVER call blocking code inside a coroutine.</text>
+<text x="576" y="127" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">time.sleep(5), requests.get(), a synchronous DB driver</text>
+<text x="576" y="144" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">or heavy CPU work will freeze EVERY other task, because</text>
+<text x="576" y="161" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">they all share this single thread.</text>
+<text x="576" y="178" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Escape hatches: asyncio.to_thread(fn, ...) or</text>
+<text x="576" y="195" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">loop.run_in_executor(None, fn) - or use an async driver.</text>
+<rect x="560" y="238" width="402" height="140" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="576" y="260" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Concurrency is NOT parallelism</text>
+<text x="576" y="284" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">3 tasks x 1 s of network wait  -&gt;  ~1 s total.</text>
+<text x="576" y="302" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">asyncio.gather() runs them CONCURRENTLY.</text>
+<text x="576" y="320" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">3 tasks x 1 s of pure CPU  -&gt;  still ~3 s total.</text>
+<text x="576" y="338" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Use run_in_executor / ProcessPool for that.</text>
+</svg>
+<figcaption>The asyncio event loop: tasks park on await and resume when their I/O is ready - one thread, many connections.</figcaption></figure>
+
+<h2 id="165-going-deeper">16.5 Going deeper</h2>
+<h3 id="1651-the-gil-precisely">16.5.1 The GIL, precisely</h3>
+<p>The GIL protects CPython&rsquo;s memory management (above all, reference counts)
+from races. It is held while executing bytecode, released during blocking I/O
+and by C extensions that declare it (NumPy releases it for heavy ops). A
+thread is also pre-empted every <code>sys.getswitchinterval()</code> seconds (5 ms
+default) so nobody starves. Consequences:</p>
+<ul>
+<li>two threads running pure Python on two cores do <strong>not</strong> finish sooner;</li>
+<li>threads waiting on sockets/files/locks cost almost nothing CPU-wise;</li>
+<li>C-extension numerics can parallelise <em>inside</em> one thread&rsquo;s call;</li>
+<li>free-threaded builds (PEP 703, Python 3.13+) exist as an <em>opt-in</em> no-GIL
+  build — real parallelism for Python code, with a performance cost on
+  single-threaded code and an ecosystem that is still migrating.</li>
+</ul>
+<h3 id="1652-sharing-state-between-threads-the-primitives">16.5.2 Sharing state between threads: the primitives</h3>
+<table>
+<thead>
+<tr>
+<th>Primitive</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Lock</code></td>
+<td>mutual exclusion (acquire once)</td>
+</tr>
+<tr>
+<td><code>RLock</code></td>
+<td>re-entrant (same thread may nest)</td>
+</tr>
+<tr>
+<td><code>Semaphore(n)</code></td>
+<td>limit concurrent access to n</td>
+</tr>
+<tr>
+<td><code>Event</code></td>
+<td>one broadcast flag (wait/set)</td>
+</tr>
+<tr>
+<td><code>Condition</code></td>
+<td>wait until a predicate, with notification</td>
+</tr>
+<tr>
+<td><code>queue.Queue</code></td>
+<td><strong>the</strong> safe producer/consumer channel</td>
+</tr>
+<tr>
+<td><code>threading.local</code></td>
+<td>per-thread storage (request contexts)</td>
+</tr>
+<tr>
+<td><code>atomic-ish</code> types</td>
+<td><code>queue</code>, <code>deque.append</code> are thread-safe by implementation; <code>x += 1</code> is not</td>
+</tr>
+</tbody>
+</table>
+<p>Rules: keep the critical section tiny; always <code>with lock:</code>; establish a global
+lock <strong>ordering</strong> to avoid deadlocks; prefer passing messages (<code>Queue</code>) over
+sharing memory — &ldquo;don&rsquo;t communicate by sharing memory; share memory by
+communicating&rdquo;.</p>
+<h3 id="1653-processes-what-crosses-the-boundary">16.5.3 Processes: what crosses the boundary</h3>
+<p>Arguments and results are <strong>pickled</strong> across the process boundary, so lambdas
+and local functions cannot be shipped (top-level functions only), and big
+payloads cost serialization time. Start methods differ: <code>fork</code> (Unix default,
+inherits memory, unsafe with threads), <code>spawn</code> (macOS/Windows default, clean,
+slower), <code>forkserver</code>. For shared mutable state across processes use
+<code>multiprocessing.Manager</code> (proxy objects, slower) or shared memory
+(<code>Value</code>, <code>Array</code>, <code>shared_memory</code>) with explicit locks — or restructure so
+each worker owns a shard and returns a reduction.</p>
+<h3 id="1654-asyncio-without-mysticism">16.5.4 asyncio without mysticism</h3>
+<ul>
+<li>a <strong>coroutine</strong> is a generator-like object created by calling an <code>async def</code>;
+  nothing runs until it is <em>scheduled</em>;</li>
+<li><code>await x</code> suspends the current task until <code>x</code> is ready and <strong>returns control
+  to the loop</strong>; the loop then runs another ready task;</li>
+<li><code>asyncio.gather(*cs)</code> runs concurrently and returns results in order;
+  <code>as_completed</code> yields as they finish;</li>
+<li><code>create_task(c)</code> schedules immediately (fire-and-track); keep a reference or
+  it may be garbage-collected mid-flight;</li>
+<li><code>TaskGroup</code> (3.11+) is structured concurrency: all-or-nothing with
+  <code>ExceptionGroup</code> semantics and automatic cancellation of siblings;</li>
+<li>cancellation is cooperative: <code>await</code> points raise <code>CancelledError</code>; never
+  swallow it — clean up and re-raise (or use <code>asyncio.shield</code> deliberately);</li>
+<li>timeouts: <code>asyncio.timeout(...)</code> / <code>wait_for(c, seconds)</code>;</li>
+<li>limiting fan-out: <code>asyncio.Semaphore(n)</code> around the await;</li>
+<li><strong>one blocking call freezes everything</strong>: <code>time.sleep</code>, <code>requests.get</code>,
+  synchronous DB drivers, CPU loops. Escape with
+  <code>await asyncio.to_thread(blocking_fn, …)</code> or an executor, or use async
+  drivers (httpx, aiohttp, asyncpg).</li>
+</ul>
+<h3 id="1655-scaling-numbers-worth-remembering">16.5.5 Scaling numbers worth remembering</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Cost per unit of concurrency</th>
+<th>Practical ceiling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>thread</td>
+<td>~8 MB stack (tunable), context switch</td>
+<td>~10³–10⁴</td>
+</tr>
+<tr>
+<td>process</td>
+<td>MBs + startup, pickling IPC</td>
+<td>~cores × few</td>
+</tr>
+<tr>
+<td>asyncio task</td>
+<td>~KBs, no switch overhead</td>
+<td>~10⁵–10⁶</td>
+</tr>
+</tbody>
+</table>
+<p>Hence: web servers with many idle connections → asyncio; CPU crunching →
+processes; glue code calling blocking libs concurrently → thread pool.</p>
+<h3 id="1656-mixing-models-correctly">16.5.6 Mixing models, correctly</h3>
+<p>Common production shapes: asyncio event loop + <code>to_thread</code> for the one legacy
+blocking driver; a <code>ProcessPoolExecutor</code> <em>behind</em> <code>loop.run_in_executor</code> for
+CPU-heavy steps inside an async service; worker queues (Celery, arq, Dramatiq)
+when jobs outlive the request and need retries/durability. Keep one model per
+layer; crossing models is where bugs breed.</p>
+<h2 id="166-industry-level">16.6 Industry level</h2>
+<h3 id="the-decision-procedure-teams-actually-use">The decision procedure teams actually use</h3>
+<ol>
+<li><strong>Is there parallelisable CPU work?</strong> → processes / vectorised NumPy /
+   move it to C / cache it. Threads will not help.</li>
+<li><strong>Is it many independent blocking calls to existing sync libs?</strong> →
+   <code>ThreadPoolExecutor</code> (or <code>asyncio.to_thread</code> inside an async app).</li>
+<li><strong>Is it a high-fanout network service you control end-to-end?</strong> → asyncio
+   with async drivers, semaphore-limited fan-out, timeouts on every await.</li>
+<li><strong>Is it long-running, retryable background work?</strong> → a task queue with
+   workers (durability, visibility, retries), not threads in the web process.</li>
+<li><strong>Otherwise</strong> → stay synchronous. Concurrency is a cost; pay it only when
+   latency or throughput demands it.</li>
+</ol>
+<h3 id="hygiene-that-prevents-incidents">Hygiene that prevents incidents</h3>
+<ul>
+<li><strong>timeouts everywhere</strong>: every network await/call gets one; unbounded waits
+  are how thread pools exhaust and requests pile up;</li>
+<li><strong>bounded queues</strong>: an unbounded <code>Queue</code> under load is an OOM; use
+  <code>maxsize</code> and let producers feel backpressure;</li>
+<li><strong>graceful shutdown</strong>: <code>executor.shutdown(wait=True)</code>, drain queues, cancel
+  tasks in <code>finally</code>, handle SIGTERM in services;</li>
+<li><strong>idempotency keys</strong> on retried side effects;</li>
+<li><strong>name your threads/tasks</strong> (<code>Thread(name=…)</code>, <code>Task(..., name=…)</code>) so
+  dumps and logs are readable;</li>
+<li><strong>no shared mutable state by default</strong>; message-passing first;</li>
+<li><strong>test with injected executors/clocks</strong>, and use
+  <code>threading.Barrier</code>/<code>asyncio.Event</code> to force interleavings deterministically.</li>
+</ul>
+<h3 id="observing-concurrency">Observing concurrency</h3>
+<p><code>faulthandler.dump_traceback_later(30, exit=True)</code> catches deadlocks in CI;
+<code>py-spy dump --pid …</code> shows every thread&rsquo;s stack of a live process; asyncio
+debug mode (<code>PYTHONASYNCCIODEBUG=1</code>, <code>loop.set_debug(True)</code>) reports slow
+callbacks and un-awaited coroutines. Know these before you need them at 3 a.m.</p>
+<h2 id="167-comparison-tables">16.7 Comparison tables</h2>
+<p><strong>Model chooser (see also figure):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Workload</th>
+<th>Model</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>call 50 HTTP APIs with <code>requests</code></td>
+<td>ThreadPoolExecutor</td>
+<td>blocking lib, I/O-bound</td>
+</tr>
+<tr>
+<td>same, with httpx.AsyncClient</td>
+<td>asyncio</td>
+<td>one thread, 50 in-flight</td>
+</tr>
+<tr>
+<td>resize 10 000 images</td>
+<td>ProcessPoolExecutor / NumPy</td>
+<td>CPU-bound, parallel cores</td>
+</tr>
+<tr>
+<td>websocket server, 20k clients</td>
+<td>asyncio</td>
+<td>cheap tasks, mostly idle</td>
+</tr>
+<tr>
+<td>nightly batch ETL</td>
+<td>processes or a queue</td>
+<td>throughput + isolation</td>
+</tr>
+<tr>
+<td>GUI staying responsive</td>
+<td>threads or async main loop</td>
+<td>I/O off the UI thread</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Synchronisation chooser:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>protect a critical section</td>
+<td><code>with lock:</code></td>
+</tr>
+<tr>
+<td>producer → consumer</td>
+<td><code>queue.Queue</code> / <code>asyncio.Queue</code></td>
+</tr>
+<tr>
+<td>limit concurrency to n</td>
+<td><code>Semaphore(n)</code> / executor max_workers</td>
+</tr>
+<tr>
+<td>signal &ldquo;ready&rdquo; across threads</td>
+<td><code>Event</code></td>
+</tr>
+<tr>
+<td>wait for a condition</td>
+<td><code>Condition</code></td>
+</tr>
+<tr>
+<td>per-thread context</td>
+<td><code>threading.local()</code> / <code>contextvars</code> (async-safe)</td>
+</tr>
+<tr>
+<td>run-once initialisation</td>
+<td><code>Lock</code> + flag, or module import</td>
+</tr>
+</tbody>
+</table>
+<h2 id="168-mistakes-gotchas">16.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>total += 1</code> in threads</p>
+<p>Read-modify-write is not atomic; you will lose updates nondeterministically.
+Lock it, or use a Queue/Counter per thread and merge.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Daemon threads and abrupt exit</p>
+<p><code>daemon=True</code> threads are killed without cleanup when main exits — fine for
+logging, fatal for flushes. Join or use executor shutdown.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Deadlock by lock ordering</p>
+<p>Thread 1 holds A waits B; thread 2 holds B waits A. Acquire in one global
+order, or use one coarse lock, or message-pass.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>time.sleep</code> inside a coroutine</p>
+<p>Blocks the whole loop. <code>await asyncio.sleep(...)</code>. Same for any blocking call.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Calling a coroutine without awaiting</p>
+<p><code>fetch(url)</code> alone creates a coroutine and warns &ldquo;never awaited&rdquo;. You need
+<code>await</code>, <code>create_task</code>, or <code>gather</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Pickling failures with ProcessPool</p>
+<p>Lambdas, local functions and open files cannot cross the boundary. Define
+workers at module top level.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Threads for CPU-bound hope</p>
+<p>Adding threads to a pure-Python computation adds overhead, not speed. Measure
+first (module 17), then parallelise with processes.</p>
+</div>
+<h2 id="169-interview-questions">16.9 Interview questions</h2>
+<ol>
+<li><strong>What is the GIL and what does it imply?</strong> — one bytecode-executing thread
+   per interpreter; CPU-bound threads don&rsquo;t parallelise; I/O-bound do.</li>
+<li><strong>Threads vs processes vs asyncio?</strong> — shared-memory waiting / isolated
+   computing / single-thread cooperative tasks.</li>
+<li><strong>How do you protect shared state?</strong> — locks around minimal critical
+   sections, or message passing via queues.</li>
+<li><strong>What freezes an event loop?</strong> — any blocking call; fix with async drivers
+   or <code>to_thread</code>.</li>
+<li><strong><code>gather</code> vs <code>as_completed</code>?</strong> — all results in order vs results as they
+   arrive.</li>
+<li><strong>How does cancellation work in asyncio?</strong> — <code>CancelledError</code> at await
+   points; cooperative, must be propagated or handled deliberately.</li>
+<li><strong>When is a thread pool the right answer?</strong> — wrapping blocking,
+   non-async-aware libraries with moderate concurrency.</li>
+<li><strong>Why can&rsquo;t you pickle a lambda for ProcessPool?</strong> — pickling is by
+   reference (module + qualname); locals/lambdas have none.</li>
+</ol>
+<h2 id="1610-practice-exercises">16.10 Practice exercises</h2>
+<p>All exercises take injectable clocks/fetchers so the tests never sleep in real
+time.</p>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-16-a</span></div><p>Implement <code>parallel_map(fn, items, workers=4)</code> with a ThreadPoolExecutor
+preserving input order; <code>safe_counter(n_threads, per_thread)</code> returning the
+final count using a Lock (must equal n*per exactly); and
+<code>chunk_sums(numbers, procs=2)</code> using ProcessPoolExecutor over a top-level
+worker.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/16_concurrency/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-16-b</span></div><p>Implement a thread-safe <code>TokenBucket(rate, capacity, clock=time.monotonic)</code>
+with <code>acquire(n=1) -&gt; bool</code> (non-blocking); a producer/consumer
+<code>run_pipeline(items, worker, n_workers)</code> using <code>queue.Queue</code> returning results
+in input order; and <code>async fetch_all(fetcher, urls, limit)</code> limiting
+concurrency with <code>asyncio.Semaphore</code> (fetcher is an async callable injected by
+the test).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/16_concurrency/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-16-c</span></div><p>Implement <code>async run_jobs(jobs, *, timeout, max_concurrent)</code> using a
+TaskGroup-free structured approach: each job (zero-arg coroutine factory) gets
+a timeout; results and exceptions are collected per index (cancelled/failed →
+<code>JobError</code> in the report, never crashing siblings); plus a <code>WorkerPool</code>
+context manager over threads with <code>submit(fn, *a)</code> and <code>shutdown(drain=True)</code>
+guaranteeing submitted work finishes (or is reported) and no thread leaks.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/16_concurrency/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/16_concurrency/solution.py)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">max_concurrent</span><span class="p">):</span>
+    <span class="n">sem</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Semaphore</span><span class="p">(</span><span class="n">max_concurrent</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">jobs</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">one</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">factory</span><span class="p">):</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">sem</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">async</span> <span class="k">with</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">timeout</span><span class="p">(</span><span class="n">timeout</span><span class="p">):</span>
+                    <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"ok"</span><span class="p">,</span> <span class="k">await</span> <span class="n">factory</span><span class="p">())</span>
+            <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"error"</span><span class="p">,</span> <span class="n">JobError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"job </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> timed out"</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"error"</span><span class="p">,</span> <span class="n">JobError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"job </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> failed: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
+
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">one</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">jobs</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">results</span>
+</code></pre></div></details>
+<h2 id="1611-cheatsheet">16.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wrap blocking lib concurrently</td>
+<td><code>ThreadPoolExecutor(max_workers=n)</code></td>
+</tr>
+<tr>
+<td>CPU-bound parallelism</td>
+<td><code>ProcessPoolExecutor</code> / NumPy / shard &amp; reduce</td>
+</tr>
+<tr>
+<td>Many network calls, async drivers</td>
+<td><code>asyncio.gather</code> + <code>Semaphore</code></td>
+</tr>
+<tr>
+<td>Run sync code inside async</td>
+<td><code>await asyncio.to_thread(fn, …)</code></td>
+</tr>
+<tr>
+<td>Safe handoff between threads</td>
+<td><code>queue.Queue(maxsize=…)</code></td>
+</tr>
+<tr>
+<td>Critical section</td>
+<td><code>with lock:</code> (tiny!)</td>
+</tr>
+<tr>
+<td>Limit concurrency</td>
+<td><code>Semaphore(n)</code> / pool size</td>
+</tr>
+<tr>
+<td>Timeouts</td>
+<td><code>fut.result(timeout=…)</code>, <code>asyncio.timeout(…)</code></td>
+</tr>
+<tr>
+<td>Structured async</td>
+<td><code>async with asyncio.TaskGroup() as tg: tg.create_task(…)</code></td>
+</tr>
+<tr>
+<td>Background durable jobs</td>
+<td>task queue (Celery/arq) + workers</td>
+</tr>
+<tr>
+<td>Debug a hung process</td>
+<td><code>py-spy dump</code>, <code>faulthandler</code></td>
+</tr>
+<tr>
+<td>Async debug</td>
+<td><code>PYTHONASYNCCIODEBUG=1</code></td>
+</tr>
+<tr>
+<td>Decide the model</td>
+<td>CPU-bound? share state? fan-out size? (figure §16.4)</td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="15-testing.html"><span>&larr; previous</span><strong>Testing with pytest: fixtures, parametrisation, mocks</strong></a><a class="next" href="17-performance.html"><span>next &rarr;</span><strong>Performance: profiling, caching and complexity-first optimisation</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#161-definition">16.1 Definition</a></li>
+<li><a href="#162-syntax">16.2 Syntax</a></li>
+<li><a href="#163-first-examples">16.3 First examples</a></li>
+<li><a href="#164-the-picture">16.4 The picture</a></li>
+<li><a href="#165-going-deeper">16.5 Going deeper</a><ul>
+<li><a href="#1651-the-gil-precisely">16.5.1 The GIL, precisely</a></li>
+<li><a href="#1652-sharing-state-between-threads-the-primitives">16.5.2 Sharing state between threads: the primitives</a></li>
+<li><a href="#1653-processes-what-crosses-the-boundary">16.5.3 Processes: what crosses the boundary</a></li>
+<li><a href="#1654-asyncio-without-mysticism">16.5.4 asyncio without mysticism</a></li>
+<li><a href="#1655-scaling-numbers-worth-remembering">16.5.5 Scaling numbers worth remembering</a></li>
+<li><a href="#1656-mixing-models-correctly">16.5.6 Mixing models, correctly</a></li>
+</ul>
+</li>
+<li><a href="#166-industry-level">16.6 Industry level</a><ul>
+<li><a href="#the-decision-procedure-teams-actually-use">The decision procedure teams actually use</a></li>
+<li><a href="#hygiene-that-prevents-incidents">Hygiene that prevents incidents</a></li>
+<li><a href="#observing-concurrency">Observing concurrency</a></li>
+</ul>
+</li>
+<li><a href="#167-comparison-tables">16.7 Comparison tables</a></li>
+<li><a href="#168-mistakes-gotchas">16.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#169-interview-questions">16.9 Interview questions</a></li>
+<li><a href="#1610-practice-exercises">16.10 Practice exercises</a></li>
+<li><a href="#1611-cheatsheet">16.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

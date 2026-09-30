@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Files &amp; I/O: paths, encodings, context managers, streams &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link active" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">30 min</span><span class="chip tag">files</span><span class="chip tag">pathlib</span><span class="chip tag">encoding</span><span class="chip tag">context-managers</span><span class="chip tag">json</span><span class="chip tag">csv</span></div>
+      <h1 id="10-files-io">10. Files &amp; I/O</h1>
+<blockquote>
+<p>I/O is where programs meet reality: partial writes, wrong encodings, locked
+files, half-updated configs. The idioms in this module exist because each of
+those has taken down a production system.</p>
+</blockquote>
+<h2 id="101-definition">10.1 Definition</h2>
+<p><strong>Plain version.</strong> Opening a file gives you an object you can read from or
+write to; <code>with</code> makes sure it gets closed.</p>
+<p><strong>Precise version.</strong> <code>open()</code> returns a <strong>file object</strong>: for text mode a
+<code>TextIOWrapper</code> (decodes bytes ↔ str using a named codec, translates
+newlines), layered over a <strong>buffered binary stream</strong> (<code>BufferedReader</code> /
+<code>BufferedWriter</code>), layered over a raw OS descriptor. Binary mode skips the
+text layer. The object is a <strong>context manager</strong>: <code>with</code> guarantees <code>close()</code>
+runs even when the body raises, flushing buffers and releasing the descriptor.
+Iteration over a text file yields <strong>lines lazily</strong> — the foundation of
+streaming.</p>
+<h2 id="102-syntax">10.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># text ------------------------------------------------------------------</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"data.txt"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>      <span class="c1"># READ (default mode 'r')</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>                                <span class="c1"># whole file as str</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"data.txt"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>                                 <span class="c1"># lazy, line by line</span>
+        <span class="o">...</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"out.txt"</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>  <span class="c1"># WRITE (truncates!)</span>
+    <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"hello</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"log.txt"</span><span class="p">,</span> <span class="s2">"a"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>  <span class="c1"># APPEND</span>
+    <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"more</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># binary ------------------------------------------------------------------</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"img.png"</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+    <span class="n">blob</span> <span class="o">=</span> <span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>                                <span class="c1"># bytes</span>
+
+<span class="c1"># pathlib shortcuts ---------------------------------------------------------</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"data.txt"</span><span class="p">)</span>
+<span class="n">p</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>      <span class="n">p</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+<span class="n">p</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>                     <span class="n">p</span><span class="o">.</span><span class="n">write_bytes</span><span class="p">(</span><span class="n">blob</span><span class="p">)</span>
+<span class="n">p</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>  <span class="n">p</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span>  <span class="n">p</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>  <span class="n">p</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">p</span><span class="o">.</span><span class="n">parent</span>  <span class="n">p</span><span class="o">.</span><span class="n">name</span>  <span class="n">p</span><span class="o">.</span><span class="n">stem</span>  <span class="n">p</span><span class="o">.</span><span class="n">suffix</span>  <span class="n">p</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">".json"</span><span class="p">)</span>
+<span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"*.csv"</span><span class="p">))</span>              <span class="n">p</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">"**/test_*.py"</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="103-first-examples">10.3 First examples</h2>
+<p><strong>Example 1 — read, transform, write.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">src</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"scores.txt"</span><span class="p">)</span>
+<span class="n">lines</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+<span class="n">clean</span> <span class="o">=</span> <span class="p">[</span><span class="n">ln</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">ln</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">if</span> <span class="n">ln</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+<span class="n">Path</span><span class="p">(</span><span class="s2">"scores.clean.txt"</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">clean</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Example 2 — the mode matrix in action.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"m.txt"</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>  <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"one</span><span class="se">\n</span><span class="s2">two</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>   <span class="c1"># create/truncate</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"m.txt"</span><span class="p">,</span> <span class="s2">"a"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>  <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"three</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>      <span class="c1"># append</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"m.txt"</span><span class="p">,</span> <span class="s2">"r+"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+    <span class="n">fh</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span> <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"ONE"</span><span class="p">)</span>                          <span class="c1"># overwrite in place</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"m.txt"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>                         <span class="c1"># ONE\n two\n three\n</span>
+</code></pre></div>
+
+<p><strong>Example 3 — JSON round trip.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"users"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"ada"</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}]}</span>
+<span class="n">Path</span><span class="p">(</span><span class="s2">"users.json"</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+<span class="n">loaded</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"users.json"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">))</span>
+<span class="k">assert</span> <span class="n">loaded</span> <span class="o">==</span> <span class="n">data</span>
+</code></pre></div>
+
+<h2 id="104-the-picture">10.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 372" width="990" height="372" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The with statement</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">with: guaranteed cleanup, even on exceptions</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">A context manager&#x27;s __enter__ runs on the way in and __exit__ always runs on the way out.</text>
+<rect x="62" y="84" width="200" height="96" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="162.0" y="118" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">with open(...) as f:</text>
+<text x="162.0" y="146" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">__enter__() returns f</text>
+<rect x="246" y="84" width="200" height="96" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="346.0" y="118" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">body executes</text>
+<text x="346.0" y="146" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">your read / write work</text>
+<rect x="470" y="84" width="250" height="96" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="595.0" y="118" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">__exit__(exc_type, exc_val, tb)</text>
+<text x="595.0" y="146" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">close / rollback / unlock</text>
+<line x1="262" y1="132" x2="246" y2="132" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<line x1="262" y1="132" x2="246" y2="132" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<line x1="446" y1="132" x2="470" y2="132" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="62" y="208" width="658" height="128" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="78" y="232" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">If the body raises, __exit__ STILL runs</text>
+<text x="78" y="258" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">The exception is passed to __exit__. Returning True from __exit__ SWALLOWS it; returning False (the</text>
+<text x="78" y="276" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">normal choice) re-raises it after cleanup. open()&#x27;s __exit__ calls f.close() and returns False.</text>
+<text x="78" y="294" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Manual try/finally gets this wrong constantly - the with statement makes it structurally impossible.</text>
+<rect x="742" y="84" width="220" height="252" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="758" y="108" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">Write your own</text>
+<text x="758" y="132" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">from contextlib</text>
+<text x="758" y="147" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">import contextmanager</text>
+<text x="758" y="162" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)"></text>
+<text x="758" y="177" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">@contextmanager</text>
+<text x="758" y="192" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">def timer(label):</text>
+<text x="758" y="207" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    t = time.perf_counter()</text>
+<text x="758" y="222" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    try:</text>
+<text x="758" y="237" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        yield</text>
+<text x="758" y="252" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    finally:</text>
+<text x="758" y="267" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(label,</text>
+<text x="758" y="282" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">              time.perf_counter()</text>
+<text x="758" y="297" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">              - t)</text>
+</svg>
+<figcaption>The with statement lifecycle: __enter__ on the way in, __exit__ always on the way out - even when the body raises.</figcaption></figure>
+
+<h2 id="105-going-deeper">10.5 Going deeper</h2>
+<h3 id="1051-the-three-layers-and-what-each-can-break">10.5.1 The three layers, and what each can break</h3>
+<div class="codehilite"><pre><span></span><code>str  &lt;-&gt;  TextIOWrapper   (codec + newline translation + errors policy)
+bytes &lt;-&gt; BufferedWriter/Reader   (8 KB buffer by default)
+fd    &lt;-&gt; FileIO          (the OS descriptor)
+</code></pre></div>
+
+<ul>
+<li><strong>Text layer failures</strong>: <code>UnicodeDecodeError</code> (wrong codec), mojibake
+  (right bytes, wrong codec), lost newlines (translation);</li>
+<li><strong>Buffer layer failures</strong>: data not yet on disk when you expected it
+  (<code>flush()</code>/<code>close</code> pushes buffers; <code>os.fsync(fd)</code> pushes to the device);</li>
+<li><strong>Descriptor failures</strong>: too many open files (leaks), permission errors,
+  locks on Windows.</li>
+</ul>
+<p>Inspect them: <code>fh.buffer</code>, <code>fh.buffer.raw</code>, <code>fh.encoding</code>, <code>fh.newlines</code>.</p>
+<h3 id="1052-the-mode-matrix">10.5.2 The mode matrix</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Meaning</th>
+<th>File must exist?</th>
+<th>Truncates?</th>
+<th>Cursor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>r</code></td>
+<td>read text</td>
+<td>yes</td>
+<td>no</td>
+<td>start</td>
+</tr>
+<tr>
+<td><code>w</code></td>
+<td>write text</td>
+<td>no (creates)</td>
+<td><strong>yes</strong></td>
+<td>start</td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td>exclusive create</td>
+<td><strong>must NOT</strong></td>
+<td>—</td>
+<td>start</td>
+</tr>
+<tr>
+<td><code>a</code></td>
+<td>append</td>
+<td>no (creates)</td>
+<td>no</td>
+<td>end</td>
+</tr>
+<tr>
+<td><code>r+</code></td>
+<td>read+write</td>
+<td>yes</td>
+<td>no</td>
+<td>start</td>
+</tr>
+<tr>
+<td><code>w+</code></td>
+<td>read+write</td>
+<td>no</td>
+<td>yes</td>
+<td>start</td>
+</tr>
+<tr>
+<td>add <code>b</code></td>
+<td>binary (<code>rb</code>, <code>wb</code>, …)</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>add <code>t</code></td>
+<td>text (default)</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><code>x</code> is the underrated one: &ldquo;create this config, fail if it already exists&rdquo; is
+exactly <code>open(path, "x")</code>.</p>
+<h3 id="1053-newlines-and-the-newline-argument">10.5.3 Newlines and the <code>newline=</code> argument</h3>
+<p>Reading: <strong>universal newlines</strong> by default — <code>\r\n</code>, <code>\r</code>, <code>\n</code> all become
+<code>\n</code>. Writing: <code>\n</code> is translated to <code>os.linesep</code>… unless you pass
+<code>newline=""</code> or <code>newline="\n"</code>. The <code>csv</code> module <strong>requires</strong> <code>newline=""</code>
+(because it does its own quoting/line-end handling); getting this wrong
+produces blank lines between rows on Windows.</p>
+<h3 id="1054-encodings-and-the-bom">10.5.4 Encodings and the BOM</h3>
+<p><code>utf-8</code> is the default choice; <code>utf-8-sig</code> reads (and writes) the BOM that
+Excel/Notepad love; <code>latin-1</code> never fails (bytes↔codepoints 1:1) which makes
+it a debugging tool and a corruption risk. Always name the codec explicitly —
+the platform default is a lottery (module 04).</p>
+<h3 id="1055-context-managers-beyond-files">10.5.5 Context managers beyond files</h3>
+<p>Anything with acquire/release deserves <code>with</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">):</span>      <span class="c1"># instead of try/except pass</span>
+    <span class="n">Path</span><span class="p">(</span><span class="s2">"tmp.lock"</span><span class="p">)</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stdout</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()):</span>   <span class="c1"># capture prints</span>
+    <span class="n">noisy</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">closing</span><span class="p">(</span><span class="n">make_thing</span><span class="p">())</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>       <span class="c1"># close() without __exit__</span>
+    <span class="o">...</span>
+<span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>                        <span class="c1"># your own, from a generator</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">atomic_write</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">+</span> <span class="s2">".tmp"</span><span class="p">)</span>
+    <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">fh</span>
+    <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+        <span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">();</span> <span class="n">tmp</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span> <span class="k">raise</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">();</span> <span class="n">os</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>         <span class="c1"># atomic on POSIX &amp; Windows</span>
+</code></pre></div>
+
+<h3 id="1056-streaming-files-bigger-than-ram">10.5.6 Streaming: files bigger than RAM</h3>
+<p>Iteration is lazy, so the pattern scales to any size:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">count_errors</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"replace"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>                     <span class="c1"># one line in memory at a time</span>
+            <span class="k">if</span> <span class="s2">"ERROR"</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">total</span>
+</code></pre></div>
+
+<p>For binary streams read in chunks: <code>while chunk := fh.read(1 &lt;&lt; 20): …</code>.
+<code>mmap</code> maps the file into address space for random access without loading it.</p>
+<h3 id="1057-structured-formats-csv-json-and-what-not-to-use">10.5.7 Structured formats: csv, json, and what not to use</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">csv</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"rows.csv"</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">fh</span><span class="p">):</span>          <span class="c1"># header -&gt; dict per row</span>
+        <span class="o">...</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"rows.csv"</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictWriter</span><span class="p">(</span><span class="n">fh</span><span class="p">,</span> <span class="n">fieldnames</span><span class="o">=</span><span class="p">[</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">])</span>
+    <span class="n">w</span><span class="o">.</span><span class="n">writeheader</span><span class="p">();</span> <span class="n">w</span><span class="o">.</span><span class="n">writerow</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"ada"</span><span class="p">})</span>
+</code></pre></div>
+
+<ul>
+<li><strong>JSON</strong> for interchange; <code>json.dump(obj, fh, ensure_ascii=False, indent=2,
+  default=str)</code>; parse with <code>object_hook</code>/<code>parse_float=Decimal</code> when types
+  matter;</li>
+<li><strong>CSV</strong> for tabular text — never hand-split on commas (quoting!);</li>
+<li><strong>pickle</strong> for Python-object graphs <strong>you trust only</strong>; unpickling
+  untrusted data executes code;</li>
+<li><strong>JSON Lines</strong> (<code>.jsonl</code>) for append-only event streams: one JSON object per
+  line, grep-able, tail-able, crash-friendly.</li>
+</ul>
+<h3 id="1058-atomic-writes-the-config-file-rule">10.5.8 Atomic writes: the config-file rule</h3>
+<p>A crash mid-write leaves a truncated config = outage. The rule: write a
+temporary file in the same directory, flush + <code>fsync</code>, then <code>os.replace(tmp,
+target)</code> (atomic rename on the same filesystem). Readers then see either the
+old or the new file, never a partial one. Databases, package installers and
+config writers all do exactly this.</p>
+<h2 id="106-industry-level">10.6 Industry level</h2>
+<h3 id="the-house-style-for-file-code">The house style for file code</h3>
+<ol>
+<li><strong><code>pathlib</code> everywhere</strong>; <code>os.path</code> only in legacy code. Paths as <code>Path</code>
+   objects, <code>/</code> for joining, <code>.read_text(encoding=…)</code> for small files.</li>
+<li><strong><code>with</code> always</strong> — even for one-liners; an unclosed file is a leaked
+   descriptor and, on Windows, a locked file.</li>
+<li><strong>Explicit <code>encoding="utf-8"</code></strong> on every text open; <code>newline=""</code> for csv.</li>
+<li><strong>Atomic writes</strong> for anything another process reads (configs, caches,
+   artifacts).</li>
+<li><strong>Stream, don&rsquo;t slurp</strong>: iterate lines or read chunks; <code>read()</code> only when
+   the size is known-small.</li>
+<li><strong>Temp files from <code>tempfile</code></strong>, never hand-rolled names
+   (<code>tempfile.TemporaryDirectory()</code> in tests gives you isolation for free).</li>
+<li><strong>Errors as decisions</strong>: choose <code>errors=</code> policy consciously; log the
+   codec and the offset when decoding fails in ingestion pipelines.</li>
+</ol>
+<h3 id="durability-when-it-matters">Durability, when it matters</h3>
+<p><code>fh.flush()</code> moves Python&rsquo;s buffer to the OS; <code>os.fsync(fh.fileno())</code> asks the
+device to persist it; for a rename to be crash-safe you also fsync the
+<em>directory</em>. Wallets, queues and WAL-based systems do this; ordinary app code
+usually doesn&rsquo;t need to — but you should know the ladder.</p>
+<h3 id="reading-other-peoples-data">Reading other people&rsquo;s data</h3>
+<p>Real files lie: mixed encodings, stray BOMs, CRLF, trailing commas. The
+ingestion pattern: detect (<code>chardet</code>/<code>charset-normalizer</code>), decode with a
+policy, normalise newlines, validate row-by-row, and <strong>quarantine</strong> bad rows
+instead of failing the batch:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">good</span><span class="p">,</span> <span class="n">bad</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">fh</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">good</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parse</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">bad</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)))</span>
+</code></pre></div>
+
+<h2 id="107-comparison-tables">10.7 Comparison tables</h2>
+<p><strong>Text vs binary:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>text mode</th>
+<th>binary mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>open</td>
+<td><code>"r"</code>, <code>"w"</code></td>
+<td><code>"rb"</code>, <code>"wb"</code></td>
+</tr>
+<tr>
+<td>yields</td>
+<td><code>str</code></td>
+<td><code>bytes</code></td>
+</tr>
+<tr>
+<td>codec</td>
+<td>applied (<code>encoding=</code>)</td>
+<td>none</td>
+</tr>
+<tr>
+<td>newlines</td>
+<td>translated</td>
+<td>untouched</td>
+</tr>
+<tr>
+<td>use for</td>
+<td>logs, csv, json, source</td>
+<td>images, archives, hashes, protocols</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>read</code> family:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Returns</th>
+<th>Memory</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fh.read()</code></td>
+<td>whole remainder</td>
+<td>O(file)</td>
+</tr>
+<tr>
+<td><code>fh.read(n)</code></td>
+<td>up to n chars/bytes</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td><code>fh.readline()</code></td>
+<td>one line</td>
+<td>O(line)</td>
+</tr>
+<tr>
+<td><code>fh.readlines()</code></td>
+<td>list of lines</td>
+<td>O(file)</td>
+</tr>
+<tr>
+<td><code>for line in fh</code></td>
+<td>one line per iteration</td>
+<td>O(line) ← default choice</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Serialisation formats:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Contents</th>
+<th>Trust boundary</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JSON</td>
+<td>scalars, lists, dicts</td>
+<td>safe to parse</td>
+<td>APIs, configs</td>
+</tr>
+<tr>
+<td>CSV</td>
+<td>tabular text</td>
+<td>safe</td>
+<td>spreadsheets, exports</td>
+</tr>
+<tr>
+<td>JSONL</td>
+<td>one JSON per line</td>
+<td>safe</td>
+<td>logs, event streams</td>
+</tr>
+<tr>
+<td>pickle</td>
+<td>arbitrary Python objects</td>
+<td><strong>executes code</strong></td>
+<td>internal caches only</td>
+</tr>
+<tr>
+<td>parquet/feather</td>
+<td>columnar tables</td>
+<td>safe</td>
+<td>analytics at scale</td>
+</tr>
+</tbody>
+</table>
+<p><strong>pathlib vs os:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>pathlib</th>
+<th>legacy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>join</td>
+<td><code>p / "sub" / "f.txt"</code></td>
+<td><code>os.path.join</code></td>
+</tr>
+<tr>
+<td>exists</td>
+<td><code>p.exists()</code></td>
+<td><code>os.path.exists</code></td>
+</tr>
+<tr>
+<td>walk</td>
+<td><code>p.rglob("*.py")</code></td>
+<td><code>os.walk</code></td>
+</tr>
+<tr>
+<td>read all</td>
+<td><code>p.read_text(encoding=…)</code></td>
+<td>open+read</td>
+</tr>
+<tr>
+<td>rename</td>
+<td><code>p.rename(new)</code> / <code>p.replace(new)</code></td>
+<td><code>os.rename</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="108-mistakes-gotchas">10.8 Mistakes &amp; gotchas</h2>
+<p>::: gotcha &ldquo;<code>"w"</code> truncates immediately on open&rdquo;
+Opening for write destroys the old content before you write a byte. Read
+first if you need to (<code>r+</code>, or read-then-write).
+:::</p>
+<div class="admonition gotcha">
+<p class="admonition-title">Forgetting to close (no <code>with</code>)</p>
+<p>Buffers may never flush and descriptors leak; CPython&rsquo;s refcounting usually
+hides it until PyPy/another runtime or Windows file locking exposes it.</p>
+</div>
+<p>::: gotcha &ldquo;csv without <code>newline=""</code>&rdquo;
+Blank lines between rows on Windows; broken quoting on reads.
+:::</p>
+<div class="admonition gotcha">
+<p class="admonition-title">Reading after writing without <code>seek(0)</code></p>
+<p>The cursor is at the end; <code>fh.read()</code> returns <code>""</code>. Seek, or reopen.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Relative paths depend on cwd</p>
+<p>Use <code>Path(__file__).parent / "data.csv"</code> for files that ship with code.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Unpickling untrusted data</p>
+<p>Remote code execution. Use JSON, or sign/validate pickles you produced.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title"><code>readlines()</code> on a 10 GB log</p>
+<p>Builds a 10 GB list. Iterate instead; the loop version uses O(line).</p>
+</div>
+<h2 id="109-interview-questions">10.9 Interview questions</h2>
+<ol>
+<li><strong>What does <code>with open(...)</code> guarantee?</strong> — <code>__exit__</code> runs on every path,
+   closing (and therefore flushing) the file.</li>
+<li><strong>Text vs binary mode?</strong> — codec + newline translation applied or not;
+   <code>str</code> vs <code>bytes</code>.</li>
+<li><strong><code>r+</code> vs <code>w+</code>?</strong> — both read+write; <code>w+</code> truncates first.</li>
+<li><strong>How do you read a file larger than RAM?</strong> — iterate lines or chunked
+   <code>read(n)</code>; never <code>read()</code>.</li>
+<li><strong>Why <code>newline=""</code> for csv?</strong> — the csv module handles line endings
+   itself; translation corrupts records.</li>
+<li><strong>How do you write a file atomically?</strong> — temp file in same dir, flush +
+   fsync, <code>os.replace</code>.</li>
+<li><strong><code>read()</code> vs <code>readline()</code> vs iteration?</strong> — whole file / one line / lazy
+   line stream.</li>
+<li><strong>Why is pickle dangerous?</strong> — unpickling reconstructs arbitrary objects,
+   executing <code>__reduce__</code> code.</li>
+</ol>
+<h2 id="1010-practice-exercises">10.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-10-a</span></div><p>Implement <code>read_non_empty_lines(path)</code> (stripped, blanks dropped),
+<code>count_words(path)</code>, and <code>copy_in_chunks(src, dst, chunk_size=64)</code> for binary
+files, returning the number of bytes copied.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/10_files/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-10-b</span></div><p>Implement <code>write_atomic(path, text)</code> (temp file + <code>os.replace</code>; on failure the
+target must be untouched), <code>tail_lines(path, n)</code> returning the last n lines
+without loading the whole file for large inputs (seeking from the end is the
+classic approach; a bounded deque is acceptable), and <code>deep_merge(a, b)</code>
+merging nested dicts (b wins on scalars, dicts merge recursively) writing the
+result with <code>json.dump</code>.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/10_files/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-10-c</span></div><p>Implement <code>JsonlLog</code>: a context manager appending JSON objects line-by-line
+(flushed per record, survives a crash mid-stream) and iterable on read
+(skipping corrupt trailing lines gracefully); and <code>grep_file(path, pattern, *,
+case_sensitive=False, encoding="utf-8")</code> yielding <code>(lineno, line)</code> for a
+compiled-or-string pattern over a possibly huge file.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/10_files/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/10_files/solution.py)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">write_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">fd</span><span class="p">,</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">".tmp"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="n">fh</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">fsync</span><span class="p">(</span><span class="n">fh</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>          <span class="c1"># atomic: readers see old or new, never half</span>
+    <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">raise</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">JsonlLog</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">);</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fh</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">"a"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">record</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fh</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>               <span class="c1"># crash-friendly: every record lands</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">exc</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="k">try</span><span class="p">:</span> <span class="k">yield</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span> <span class="k">continue</span>   <span class="c1"># torn tail line</span>
+</code></pre></div></details>
+<h2 id="1011-cheatsheet">10.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Read all text</td>
+<td><code>Path(p).read_text(encoding="utf-8")</code></td>
+</tr>
+<tr>
+<td>Stream lines</td>
+<td><code>with open(p, encoding=…) as fh: for line in fh</code></td>
+</tr>
+<tr>
+<td>Write (truncate)</td>
+<td><code>open(p, "w", encoding=…)</code> / <code>write_text</code></td>
+</tr>
+<tr>
+<td>Append</td>
+<td><code>open(p, "a", encoding=…)</code></td>
+</tr>
+<tr>
+<td>Fail if exists</td>
+<td><code>open(p, "x")</code></td>
+</tr>
+<tr>
+<td>Binary</td>
+<td><code>rb</code> / <code>wb</code> / <code>read_bytes</code> / <code>write_bytes</code></td>
+</tr>
+<tr>
+<td>CSV</td>
+<td><code>csv.DictReader/DictWriter</code> with <code>newline=""</code></td>
+</tr>
+<tr>
+<td>JSON</td>
+<td><code>json.load/dump</code>, <code>ensure_ascii=False</code></td>
+</tr>
+<tr>
+<td>Append-only events</td>
+<td>JSON Lines, flush per record</td>
+</tr>
+<tr>
+<td>Atomic write</td>
+<td>tmp in same dir + <code>os.replace</code></td>
+</tr>
+<tr>
+<td>Temp workspace</td>
+<td><code>tempfile.TemporaryDirectory()</code></td>
+</tr>
+<tr>
+<td>Silence an error</td>
+<td><code>contextlib.suppress(Exc)</code></td>
+</tr>
+<tr>
+<td>Own context manager</td>
+<td><code>@contextlib.contextmanager</code> + <code>yield</code></td>
+</tr>
+<tr>
+<td>Paths</td>
+<td><code>Path</code>, <code>/</code>, <code>.glob</code>, <code>.rglob</code>, <code>.mkdir(parents=True, exist_ok=True)</code></td>
+</tr>
+<tr>
+<td>Durability</td>
+<td><code>flush()</code> → <code>os.fsync(fd)</code> → fsync dir</td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="09-oop.html"><span>&larr; previous</span><strong>Object-oriented Python: classes, protocols, dataclasses</strong></a><a class="next" href="11-exceptions.html"><span>next &rarr;</span><strong>Exceptions & error handling design</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#101-definition">10.1 Definition</a></li>
+<li><a href="#102-syntax">10.2 Syntax</a></li>
+<li><a href="#103-first-examples">10.3 First examples</a></li>
+<li><a href="#104-the-picture">10.4 The picture</a></li>
+<li><a href="#105-going-deeper">10.5 Going deeper</a><ul>
+<li><a href="#1051-the-three-layers-and-what-each-can-break">10.5.1 The three layers, and what each can break</a></li>
+<li><a href="#1052-the-mode-matrix">10.5.2 The mode matrix</a></li>
+<li><a href="#1053-newlines-and-the-newline-argument">10.5.3 Newlines and the newline= argument</a></li>
+<li><a href="#1054-encodings-and-the-bom">10.5.4 Encodings and the BOM</a></li>
+<li><a href="#1055-context-managers-beyond-files">10.5.5 Context managers beyond files</a></li>
+<li><a href="#1056-streaming-files-bigger-than-ram">10.5.6 Streaming: files bigger than RAM</a></li>
+<li><a href="#1057-structured-formats-csv-json-and-what-not-to-use">10.5.7 Structured formats: csv, json, and what not to use</a></li>
+<li><a href="#1058-atomic-writes-the-config-file-rule">10.5.8 Atomic writes: the config-file rule</a></li>
+</ul>
+</li>
+<li><a href="#106-industry-level">10.6 Industry level</a><ul>
+<li><a href="#the-house-style-for-file-code">The house style for file code</a></li>
+<li><a href="#durability-when-it-matters">Durability, when it matters</a></li>
+<li><a href="#reading-other-peoples-data">Reading other people&rsquo;s data</a></li>
+</ul>
+</li>
+<li><a href="#107-comparison-tables">10.7 Comparison tables</a></li>
+<li><a href="#108-mistakes-gotchas">10.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#109-interview-questions">10.9 Interview questions</a></li>
+<li><a href="#1010-practice-exercises">10.10 Practice exercises</a></li>
+<li><a href="#1011-cheatsheet">10.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

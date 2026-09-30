@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 430" width="990" height="430" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Multiple inheritance and MRO</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arblue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-blue, #2563eb)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">The diamond problem, solved by C3 linearisation</text>
+<rect x="410" y="66" width="170" height="54" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="495.0" y="98.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">D</text>
+<rect x="200" y="176" width="170" height="54" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="285.0" y="208.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">B</text>
+<rect x="620" y="176" width="170" height="54" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="705.0" y="208.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">C</text>
+<rect x="410" y="288" width="170" height="54" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="495.0" y="320.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">A</text>
+<rect x="410" y="372" width="170" height="44" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="495.0" y="399.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">object</text>
+<line x1="435.0" y1="120" x2="285.0" y2="176" stroke="var(--dg-blue, #2563eb)" stroke-width="2" marker-end="url(#arblue)"/>
+<line x1="555.0" y1="120" x2="705.0" y2="176" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<line x1="265.0" y1="230" x2="435.0" y2="288" stroke="var(--dg-violet, #7c3aed)" stroke-width="2" marker-end="url(#arviolet)"/>
+<line x1="725.0" y1="230" x2="555.0" y2="288" stroke="var(--dg-violet, #7c3aed)" stroke-width="2" marker-end="url(#arviolet)"/>
+<line x1="495.0" y1="342" x2="495.0" y2="372" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<rect x="40" y="66" width="140" height="54" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="110" y="88" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">class D(B, C)</text>
+<text x="110" y="106" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">A defined once</text>
+<text x="660" y="84" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">D.__mro__</text>
+<rect x="660" y="96" width="52" height="30" rx="6" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="686" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">D</text>
+<rect x="720" y="96" width="52" height="30" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="746" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">B</text>
+<line x1="712" y1="111" x2="720" y2="111" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="780" y="96" width="52" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="806" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">C</text>
+<line x1="772" y1="111" x2="780" y2="111" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="840" y="96" width="52" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="866" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">A</text>
+<line x1="832" y1="111" x2="840" y2="111" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="900" y="96" width="52" height="30" rx="6" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="926" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">object</text>
+<line x1="892" y1="111" x2="900" y2="111" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="640" y="146" width="330" height="116" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="656" y="168" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">super() follows the MRO, not &#x27;my parent&#x27;.</text>
+<text x="656" y="185" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">In D().hello() the call order is</text>
+<text x="656" y="202" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">D -&gt; B -&gt; C -&gt; A -&gt; object, and A runs</text>
+<text x="656" y="219" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">exactly ONCE even though B and C both</text>
+<text x="656" y="236" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">inherit from it.</text>
+<rect x="40" y="156" width="500" height="246" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="56" y="180" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Cooperative multiple inheritance</text>
+<text x="56" y="204" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class A:</text>
+<text x="56" y="221" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def hello(self):</text>
+<text x="56" y="238" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(&#x27;A&#x27;)</text>
+<text x="56" y="255" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class B(A):</text>
+<text x="56" y="272" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def hello(self):</text>
+<text x="56" y="289" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(&#x27;B&#x27;); super().hello()</text>
+<text x="56" y="306" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class C(A):</text>
+<text x="56" y="323" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def hello(self):</text>
+<text x="56" y="340" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(&#x27;C&#x27;); super().hello()</text>
+<text x="56" y="357" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class D(B, C):</text>
+<text x="56" y="374" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def hello(self):</text>
+<text x="56" y="391" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(&#x27;D&#x27;); super().hello()</text>
+<text x="56" y="392" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">D().hello()  -&gt;  D B C A   (not D B A C A)</text>
+</svg>

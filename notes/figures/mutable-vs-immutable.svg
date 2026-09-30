@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 452" width="990" height="452" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Mutable vs immutable</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="30" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Two families of objects</text>
+<rect x="22" y="56" width="468" height="244" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="22" y="56" width="468" height="30" rx="10" fill="var(--dg-violet, #7c3aed)"/>
+<rect x="22" y="74" width="468" height="12" rx="0" fill="var(--dg-violet, #7c3aed)"/>
+<text x="256" y="76" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">IMMUTABLE  -  value can never change</text>
+<rect x="44" y="104" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="113.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">int</text>
+<rect x="192" y="104" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="261.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">float</text>
+<rect x="340" y="104" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="409.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">complex</text>
+<rect x="44" y="144" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="113.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">bool</text>
+<rect x="192" y="144" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="261.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">str</text>
+<rect x="340" y="144" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="409.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">tuple</text>
+<rect x="44" y="184" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="113.0" y="203.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">frozenset</text>
+<rect x="192" y="184" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="261.0" y="203.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">bytes</text>
+<rect x="340" y="184" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="409.0" y="203.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">None</text>
+<text x="44" y="232" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">x = 10 ; x += 1     # a NEW int object is created</text>
+<text x="44" y="249" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">s = &#x27;hi&#x27; ; s += &#x27;!&#x27; # a NEW str object is created</text>
+<text x="44" y="284" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">hashable -&gt; can be dict keys / set members</text>
+<rect x="500" y="56" width="468" height="244" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="500" y="56" width="468" height="30" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="500" y="74" width="468" height="12" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="734" y="76" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">MUTABLE  -  value can change in place</text>
+<rect x="522" y="104" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="591.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">list</text>
+<rect x="670" y="104" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="739.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">dict</text>
+<rect x="818" y="104" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="887.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">set</text>
+<rect x="522" y="144" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="591.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">bytearray</text>
+<rect x="670" y="144" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="739.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">MyClass()</text>
+<rect x="818" y="144" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="887.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">deque</text>
+<text x="522" y="232" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">a = [1,2] ; a.append(3)  # SAME object, grown</text>
+<text x="522" y="249" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">d = {}    ; d[&#x27;k&#x27;] = 1     # SAME object, new entry</text>
+<text x="522" y="284" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">unhashable -&gt; TypeError if used as a dict key</text>
+<rect x="22" y="322" width="306" height="82" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="36" y="344" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">Why it matters #1</text>
+<text x="36" y="366" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Only immutable objects can be dictionary key</text>
+<text x="36" y="382" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">s or live inside a set.</text>
+<rect x="342" y="322" width="306" height="82" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="356" y="344" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">Why it matters #2</text>
+<text x="356" y="366" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Immutable objects are safe to share across t</text>
+<text x="356" y="382" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">hreads - no locks needed.</text>
+<rect x="662" y="322" width="306" height="82" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="676" y="344" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Why it matters #3</text>
+<text x="676" y="366" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">A tuple of mutable items is NOT truly immuta</text>
+<text x="676" y="382" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">ble: (1, [2]) can change.</text>
+<text x="495" y="436" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Mental model: immutable = a value you read; mutable = a container you edit.</text>
+</svg>

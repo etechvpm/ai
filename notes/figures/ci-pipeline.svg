@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 396" width="990" height="396" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The CI pipeline</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+    <marker id="arred" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-red, #dc2626)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">What happens between `git push` and production</text>
+<rect x="24.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<rect x="24.0" y="68" width="126" height="28" rx="10" fill="var(--dg-slate, #475569)"/>
+<rect x="24.0" y="86" width="126" height="10" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="87.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">git push / PR</text>
+<text x="87.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">developer</text>
+<rect x="160.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="160.0" y="68" width="126" height="28" rx="10" fill="var(--dg-blue, #2563eb)"/>
+<rect x="160.0" y="86" width="126" height="10" rx="0" fill="var(--dg-blue, #2563eb)"/>
+<text x="223.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">install deps</text>
+<text x="223.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">pip install -e .[dev]</text>
+<text x="223.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">from a lockfile</text>
+<line x1="150.0" y1="120.0" x2="160.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="296.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<rect x="296.0" y="68" width="126" height="28" rx="10" fill="var(--dg-cyan, #0891b2)"/>
+<rect x="296.0" y="86" width="126" height="10" rx="0" fill="var(--dg-cyan, #0891b2)"/>
+<text x="359.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">format + lint</text>
+<text x="359.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ruff format</text>
+<text x="359.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ruff check</text>
+<line x1="286.0" y1="120.0" x2="296.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="432.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="432.0" y="68" width="126" height="28" rx="10" fill="var(--dg-violet, #7c3aed)"/>
+<rect x="432.0" y="86" width="126" height="10" rx="0" fill="var(--dg-violet, #7c3aed)"/>
+<text x="495.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">type check</text>
+<text x="495.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">mypy --strict</text>
+<text x="495.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">pyright</text>
+<line x1="422.0" y1="120.0" x2="432.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="568.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="568.0" y="68" width="126" height="28" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="568.0" y="86" width="126" height="10" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="631.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">tests + coverage</text>
+<text x="631.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">pytest --cov</text>
+<text x="631.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">fail below 90%</text>
+<line x1="558.0" y1="120.0" x2="568.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="704.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="704.0" y="68" width="126" height="28" rx="10" fill="var(--dg-amber, #d97706)"/>
+<rect x="704.0" y="86" width="126" height="10" rx="0" fill="var(--dg-amber, #d97706)"/>
+<text x="767.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">build</text>
+<text x="767.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">python -m build</text>
+<text x="767.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">wheel + sdist</text>
+<line x1="694.0" y1="120.0" x2="704.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="840.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<rect x="840.0" y="68" width="126" height="28" rx="10" fill="var(--dg-red, #dc2626)"/>
+<rect x="840.0" y="86" width="126" height="10" rx="0" fill="var(--dg-red, #dc2626)"/>
+<text x="903.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">deploy</text>
+<text x="903.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">container / PyPI</text>
+<text x="903.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">staging then prod</text>
+<line x1="830.0" y1="120.0" x2="840.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="87.0" y1="172" x2="87.0" y2="192" stroke="var(--dg-red, #dc2626)" stroke-width="1.8" marker-end="url(#arred)"/>
+<rect x="59.45000000000002" y="175.55" width="295.09999999999997" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="207.0" y="186" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">any red step blocks the merge - no exceptions</text>
+<rect x="24.0" y="208" width="452" height="160" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="40.0" y="230" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">A minimal pyproject.toml</text>
+<text x="40.0" y="254" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">[project]</text>
+<text x="40.0" y="270" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">name = &#x27;myproject&#x27;</text>
+<text x="40.0" y="286" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">version = &#x27;1.0.0&#x27;</text>
+<text x="40.0" y="302" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">requires-python = &#x27;&gt;=3.11&#x27;</text>
+<text x="40.0" y="318" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">dependencies = [&#x27;httpx&gt;=0.27&#x27;, &#x27;pydantic&gt;=2&#x27;]</text>
+<text x="40.0" y="334" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">[project.optional-dependencies]</text>
+<text x="40.0" y="350" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">dev = [&#x27;pytest&#x27;, &#x27;ruff&#x27;, &#x27;mypy&#x27;]</text>
+<rect x="492.0" y="208" width="452" height="160" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="508.0" y="230" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">Why teams insist on this</text>
+<text x="508.0" y="254" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* &#x27;works on my machine&#x27; disappears - CI IS the machine</text>
+<text x="508.0" y="272" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* a broken change is caught in minutes, not in prod</text>
+<text x="508.0" y="290" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* reviewers read a diff with green checks, not hope</text>
+<text x="508.0" y="308" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* releases become boring and repeatable,</text>
+<text x="508.0" y="326" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  which is exactly what you want them to be</text>
+</svg>

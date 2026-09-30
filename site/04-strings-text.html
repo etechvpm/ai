@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strings &amp; text: Unicode, slicing, formatting, performance &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link active" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">30 min</span><span class="chip tag">strings</span><span class="chip tag">unicode</span><span class="chip tag">encoding</span><span class="chip tag">f-strings</span><span class="chip tag">regex</span></div>
+      <h1 id="4-strings-text">4. Strings &amp; text</h1>
+<blockquote>
+<p>Text is the interface between your program and the world, and the world is
+not ASCII. This module makes mojibake and quadratic string code impossible
+for you to write by accident.</p>
+</blockquote>
+<h2 id="41-definition">4.1 Definition</h2>
+<p><strong>Plain version.</strong> A string (<code>str</code>) is text: <code>"hello"</code>, <code>"नमस्ते"</code>, <code>"🚀"</code>.</p>
+<p><strong>Precise version.</strong> <code>str</code> is an <strong>immutable sequence of Unicode code
+points</strong>. Immutable: every &ldquo;change&rdquo; builds a new object. Sequence: indexing,
+slicing, iteration, <code>len</code>, <code>in</code> all work. Unicode: <code>len("café") == 4</code>
+characters even though UTF-8 stores it in 5 <strong>bytes</strong> — because <code>str</code> is not
+bytes. The bridge between the two is <strong>encoding</strong> (<code>str → bytes</code>) and
+<strong>decoding</strong> (<code>bytes → str</code>).</p>
+<h2 id="42-syntax">4.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># literals -------------------------------------------------------------</span>
+<span class="n">s</span> <span class="o">=</span> <span class="s1">'single'</span>  <span class="n">t</span> <span class="o">=</span> <span class="s2">"double"</span>            <span class="c1"># identical; pick one style, keep it</span>
+<span class="n">raw</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"C:\new\path"</span>                  <span class="c1"># no escape processing</span>
+<span class="n">tri</span> <span class="o">=</span> <span class="s2">"""multi</span>
+<span class="s2">line"""</span>                               <span class="c1"># triple quotes keep newlines</span>
+<span class="n">b</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">"raw bytes"</span>                      <span class="c1"># bytes literal, NOT str</span>
+<span class="n">f</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"value=</span><span class="si">{</span><span class="mi">42</span><span class="si">:</span><span class="s2">&gt;6.2f</span><span class="si">}</span><span class="s2">"</span>               <span class="c1"># formatted literal (see 4.5)</span>
+
+<span class="c1"># the core operations ---------------------------------------------------</span>
+<span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>          <span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>        <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>     <span class="n">s</span><span class="p">[::</span><span class="mi">2</span><span class="p">]</span>      <span class="n">s</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>        <span class="s2">"ub"</span> <span class="ow">in</span> <span class="n">s</span>    <span class="n">s</span> <span class="o">+</span> <span class="n">t</span>      <span class="n">s</span> <span class="o">*</span> <span class="mi">3</span>
+<span class="n">s</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>     <span class="n">s</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>    <span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>  <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>   <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>           <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>        <span class="n">s</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">sub</span><span class="p">)</span>   <span class="n">s</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">sub</span><span class="p">)</span> <span class="n">s</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">sub</span><span class="p">)</span>           <span class="n">s</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span>
+<span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>           <span class="n">s</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>          <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">x</span><span class="si">!r:</span><span class="s2">&gt;10</span><span class="si">}</span><span class="s2">"</span>
+</code></pre></div>
+
+<h2 id="43-first-examples">4.3 First examples</h2>
+<p><strong>Example 1 — slicing and immutability.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">name</span> <span class="o">=</span> <span class="s2">"PyCon India"</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span> <span class="n">name</span><span class="p">[</span><span class="mi">6</span><span class="p">:],</span> <span class="n">name</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>     <span class="c1"># PyCon  India  aidnI noCyP</span>
+<span class="c1"># name[0] = "p"                            # TypeError: 'str' does not support item assignment</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"p"</span> <span class="o">+</span> <span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>                     <span class="c1"># build a NEW string instead</span>
+</code></pre></div>
+
+<p><strong>Example 2 — splitting and joining (the workhorses).</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">line</span> <span class="o">=</span> <span class="s2">"  ada,lovelace,36  "</span>
+<span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>                              <span class="c1"># ['ada', 'lovelace', '36']</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">" | "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">))</span>                  <span class="c1"># ada | lovelace | 36</span>
+</code></pre></div>
+
+<p><strong>Example 3 — encode / decode.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">text</span> <span class="o">=</span> <span class="s2">"café 🚀"</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>               <span class="c1"># 7 code points, 11 bytes</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="o">==</span> <span class="n">text</span><span class="p">)</span>       <span class="c1"># True</span>
+</code></pre></div>
+
+<h2 id="44-the-picture">4.4 The picture</h2>
+<p><figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 500" width="990" height="500" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>String indexing and slicing</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Indexing and slicing</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">s[start : stop : step]   -   stop is EXCLUSIVE, negative indices count from the right</text>
+<text x="155.0" y="169.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="22" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">s</text>
+<rect x="195.0" y="132" width="56" height="62" rx="6" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="223.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">P</text>
+<text x="223.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">0</text>
+<text x="223.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-10</text>
+<rect x="255.0" y="132" width="56" height="62" rx="6" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="283.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Y</text>
+<text x="283.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">1</text>
+<text x="283.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-9</text>
+<rect x="315.0" y="132" width="56" height="62" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="2"/>
+<text x="343.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">T</text>
+<text x="343.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">2</text>
+<text x="343.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-8</text>
+<rect x="375.0" y="132" width="56" height="62" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="2"/>
+<text x="403.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">H</text>
+<text x="403.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">3</text>
+<text x="403.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-7</text>
+<rect x="435.0" y="132" width="56" height="62" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="2"/>
+<text x="463.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">O</text>
+<text x="463.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">4</text>
+<text x="463.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-6</text>
+<rect x="495.0" y="132" width="56" height="62" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="2"/>
+<text x="523.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">N</text>
+<text x="523.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">5</text>
+<text x="523.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-5</text>
+<rect x="555.0" y="132" width="56" height="62" rx="6" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="583.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">I</text>
+<text x="583.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">6</text>
+<text x="583.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-4</text>
+<rect x="615.0" y="132" width="56" height="62" rx="6" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="643.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">S</text>
+<text x="643.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">7</text>
+<text x="643.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-3</text>
+<rect x="675.0" y="132" width="56" height="62" rx="6" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="703.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">T</text>
+<text x="703.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">8</text>
+<text x="703.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-2</text>
+<rect x="735.0" y="132" width="56" height="62" rx="6" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<text x="763.0" y="171.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="21" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">A</text>
+<text x="763.0" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">9</text>
+<text x="763.0" y="216" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">-1</text>
+<text x="189.0" y="120" text-anchor="end" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-slate, #475569)">+index</text>
+<text x="189.0" y="216" text-anchor="end" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">-index</text>
+<line x1="313.0" y1="98" x2="313.0" y2="228" stroke="var(--dg-green, #059669)" stroke-width="2" stroke-dasharray="5 4"/>
+<rect x="280.29" y="79.55" width="65.41999999999999" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="313.0" y="90" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">start = 2</text>
+<line x1="553.0" y1="98" x2="553.0" y2="228" stroke="var(--dg-red, #dc2626)" stroke-width="2" stroke-dasharray="5 4"/>
+<rect x="523.48" y="79.55" width="59.04" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="553.0" y="90" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">stop = 6</text>
+<path d="M 313.0,240 L 553.0,240" stroke="var(--dg-blue, #2563eb)" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+<text x="435.0" y="260" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">s[2:6]  -&gt;  &#x27;THON&#x27;   (indices 2,3,4,5 - stop excluded)</text>
+<rect x="60" y="286" width="830" height="28" rx="6" fill="var(--dg-slate, #475569)"/>
+<rect x="60" y="308" width="830" height="6" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="70" y="304.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">expression</text>
+<text x="240" y="304.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">result</text>
+<text x="460" y="304.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">meaning</text>
+<rect x="60" y="314" width="830" height="26" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="70" y="331.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">s[0]</text>
+<text x="240" y="331.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">&#x27;P&#x27;</text>
+<text x="460" y="331.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">first character</text>
+<rect x="60" y="340" width="830" height="26" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="70" y="357.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">s[-1]</text>
+<text x="240" y="357.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">&#x27;A&#x27;</text>
+<text x="460" y="357.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">last character</text>
+<rect x="60" y="366" width="830" height="26" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="70" y="383.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">s[2:]</text>
+<text x="240" y="383.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">&#x27;THONISTA&#x27;</text>
+<text x="460" y="383.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">from 2 to the end</text>
+<rect x="60" y="392" width="830" height="26" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="70" y="409.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">s[:4]</text>
+<text x="240" y="409.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">&#x27;PYTH&#x27;</text>
+<text x="460" y="409.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">up to (not incl.) 4</text>
+<rect x="60" y="418" width="830" height="26" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="70" y="435.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">s[::2]</text>
+<text x="240" y="435.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">&#x27;PTOSIA&#x27;</text>
+<text x="460" y="435.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">every second char</text>
+<rect x="60" y="444" width="830" height="26" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="70" y="461.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">s[::-1]</text>
+<text x="240" y="461.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">&#x27;ATSINOHTYP&#x27;</text>
+<text x="460" y="461.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">reversed - classic idiom</text>
+<rect x="60" y="286" width="830" height="184" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<line x1="230" y1="314" x2="230" y2="470" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="450" y1="314" x2="450" y2="470" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<text x="495" y="486" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Slicing never raises IndexError - out-of-range bounds are simply clamped.</text>
+</svg>
+<figcaption>Indexing and slicing: positive and negative indices over a string, with s[2:6] highlighted - the stop index is exclusive.</figcaption></figure></p>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 336" width="990" height="336" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>str vs bytes</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Text is str, storage is bytes</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Encoding turns characters into bytes; decoding turns bytes back into characters.</text>
+<rect x="60" y="84" width="340" height="110" rx="12" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="230" y="110" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">str  (unicode text)</text>
+<text x="230" y="142" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="19" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">&#x27;café  নমস্তে  😀&#x27;</text>
+<text x="230" y="172" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">len(&#x27;café&#x27;) == 4  characters</text>
+<rect x="590" y="84" width="340" height="110" rx="12" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="760" y="110" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">bytes  (raw 0-255 values)</text>
+<text x="760" y="142" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="17" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">b&#x27;caf\xc3\xa9&#x27;</text>
+<text x="760" y="172" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">len(&#x27;café&#x27;.encode()) == 5  bytes</text>
+<line x1="400" y1="118" x2="590" y2="118" stroke="var(--dg-violet, #7c3aed)" stroke-width="2.4" marker-end="url(#arviolet)"/>
+<rect x="437.64" y="97.075" width="114.72" height="17.25" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="495" y="108" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">.encode(&#x27;utf-8&#x27;)</text>
+<line x1="590" y1="162" x2="400" y2="162" stroke="var(--dg-green, #059669)" stroke-width="2.4" marker-end="url(#argreen)"/>
+<rect x="437.64" y="173.075" width="114.72" height="17.25" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="495" y="184" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">.decode(&#x27;utf-8&#x27;)</text>
+<rect x="60" y="214" width="870" height="96" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="78" y="238" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">The golden rule of I/O</text>
+<text x="78" y="260" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">DECODE on the way IN (bytes -&gt; str as early as possible)  and  ENCODE on the way OUT (str -&gt; bytes as late as possible).</text>
+<text x="78" y="277" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Always name the encoding explicitly: open(path, encoding=&#x27;utf-8&#x27;).  Never rely on the platform default -</text>
+<text x="78" y="294" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">that is exactly how a file written on Linux becomes mojibake when opened on Windows.</text>
+</svg>
+<figcaption>str vs bytes: encode on the way out, decode on the way in, and the rule of doing both as close to the boundary as possible.</figcaption></figure>
+
+<h2 id="45-going-deeper">4.5 Going deeper</h2>
+<h3 id="451-code-points-graphemes-and-why-len-lies-to-your-eyes">4.5.1 Code points, graphemes, and why <code>len</code> lies to your eyes</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">unicodedata</span>
+<span class="n">s</span> <span class="o">=</span> <span class="s2">"é"</span>            <span class="c1"># e + combining acute (2 code points!)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>                      <span class="c1"># 2</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">"NFC"</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"é"</span><span class="p">)</span>   <span class="c1"># True after composing</span>
+</code></pre></div>
+
+<p>A <em>grapheme cluster</em> (what a human calls &ldquo;a character&rdquo;) can be several code
+points (combining marks), and a code point can be several bytes. Hence three
+different &ldquo;lengths&rdquo;: <code>len(str)</code> code points, <code>len(str.encode())</code> bytes, and
+display width (which emoji and CJK widen). Normalise user input with
+<code>unicodedata.normalize("NFC", …)</code> before comparing or storing.</p>
+<h3 id="452-case-lower-is-not-enough">4.5.2 Case: <code>lower()</code> is not enough</h3>
+<div class="codehilite"><pre><span></span><code><span class="s2">"STRASSE"</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"strasse"</span>          <span class="c1"># True</span>
+<span class="s2">"straße"</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"STRASSE"</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>   <span class="c1"># False (!)</span>
+<span class="s2">"straße"</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"STRASSE"</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span>   <span class="c1"># True  (ß -&gt; ss)</span>
+</code></pre></div>
+
+<p><code>casefold()</code> implements Unicode caseless matching — use it for
+case-insensitive comparison of anything a human typed. Turkish <code>İ</code> and Greek
+final sigma are further reasons <code>lower()</code> is wrong for matching.</p>
+<h3 id="453-the-method-families-organised">4.5.3 The method families, organised</h3>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Methods</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>case</td>
+<td><code>upper lower title capitalize swapcase casefold</code></td>
+<td><code>title()</code> capitalises every word (odd for &ldquo;mcDonald&rdquo;)</td>
+</tr>
+<tr>
+<td>trimming</td>
+<td><code>strip lstrip rstrip removeprefix removesuffix</code></td>
+<td><code>strip("abc")</code> removes a <strong>set</strong> of chars, not a substring</td>
+</tr>
+<tr>
+<td>splitting</td>
+<td><code>split rsplit splitlines partition rpartition</code></td>
+<td><code>split()</code> with no arg collapses all whitespace</td>
+</tr>
+<tr>
+<td>searching</td>
+<td><code>find rfind index rindex count startswith endswith</code></td>
+<td><code>find</code> → <code>-1</code>; <code>index</code> → <code>ValueError</code></td>
+</tr>
+<tr>
+<td>testing</td>
+<td><code>isalnum isalpha isdigit isnumeric isdecimal isspace isupper islower</code></td>
+<td><code>isdigit</code> accepts superscripts; <code>isdecimal</code> is strictest</td>
+</tr>
+<tr>
+<td>transforming</td>
+<td><code>replace translate expandtabs zfill center ljust rjust</code></td>
+<td><code>str.maketrans</code> + <code>translate</code> = fast char maps</td>
+</tr>
+<tr>
+<td>assembling</td>
+<td><code>join format %</code>-style, f-strings</td>
+<td><code>join</code> is the fast path</td>
+</tr>
+</tbody>
+</table>
+<p><code>partition</code> is criminally underused: it always returns exactly three parts,
+so <code>head, sep, tail = s.partition("=")</code> never raises and tells you whether the
+separator existed (<code>sep == ""</code>).</p>
+<h3 id="454-f-strings-and-the-format-mini-language">4.5.4 f-strings and the format mini-language</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">n</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">kind</span> <span class="o">=</span> <span class="mf">1234567.891</span><span class="p">,</span> <span class="mi">42</span><span class="p">,</span> <span class="s2">"widget"</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">n</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span>          <span class="c1"># '1,234,567.89'   grouping + precision</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">kind</span><span class="si">:</span><span class="s2">&gt;12</span><span class="si">}</span><span class="s2">"</span>        <span class="c1"># right-aligned in width 12</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">kind</span><span class="si">:</span><span class="s2">&lt;12</span><span class="si">}</span><span class="s2">|"</span>       <span class="c1"># left-aligned</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">kind</span><span class="si">:</span><span class="s2">^12</span><span class="si">}</span><span class="s2">"</span>        <span class="c1"># centred</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="mi">42</span><span class="si">:</span><span class="s2">b</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="mi">42</span><span class="si">:</span><span class="s2">x</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="mi">42</span><span class="si">:</span><span class="s2">o</span><span class="si">}</span><span class="s2">"</span>     <span class="c1"># '101010 2a 52'</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="mf">0.5</span><span class="si">:</span><span class="s2">%</span><span class="si">}</span><span class="s2">"</span>           <span class="c1"># '50.000000%'</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">price</span><span class="si">=}</span><span class="s2">"</span>          <span class="c1"># 'price=42'   (debugging: shows name and value)</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">price</span><span class="si">!r:</span><span class="s2">&gt;8</span><span class="si">}</span><span class="s2">"</span>      <span class="c1"># conversion (!r repr, !s str, !a ascii) then spec</span>
+<span class="sa">f</span><span class="s2">"</span><span class="se">{{</span><span class="s2">literal braces</span><span class="se">}}</span><span class="s2">"</span>      <span class="c1"># escape braces by doubling</span>
+</code></pre></div>
+
+<p>Everything after <code>:</code> is the same <strong>format specification mini-language</strong> that
+<code>str.format()</code> and <code>format(value, spec)</code> accept — meaning you can apply a
+spec read from configuration at runtime: <code>format(value, spec_from_file)</code>.
+f-strings are evaluated at runtime (they call <code>__format__</code>), are fast (compiled
+to concatenations), and since 3.12 may nest quotes and reuse the same quote
+type.</p>
+<h3 id="455-performance-the-quadratic-trap">4.5.5 Performance: the quadratic trap</h3>
+<p>Strings are immutable, so <code>s += part</code> in a loop copies the whole string every
+iteration → O(n²):</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># slow: quadratic</span>
+<span class="n">out</span> <span class="o">=</span> <span class="s2">""</span>
+<span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">:</span>
+    <span class="n">out</span> <span class="o">+=</span> <span class="n">chunk</span>
+
+<span class="c1"># fast: linear</span>
+<span class="n">out</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span>
+
+<span class="c1"># also fast, and clearer when building conditionally</span>
+<span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">render</span><span class="p">(</span><span class="n">row</span><span class="p">))</span>
+<span class="n">out</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+</code></pre></div>
+
+<p>For very large streaming output, write to a file or <code>io.StringIO</code> instead of
+accumulating at all. Benchmark with <code>timeit</code> (module 17); the join version is
+routinely 10–100× faster on 10⁵ pieces.</p>
+<h3 id="456-regular-expressions-the-20-you-will-use-daily">4.5.6 Regular expressions, the 20 % you will use daily</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="n">LOG</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?P&lt;ip&gt;\d+\.\d+\.\d+\.\d+) - - \[(?P&lt;when&gt;[^\]]+)\] "</span>
+                 <span class="sa">r</span><span class="s1">'"(?P&lt;verb&gt;GET|POST) (?P&lt;path&gt;\S+)" (?P&lt;status&gt;\d</span><span class="si">{3}</span><span class="s1">)'</span><span class="p">)</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">LOG</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span>        <span class="c1"># named groups: readable, refactor-safe</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">groupdict</span><span class="p">()</span>            <span class="c1"># {'ip': ..., 'when': ..., ...}</span>
+
+<span class="n">LOG</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>            <span class="c1"># all matches</span>
+<span class="n">LOG</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">"@@@"</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>         <span class="c1"># replace matches</span>
+<span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[,\s]+"</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>    <span class="c1"># split on a pattern</span>
+</code></pre></div>
+
+<p>Compile once, reuse forever (<code>re.compile</code>), prefer named groups, and reach for
+plain string methods first — <code>s.startswith("GET ")</code> beats a regex every time
+it can express the rule.</p>
+<h3 id="457-encodings-and-error-policies">4.5.7 Encodings and error policies</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">raw</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">"caf</span><span class="se">\xe9</span><span class="s2">"</span>                     <span class="c1"># latin-1 bytes</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>                  <span class="c1"># UnicodeDecodeError</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"replace"</span><span class="p">)</span>     <span class="c1"># 'caf\ufffd'</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>      <span class="c1"># 'caf'</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"backslashreplace"</span><span class="p">)</span>  <span class="c1"># 'caf\\xe9'</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"latin-1"</span><span class="p">)</span>                <span class="c1"># 'café'  (the right answer here)</span>
+</code></pre></div>
+
+<p>Decide the policy <strong>deliberately</strong>: <code>strict</code> for data you must not corrupt,
+<code>replace</code> for user-visible best-effort text, never <code>ignore</code> on data you store
+(silently losing bytes is how records stop matching).</p>
+<h2 id="46-industry-level">4.6 Industry level</h2>
+<h3 id="text-at-the-boundaries">Text at the boundaries</h3>
+<p>Production services agree on UTF-8 everywhere: HTTP bodies, JSON, database
+columns, log files. The code then follows one rule — decode once at the edge,
+keep <code>str</code> internally, encode once at the edge:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">payload</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>      <span class="c1"># edge in</span>
+<span class="o">...</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>   <span class="c1"># edge out</span>
+</code></pre></div>
+
+<p><code>ensure_ascii=False</code> keeps UTF-8 human-readable in payloads instead of
+<code>\uXXXX</code> noise; the transport is UTF-8 anyway.</p>
+<h3 id="normalisation-and-matching-of-human-input">Normalisation and matching of human input</h3>
+<p>Usernames, emails and search queries must be normalised before comparison:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">canon</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">"NFC"</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Without this, &ldquo;José&rdquo; typed on two keyboards becomes two different users.</p>
+<h3 id="never-use-str-for-binary-never-bytes-for-text">Never use <code>str</code> for binary, never <code>bytes</code> for text</h3>
+<p>IDs from databases, tokens and hashes are frequently <code>bytes</code>; converting them
+to <code>str</code> with the wrong codec is a top-10 production bug. Use
+<code>binascii.hexlify(...).decode("ascii")</code> or <code>base64.urlsafe_b64encode</code> when a
+textual form is genuinely required.</p>
+<h3 id="logging-lazy-formatting">Logging: lazy formatting</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"processed </span><span class="si">%d</span><span class="s2"> rows in </span><span class="si">%.2f</span><span class="s2">s"</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>     <span class="c1"># good: formatted only if logged</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"processed </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2"> rows in </span><span class="si">{</span><span class="n">dt</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>      <span class="c1"># pays the cost always</span>
+</code></pre></div>
+
+<p>At <code>DEBUG</code>-off in production, the <code>%</code> form costs nothing. Teams lint for this.</p>
+<h3 id="paths-are-not-strings">Paths are not strings</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"data"</span><span class="p">)</span> <span class="o">/</span> <span class="s2">"raw"</span> <span class="o">/</span> <span class="s2">"sales.csv"</span>     <span class="c1"># OS-correct separators, no join bugs</span>
+<span class="n">p</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>os.path</code> string glue is legacy; <code>pathlib</code> is the reviewed default (module 10).</p>
+<h2 id="47-comparison-tables">4.7 Comparison tables</h2>
+<p><strong><code>str</code> vs <code>bytes</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>str</code></th>
+<th><code>bytes</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>holds</td>
+<td>Unicode code points</td>
+<td>integers 0–255</td>
+</tr>
+<tr>
+<td>literal</td>
+<td><code>"café"</code></td>
+<td><code>b"caf\xc3\xa9"</code></td>
+</tr>
+<tr>
+<td><code>len("café")</code></td>
+<td>4</td>
+<td>5 (utf-8)</td>
+</tr>
+<tr>
+<td>indexing gives</td>
+<td>1-char <code>str</code></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td>use for</td>
+<td>text, names, messages</td>
+<td>files, sockets, hashes, images</td>
+</tr>
+<tr>
+<td>convert</td>
+<td><code>.encode(codec)</code></td>
+<td><code>.decode(codec)</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Formatting choices:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>f-string</td>
+<td>interpolation known at write time (default choice)</td>
+</tr>
+<tr>
+<td><code>str.format</code></td>
+<td>template stored in data/config</td>
+</tr>
+<tr>
+<td><code>%</code> formatting</td>
+<td>logging calls (lazy)</td>
+</tr>
+<tr>
+<td><code>string.Template</code></td>
+<td>user-editable templates (no code execution surface)</td>
+</tr>
+<tr>
+<td><code>"".join</code> / <code>write()</code></td>
+<td>assembling many pieces</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Search methods:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Method</th>
+<th>Missing-case behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>position or −1</td>
+<td><code>find</code> / <code>rfind</code></td>
+<td><code>-1</code></td>
+</tr>
+<tr>
+<td>position or crash</td>
+<td><code>index</code> / <code>rindex</code></td>
+<td><code>ValueError</code></td>
+</tr>
+<tr>
+<td>boolean</td>
+<td><code>in</code></td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td>prefix/suffix</td>
+<td><code>startswith</code> / <code>endswith</code> (accept tuples!)</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td>split at first sep</td>
+<td><code>partition</code></td>
+<td><code>("", "", s)</code></td>
+</tr>
+<tr>
+<td>count</td>
+<td><code>count</code></td>
+<td><code>0</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="48-mistakes-gotchas">4.8 Mistakes &amp; gotchas</h2>
+<p>::: gotcha &ldquo;<code>strip("ab")</code> is a character SET&rdquo;
+<code>"abcab".strip("ab")</code> → <code>'c'</code>. To remove a fixed prefix/suffix use
+<code>removeprefix</code> / <code>removesuffix</code> (3.9+).
+:::</p>
+<p>::: gotcha &ldquo;<code>split()</code> vs <code>split(" ")</code>&rdquo;
+Bare <code>split()</code> collapses runs of whitespace and drops empties;
+<code>split(" ")</code> keeps empty fields. Parsing CSV by hand with <code>split(",")</code> is how
+quoted-comma bugs ship — use the <code>csv</code> module (module 10).
+:::</p>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>find</code> returns −1, which is truthy-ish in <code>if s.find(x):</code></p>
+<p><code>if s.find(x) != -1:</code> or better <code>if x in s:</code>. The −1-vs-0 confusion is a
+classic off-by-truthiness bug.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Literal braces in f-strings</p>
+<p><code>f"{"x"}"</code> is a syntax error pre-3.12 and <code>f"{ {1,2} }"</code> prints a set. To emit
+<code>{</code> or <code>}</code> literally, double them: <code>f"{{}}"</code> → <code>'{}'</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Concatenating in loops</p>
+<p>Quadratic time. Collect pieces and <code>"".join</code>. Reviewers reject <code>+=</code> in loops
+over data of unknown size.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Default encoding is platform-dependent</p>
+<p><code>open(path)</code> without <code>encoding=</code> uses the locale (cp1252 on some Windows!).
+Always pass <code>encoding="utf-8"</code> — or run Python 3.15+ where UTF-8 mode becomes
+default, but don&rsquo;t rely on it yet.</p>
+</div>
+<h2 id="49-interview-questions">4.9 Interview questions</h2>
+<ol>
+<li><strong>Are strings mutable?</strong> — No; every modification returns a new object.
+   Consequences: no item assignment, O(n) per &ldquo;change&rdquo;, hashable, thread-safe.</li>
+<li><strong><code>str</code> vs <code>bytes</code>?</strong> — code points vs raw bytes; bridged by
+   encode/decode with a named codec.</li>
+<li><strong>Why is <code>"".join(parts)</code> fast?</strong> — one allocation and one copy, versus a
+   copy of the growing string per <code>+=</code>.</li>
+<li><strong><code>find</code> vs <code>index</code>?</strong> — −1 vs <code>ValueError</code>.</li>
+<li><strong>What does <code>casefold</code> do that <code>lower</code> doesn&rsquo;t?</strong> — full Unicode caseless
+   mapping (ß→ss), correct for case-insensitive matching.</li>
+<li><strong>What is an f-string at runtime?</strong> — an expression calling
+   <code>__format__</code>/conversions; compiled, not parsed at runtime; cannot be
+   built from untrusted templates (use <code>string.Template</code> for that).</li>
+<li><strong>How do you compare usernames safely?</strong> — NFC-normalise, casefold, strip.</li>
+</ol>
+<h2 id="410-practice-exercises">4.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-04-a</span></div><p>Implement <code>stats(text)</code> returning <code>{"chars", "words", "lines", "reversed"}</code>,
+<code>initials(full_name)</code> (&ldquo;ada lovelace&rdquo; → &ldquo;A.L.&rdquo;), and <code>caesar(text, shift)</code>
+shifting only ASCII letters, wrapping around, preserving case and
+non-letters.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/04_strings/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-04-b</span></div><p>Implement <code>slugify(text)</code> (NFC-normalise, strip accents, lowercase,
+non-alnum → single <code>-</code>, trim <code>-</code>), <code>parse_query(qs)</code> parsing
+<code>"a=1&amp;b=2&amp;b=3"</code> into <code>{"a": ["1"], "b": ["2", "3"]}</code> with URL-decoding, and
+<code>mask_email(addr)</code> keeping first and last character of the local part
+(<code>"jane.doe@corp.io"</code> → <code>"j******e@corp.io"</code>).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/04_strings/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-04-c</span></div><p>Implement <code>render_template(template, mapping)</code> supporting <code>{key}</code>,
+<code>{key!r}</code>, <code>{key!s}</code> and <code>{key:spec}</code> (apply the format mini-language via
+<code>format(value, spec)</code>), raising <code>KeyError</code> for unknown keys and <code>ValueError</code>
+for a malformed placeholder; and <code>decode_stream(chunks)</code> that decodes an
+iterable of byte chunks split at arbitrary boundaries using an incremental
+decoder, yielding <code>str</code> pieces without ever losing or duplicating a
+character.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/04_strings/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># The interesting half (full: exercises/04_strings/solution.py)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">codecs</span><span class="o">,</span><span class="w"> </span><span class="nn">re</span><span class="o">,</span><span class="w"> </span><span class="nn">unicodedata</span>
+
+<span class="n">PLACEHOLDER</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">"\{(?P&lt;key&gt;\w+)(?P&lt;conv&gt;![rs])?(?::(?P&lt;spec&gt;[^</span><span class="si">{}</span><span class="s2">]*))?\}"</span><span class="p">)</span>
+<span class="n">LBRACE</span><span class="p">,</span> <span class="n">RBRACE</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\x00</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\x01</span><span class="s2">"</span>      <span class="c1"># sentinels for escaped braces</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">render_template</span><span class="p">(</span><span class="n">template</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">work</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"{{"</span><span class="p">,</span> <span class="n">LBRACE</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"}}"</span><span class="p">,</span> <span class="n">RBRACE</span><span class="p">)</span>  <span class="c1"># protect first!</span>
+    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[</span><span class="si">{}</span><span class="s2">]"</span><span class="p">,</span> <span class="n">PLACEHOLDER</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">work</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"malformed placeholder"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">sub</span><span class="p">(</span><span class="n">m</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">Match</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">"key"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">mapping</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">"conv"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"!r"</span>
+                <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">"conv"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"!s"</span>
+                <span class="k">else</span> <span class="n">value</span><span class="p">)</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">"spec"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">format</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>        <span class="c1"># raw value: numeric specs work</span>
+        <span class="k">return</span> <span class="n">text</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">format</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">PLACEHOLDER</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">sub</span><span class="p">,</span> <span class="n">work</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">LBRACE</span><span class="p">,</span> <span class="s2">"{"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">RBRACE</span><span class="p">,</span> <span class="s2">"}"</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">decode_stream</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
+    <span class="n">dec</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">getincrementaldecoder</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)()</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
+        <span class="n">piece</span> <span class="o">=</span> <span class="n">dec</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="p">(</span><span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">piece</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">piece</span>
+</code></pre></div></details>
+<h2 id="411-cheatsheet">4.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reverse</td>
+<td><code>s[::-1]</code></td>
+</tr>
+<tr>
+<td>Split lines / words</td>
+<td><code>s.splitlines()</code>, <code>s.split()</code></td>
+</tr>
+<tr>
+<td>Trim</td>
+<td><code>s.strip()</code>, <code>removeprefix</code>, <code>removesuffix</code></td>
+</tr>
+<tr>
+<td>Test membership</td>
+<td><code>sub in s</code></td>
+</tr>
+<tr>
+<td>Replace first n</td>
+<td><code>s.replace(a, b, n)</code></td>
+</tr>
+<tr>
+<td>Char map</td>
+<td><code>s.translate(str.maketrans({...}))</code></td>
+</tr>
+<tr>
+<td>Align/pad</td>
+<td><code>s.center(w)</code>, <code>ljust</code>, <code>rjust</code>, <code>zfill</code></td>
+</tr>
+<tr>
+<td>Numbers</td>
+<td><code>f"{n:,}"</code>, <code>f"{n:.2f}"</code>, <code>f"{n:%}"</code>, <code>f"{n:x}"</code></td>
+</tr>
+<tr>
+<td>Debug print</td>
+<td><code>f"{expr=}"</code></td>
+</tr>
+<tr>
+<td>Caseless compare</td>
+<td><code>a.casefold() == b.casefold()</code></td>
+</tr>
+<tr>
+<td>Normalise</td>
+<td><code>unicodedata.normalize("NFC", s)</code></td>
+</tr>
+<tr>
+<td>Fast build</td>
+<td><code>"".join(iterable)</code></td>
+</tr>
+<tr>
+<td>Streaming text</td>
+<td><code>io.StringIO</code>, or write to file</td>
+</tr>
+<tr>
+<td>Regex</td>
+<td><code>re.compile(...)</code> once, named groups, <code>.search/.findall/.sub</code></td>
+</tr>
+<tr>
+<td>Safe templates from users</td>
+<td><code>string.Template</code></td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="03-operators-expressions.html"><span>&larr; previous</span><strong>Operators & expressions: what the symbols really do</strong></a><a class="next" href="05-control-flow.html"><span>next &rarr;</span><strong>Control flow: branching, looping, and match</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#41-definition">4.1 Definition</a></li>
+<li><a href="#42-syntax">4.2 Syntax</a></li>
+<li><a href="#43-first-examples">4.3 First examples</a></li>
+<li><a href="#44-the-picture">4.4 The picture</a></li>
+<li><a href="#45-going-deeper">4.5 Going deeper</a><ul>
+<li><a href="#451-code-points-graphemes-and-why-len-lies-to-your-eyes">4.5.1 Code points, graphemes, and why len lies to your eyes</a></li>
+<li><a href="#452-case-lower-is-not-enough">4.5.2 Case: lower() is not enough</a></li>
+<li><a href="#453-the-method-families-organised">4.5.3 The method families, organised</a></li>
+<li><a href="#454-f-strings-and-the-format-mini-language">4.5.4 f-strings and the format mini-language</a></li>
+<li><a href="#455-performance-the-quadratic-trap">4.5.5 Performance: the quadratic trap</a></li>
+<li><a href="#456-regular-expressions-the-20-you-will-use-daily">4.5.6 Regular expressions, the 20 % you will use daily</a></li>
+<li><a href="#457-encodings-and-error-policies">4.5.7 Encodings and error policies</a></li>
+</ul>
+</li>
+<li><a href="#46-industry-level">4.6 Industry level</a><ul>
+<li><a href="#text-at-the-boundaries">Text at the boundaries</a></li>
+<li><a href="#normalisation-and-matching-of-human-input">Normalisation and matching of human input</a></li>
+<li><a href="#never-use-str-for-binary-never-bytes-for-text">Never use str for binary, never bytes for text</a></li>
+<li><a href="#logging-lazy-formatting">Logging: lazy formatting</a></li>
+<li><a href="#paths-are-not-strings">Paths are not strings</a></li>
+</ul>
+</li>
+<li><a href="#47-comparison-tables">4.7 Comparison tables</a></li>
+<li><a href="#48-mistakes-gotchas">4.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#49-interview-questions">4.9 Interview questions</a></li>
+<li><a href="#410-practice-exercises">4.10 Practice exercises</a></li>
+<li><a href="#411-cheatsheet">4.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

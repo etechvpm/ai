@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cheatsheets: the whole course on a few screens &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link active" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Revision</span><span class="chip read">20 min</span><span class="chip tag">cheatsheet</span><span class="chip tag">revision</span><span class="chip tag">reference</span></div>
+      <h1 id="19-cheatsheets-revision">19. Cheatsheets &amp; revision</h1>
+<blockquote>
+<p>Everything earlier in the course, compressed. These tables are for the night
+before an exam or an interview, and for the moment you know <em>what</em> you want
+but not the exact spelling of it.</p>
+</blockquote>
+<h2 id="191-the-course-on-one-picture">19.1 The course on one picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 664" width="990" height="664" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Course map</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="30" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">How the 19 modules build on each other</text>
+<text x="495" y="50" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Read in order the first time; after that, use the map to find the module that owns your question</text>
+<rect x="24" y="78" width="942" height="88" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="24" y="78" width="8" height="88" rx="3" fill="var(--dg-green, #059669)"/>
+<text x="48" y="102" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)" letter-spacing="1.0">FOUNDATIONS</text>
+<rect x="44.0" y="112" width="215.0" height="42" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.4"/>
+<text x="58.0" y="138" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">01</text>
+<text x="84.0" y="138" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">How Python runs</text>
+<rect x="273.0" y="112" width="215.0" height="42" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.4"/>
+<text x="287.0" y="138" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">02</text>
+<text x="313.0" y="138" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Variables &amp; memory</text>
+<rect x="502.0" y="112" width="215.0" height="42" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.4"/>
+<text x="516.0" y="138" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">03</text>
+<text x="542.0" y="138" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Operators</text>
+<rect x="731.0" y="112" width="215.0" height="42" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.4"/>
+<text x="745.0" y="138" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">04</text>
+<text x="771.0" y="138" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Strings &amp; text</text>
+<rect x="24" y="182" width="942" height="88" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="24" y="182" width="8" height="88" rx="3" fill="var(--dg-blue, #2563eb)"/>
+<text x="48" y="206" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)" letter-spacing="1.0">STRUCTURE</text>
+<rect x="44.0" y="216" width="169.2" height="42" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.4"/>
+<text x="58.0" y="242" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">05</text>
+<text x="84.0" y="242" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Control flow</text>
+<rect x="227.2" y="216" width="169.2" height="42" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.4"/>
+<text x="241.2" y="242" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">06</text>
+<text x="267.2" y="242" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Data structures</text>
+<rect x="410.4" y="216" width="169.2" height="42" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.4"/>
+<text x="424.4" y="242" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">07</text>
+<text x="450.4" y="242" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Functions</text>
+<rect x="593.5999999999999" y="216" width="169.2" height="42" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.4"/>
+<text x="607.5999999999999" y="242" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">08</text>
+<text x="633.5999999999999" y="242" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Modules &amp; packages</text>
+<rect x="776.8" y="216" width="169.2" height="42" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.4"/>
+<text x="790.8" y="242" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">09</text>
+<text x="816.8" y="242" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">OOP</text>
+<rect x="24" y="286" width="942" height="88" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="24" y="286" width="8" height="88" rx="3" fill="var(--dg-amber, #d97706)"/>
+<text x="48" y="310" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)" letter-spacing="1.0">DATA &amp; INTERFACES</text>
+<rect x="44.0" y="320" width="215.0" height="42" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.4"/>
+<text x="58.0" y="346" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">10</text>
+<text x="84.0" y="346" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Files &amp; I/O</text>
+<rect x="273.0" y="320" width="215.0" height="42" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.4"/>
+<text x="287.0" y="346" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">11</text>
+<text x="313.0" y="346" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Exceptions</text>
+<rect x="502.0" y="320" width="215.0" height="42" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.4"/>
+<text x="516.0" y="346" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">12</text>
+<text x="542.0" y="346" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Iteration &amp; generators</text>
+<rect x="731.0" y="320" width="215.0" height="42" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.4"/>
+<text x="745.0" y="346" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">13</text>
+<text x="771.0" y="346" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Decorators</text>
+<rect x="24" y="390" width="942" height="88" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="24" y="390" width="8" height="88" rx="3" fill="var(--dg-violet, #7c3aed)"/>
+<text x="48" y="414" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)" letter-spacing="1.0">ENGINEERING</text>
+<rect x="44.0" y="424" width="169.2" height="42" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.4"/>
+<text x="58.0" y="450" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">14</text>
+<text x="84.0" y="450" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Type hints</text>
+<rect x="227.2" y="424" width="169.2" height="42" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.4"/>
+<text x="241.2" y="450" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">15</text>
+<text x="267.2" y="450" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Testing</text>
+<rect x="410.4" y="424" width="169.2" height="42" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.4"/>
+<text x="424.4" y="450" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">16</text>
+<text x="450.4" y="450" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Concurrency</text>
+<rect x="593.5999999999999" y="424" width="169.2" height="42" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.4"/>
+<text x="607.5999999999999" y="450" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">17</text>
+<text x="633.5999999999999" y="450" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Performance</text>
+<rect x="776.8" y="424" width="169.2" height="42" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.4"/>
+<text x="790.8" y="450" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">18</text>
+<text x="816.8" y="450" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Packaging &amp; CI</text>
+<rect x="24" y="494" width="942" height="44" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="48" y="522" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)" letter-spacing="1.0">REVISION</text>
+<rect x="180" y="502" width="300" height="28" rx="8" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.3"/>
+<text x="196" y="521" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">19  Cheatsheets &amp; capstone</text>
+<text x="500" y="521" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">every module compressed to one screen, plus the pipeline project that uses them all</text>
+<rect x="24" y="552" width="942" height="74" rx="10" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="42" y="576" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Each module: definition -&gt; syntax -&gt; examples -&gt; diagram -&gt; mechanics -&gt; industry practice -&gt; tables -&gt; gotchas -&gt; interview -&gt; exercises -&gt; cheatsheet.</text>
+<text x="42" y="594" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.8" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Each exercise pack: tasks.py (yours), test_tasks.py (the grader), solution.py (reference). Run  pytest exercises -q  and keep it green.</text>
+</svg>
+<figcaption>The module map: foundations -&gt; structure -&gt; behaviour -&gt; engineering, with the modules that build on each other.</figcaption></figure>
+
+<h2 id="192-types-literals">19.2 Types &amp; literals</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Literal</th>
+<th>Mutable?</th>
+<th>Ordered?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>int</code></td>
+<td><code>42</code>, <code>0x2A</code>, <code>1_000</code></td>
+<td>no</td>
+<td>yes</td>
+<td>arbitrary precision</td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td><code>3.14</code>, <code>1e-9</code></td>
+<td>no</td>
+<td>yes</td>
+<td>IEEE-754, never for money</td>
+</tr>
+<tr>
+<td><code>complex</code></td>
+<td><code>2+3j</code></td>
+<td>no</td>
+<td>no</td>
+<td><code>abs()</code> = magnitude</td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>True</code>/<code>False</code></td>
+<td>no</td>
+<td>yes</td>
+<td>subclass of <code>int</code></td>
+</tr>
+<tr>
+<td><code>str</code></td>
+<td><code>"a"</code>, <code>'a'</code>, <code>"""a"""</code></td>
+<td>no</td>
+<td>yes</td>
+<td>Unicode code points</td>
+</tr>
+<tr>
+<td><code>bytes</code></td>
+<td><code>b"ab"</code></td>
+<td>no</td>
+<td>yes</td>
+<td>raw 8-bit data</td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td><code>[1, 2]</code></td>
+<td><strong>yes</strong></td>
+<td>yes</td>
+<td>heterogeneous, amortised O(1) append</td>
+</tr>
+<tr>
+<td><code>tuple</code></td>
+<td><code>(1, 2)</code>, <code>1,</code></td>
+<td>no</td>
+<td>yes</td>
+<td>record/keys, unpacking</td>
+</tr>
+<tr>
+<td><code>dict</code></td>
+<td><code>{"k": 1}</code></td>
+<td><strong>yes</strong></td>
+<td>insertion</td>
+<td>O(1) lookup, keys hashable</td>
+</tr>
+<tr>
+<td><code>set</code></td>
+<td><code>{1, 2}</code></td>
+<td><strong>yes</strong></td>
+<td>no</td>
+<td>unique, O(1) membership</td>
+</tr>
+<tr>
+<td><code>frozenset</code></td>
+<td><code>frozenset({1})</code></td>
+<td>no</td>
+<td>no</td>
+<td>hashable set</td>
+</tr>
+<tr>
+<td><code>NoneType</code></td>
+<td><code>None</code></td>
+<td>no</td>
+<td>—</td>
+<td>singleton</td>
+</tr>
+<tr>
+<td><code>Decimal</code></td>
+<td><code>Decimal("0.1")</code></td>
+<td>yes-ish</td>
+<td>yes</td>
+<td>money, exact decimal</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Truthiness:</strong> everything is true except <code>False</code>, <code>None</code>, <code>0</code>, <code>0.0</code>, <code>""</code>,
+<code>()</code>, <code>[]</code>, <code>{}</code>, <code>set()</code>, and objects defining <code>__bool__</code>/<code>__len__</code> → 0.</p>
+<h2 id="193-operators-you-must-know-cold">19.3 Operators you must know cold</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Operators</th>
+<th>Gotcha</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>arithmetic</td>
+<td><code>+ - * / // % **</code></td>
+<td><code>/</code> always float; <code>//</code> floors toward −∞</td>
+</tr>
+<tr>
+<td>comparison</td>
+<td><code>== != &lt; &lt;= &gt; &gt;=</code></td>
+<td>chained: <code>a &lt; b &lt; c</code></td>
+</tr>
+<tr>
+<td>identity</td>
+<td><code>is</code>, <code>is not</code></td>
+<td>object identity, not equality; only for <code>None</code>/singletons</td>
+</tr>
+<tr>
+<td>membership</td>
+<td><code>in</code>, <code>not in</code></td>
+<td>O(1) on set/dict, O(n) on list</td>
+</tr>
+<tr>
+<td>boolean</td>
+<td><code>and or not</code></td>
+<td>short-circuit; <code>and</code>/<code>or</code> <strong>return operands</strong></td>
+</tr>
+<tr>
+<td>walrus</td>
+<td><code>:=</code></td>
+<td>assign inside an expression</td>
+</tr>
+<tr>
+<td>bitwise</td>
+<td><code>&amp; \| ^ ~ &lt;&lt; &gt;&gt;</code></td>
+<td>also set operations on <code>set</code></td>
+</tr>
+<tr>
+<td>ternary</td>
+<td><code>a if cond else b</code></td>
+<td>reads left-to-right</td>
+</tr>
+<tr>
+<td>unpacking</td>
+<td><code>a, *rest = seq</code></td>
+<td><code>*</code> collects the remainder</td>
+</tr>
+</tbody>
+</table>
+<p>Precedence (tightest first): <code>**</code> → unary <code>+ - ~</code> → <code>* / // %</code> → <code>+ -</code> →
+<code>&lt;&lt; &gt;&gt;</code> → <code>&amp;</code> → <code>^</code> → <code>|</code> → comparisons → <code>not</code> → <code>and</code> → <code>or</code> → ternary →
+walrus → lambda. <strong>When in doubt, add parentheses.</strong></p>
+<h2 id="194-strings">19.4 Strings</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">s</span> <span class="o">=</span> <span class="s2">"Hello, World"</span>
+<span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span>              <span class="c1"># 'ello'      s[::-1] -&gt; reversed</span>
+<span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">", "</span><span class="p">)</span>       <span class="c1"># ['Hello', 'World']      ", ".join(parts)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>           <span class="c1"># trim whitespace (lstrip/rstrip)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"l"</span><span class="p">,</span> <span class="s2">"L"</span><span class="p">)</span> <span class="c1"># new string (immutable)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"He"</span><span class="p">)</span>  <span class="c1"># endswith / in / index / find(-1) / count</span>
+<span class="n">s</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>   <span class="c1"># casefold() for case-insensitive COMPARISON</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">&gt;10,.2f</span><span class="si">}</span><span class="s2">"</span>  <span class="c1"># width 10, right-aligned, thousands, 2 decimals</span>
+<span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">now</span><span class="si">:</span><span class="s2">%Y-%m-%d</span><span class="si">}</span><span class="s2">"</span>   <span class="c1"># datetime formatting</span>
+<span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>     <span class="c1"># NEVER += in a loop</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">);</span> <span class="n">text</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"replace"</span><span class="p">)</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>f-spec</th>
+<th>Example</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;</code> <code>&gt;</code> <code>^</code></td>
+<td><code>f"{'x':^5}"</code></td>
+<td><code>'  x  '</code></td>
+</tr>
+<tr>
+<td><code>=</code></td>
+<td><code>f"{x=}"</code></td>
+<td><code>'x=3'</code> (debugging)</td>
+</tr>
+<tr>
+<td><code>,</code> / <code>_</code></td>
+<td><code>f"{1234567:,}"</code></td>
+<td><code>'1,234,567'</code></td>
+</tr>
+<tr>
+<td><code>.2f</code> / <code>.2%</code> / <code>.3g</code></td>
+<td><code>f"{0.1234:.2%}"</code></td>
+<td><code>'12.34%'</code></td>
+</tr>
+<tr>
+<td><code>#x</code> <code>#o</code> <code>#b</code></td>
+<td><code>f"{255:#x}"</code></td>
+<td><code>'0xff'</code></td>
+</tr>
+<tr>
+<td><code>!r</code> <code>!s</code></td>
+<td><code>f"{obj!r}"</code></td>
+<td>repr — for logs/errors</td>
+</tr>
+</tbody>
+</table>
+<h2 id="195-control-flow">19.5 Control flow</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="o">...</span> <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="o">...</span> <span class="k">else</span><span class="p">:</span> <span class="o">...</span>
+<span class="k">while</span> <span class="n">cond</span><span class="p">:</span> <span class="o">...</span> <span class="k">else</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">no</span> <span class="k">break</span><span class="o">&gt;</span>       <span class="c1"># else runs if not broken</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">bad</span><span class="p">:</span> <span class="k">break</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"completed without break"</span><span class="p">)</span>    <span class="c1"># search pattern</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">seq</span><span class="p">):</span> <span class="o">...</span>
+<span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span> <span class="o">...</span>
+<span class="k">match</span> <span class="n">command</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>                  <span class="c1"># structural pattern matching</span>
+    <span class="k">case</span> <span class="p">[</span><span class="s2">"go"</span><span class="p">,</span> <span class="n">direction</span><span class="p">]:</span> <span class="n">walk</span><span class="p">(</span><span class="n">direction</span><span class="p">)</span>
+    <span class="k">case</span> <span class="p">[</span><span class="s2">"quit"</span> <span class="o">|</span> <span class="s2">"exit"</span><span class="p">]:</span> <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+    <span class="k">case</span> <span class="p">[</span><span class="n">cmd</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">]</span> <span class="k">if</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">KNOWN</span><span class="p">:</span> <span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+    <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span> <span class="n">error</span><span class="p">()</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Construct</th>
+<th>Use for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>if/elif/else</code></td>
+<td>2–4 conditions</td>
+</tr>
+<tr>
+<td><code>match</code></td>
+<td>shape/destructure dispatch, command parsers</td>
+</tr>
+<tr>
+<td><code>dict</code> dispatch</td>
+<td>name → handler tables</td>
+</tr>
+<tr>
+<td><code>for/else</code></td>
+<td>&ldquo;searched and did not find&rdquo;</td>
+</tr>
+<tr>
+<td><code>while/else</code></td>
+<td>same for condition loops</td>
+</tr>
+<tr>
+<td>early <code>return</code></td>
+<td>flatten nesting (guard clauses)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="196-containers-operations-complexity">19.6 Containers: operations &amp; complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>list</th>
+<th>dict</th>
+<th>set</th>
+<th>deque</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>index <code>x[i]</code></td>
+<td>O(1)</td>
+<td>—</td>
+<td>—</td>
+<td>O(1) ends, O(n) middle</td>
+</tr>
+<tr>
+<td>lookup <code>k in x</code></td>
+<td><strong>O(n)</strong></td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>append right</td>
+<td>O(1)*</td>
+<td>O(1)*</td>
+<td>O(1)*</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>append left</td>
+<td><strong>O(n)</strong></td>
+<td>—</td>
+<td>—</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>pop right</td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>pop left / del [0]</td>
+<td><strong>O(n)</strong></td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>insert middle</td>
+<td>O(n)</td>
+<td>—</td>
+<td>—</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>sort</td>
+<td>O(n log n)</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>slice</td>
+<td>O(k)</td>
+<td>—</td>
+<td>—</td>
+<td>O(k)</td>
+</tr>
+</tbody>
+</table>
+<p>* amortised. <strong>Choosing:</strong> unique + membership → <code>set</code>; key→value → <code>dict</code>;
+ordered + mutable sequence → <code>list</code>; fixed record → <code>tuple</code>/<code>dataclass</code>;
+queue at both ends → <code>collections.deque</code>; counting → <code>Counter</code>; defaults →
+<code>defaultdict</code>; insertion-ordered eviction → <code>OrderedDict</code>; big binary numbers →
+<code>array</code>/NumPy.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">deque</span><span class="p">,</span> <span class="n">namedtuple</span>
+<span class="n">Counter</span><span class="p">(</span><span class="s2">"aab"</span><span class="p">)</span><span class="o">.</span><span class="n">most_common</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>          <span class="c1"># [('a', 2)]</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">);</span> <span class="n">d</span><span class="p">[</span><span class="s2">"k"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">q</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>                    <span class="c1"># bounded, drops oldest</span>
+</code></pre></div>
+
+<h2 id="197-comprehensions-generators">19.7 Comprehensions &amp; generators</h2>
+<div class="codehilite"><pre><span></span><code><span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">nums</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>                       <span class="c1"># list</span>
+<span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">words</span><span class="p">}</span>                           <span class="c1"># dict</span>
+<span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">}</span>                                   <span class="c1"># set</span>
+<span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xs</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">ys</span><span class="p">)</span>                     <span class="c1"># generator: lazy</span>
+<span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">nums</span><span class="p">)</span>                             <span class="c1"># no list built</span>
+<span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>                                    <span class="c1"># safe first item</span>
+<span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">);</span> <span class="n">islice</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span> <span class="n">groupby</span><span class="p">(</span><span class="n">sorted_data</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+<span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">);</span> <span class="n">permutations</span><span class="p">(</span><span class="n">xs</span><span class="p">);</span> <span class="n">combinations</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nb">zip</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">);</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>transform + filter, all in memory</td>
+<td>list comprehension</td>
+</tr>
+<tr>
+<td>huge/infinite stream</td>
+<td>generator expression</td>
+</tr>
+<tr>
+<td>nested loops → flat</td>
+<td><code>[x for row in m for x in row]</code></td>
+</tr>
+<tr>
+<td>key→group</td>
+<td><code>defaultdict(list)</code> or <code>groupby</code> (needs sorted input)</td>
+</tr>
+<tr>
+<td>pairwise</td>
+<td><code>zip(seq, seq[1:])</code> or <code>itertools.pairwise</code></td>
+</tr>
+<tr>
+<td>chunk</td>
+<td><code>itertools.islice</code> in a loop (module 17)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="198-functions">19.8 Functions</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">either</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kw_only</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">rest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">g</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="o">...</span>                <span class="c1"># transparent wrapper</span>
+<span class="n">f</span><span class="o">.</span><span class="vm">__defaults__</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="vm">__kwdefaults__</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>                            <span class="c1"># expression only, no statements</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Syntax at call</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>positional-only</td>
+<td>before <code>/</code></td>
+<td>cannot be passed by name</td>
+</tr>
+<tr>
+<td>positional-or-keyword</td>
+<td>middle</td>
+<td>either</td>
+</tr>
+<tr>
+<td>var-positional</td>
+<td><code>*args</code></td>
+<td>tuple of extras</td>
+</tr>
+<tr>
+<td>keyword-only</td>
+<td>after <code>*</code></td>
+<td>must be named</td>
+</tr>
+<tr>
+<td>var-keyword</td>
+<td><code>**kwargs</code></td>
+<td>dict of extras</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Defaults:</strong> never mutable (<code>def f(x=[])</code> is shared forever) → use <code>None</code>
+sentinel. <strong>Return</strong> early, return one shape, avoid <code>None</code>-or-value ambiguity.
+<strong>Scope:</strong> LEGB (Local → Enclosing → Global → Builtins); <code>nonlocal</code> rebinds an
+enclosing variable, <code>global</code> a module one — prefer returning values.</p>
+<h2 id="199-oop">19.9 OOP</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Account</span><span class="p">:</span>
+    <span class="n">kind</span> <span class="o">=</span> <span class="s2">"current"</span>                       <span class="c1"># class attribute (shared)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">owner</span>                 <span class="c1"># instance attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_balance</span> <span class="o">=</span> <span class="n">balance</span>            <span class="c1"># convention: internal</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">balance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_balance</span>
+    <span class="nd">@balance</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">balance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"negative balance"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_balance</span> <span class="o">=</span> <span class="n">v</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_string</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span> <span class="o">...</span>           <span class="c1"># alternative constructor</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_valid</span><span class="p">(</span><span class="n">s</span><span class="p">):</span> <span class="o">...</span>                   <span class="c1"># no self/cls</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="sa">f</span><span class="s2">"Account(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="si">!r}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_balance</span><span class="si">}</span><span class="s2">)"</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span> <span class="o">...</span>           <span class="c1"># + __hash__ if used in sets/dicts</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Dunder</th>
+<th>Triggered by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>__init__</code> / <code>__new__</code></td>
+<td>construction</td>
+</tr>
+<tr>
+<td><code>__repr__</code> / <code>__str__</code></td>
+<td>repr() / print, str(), f-string</td>
+</tr>
+<tr>
+<td><code>__eq__</code> / <code>__hash__</code></td>
+<td><code>==</code>, dict/set membership</td>
+</tr>
+<tr>
+<td><code>__len__</code> / <code>__getitem__</code> / <code>__contains__</code></td>
+<td>len(), x[i], <code>in</code></td>
+</tr>
+<tr>
+<td><code>__iter__</code> / <code>__next__</code></td>
+<td>for-loops, iter()/next()</td>
+</tr>
+<tr>
+<td><code>__enter__</code> / <code>__exit__</code></td>
+<td><code>with</code></td>
+</tr>
+<tr>
+<td><code>__call__</code></td>
+<td><code>obj()</code></td>
+</tr>
+<tr>
+<td><code>__add__</code> / <code>__radd__</code></td>
+<td><code>+</code> (and friends)</td>
+</tr>
+<tr>
+<td><code>__set_name__</code> / <code>__get__</code> / <code>__set__</code></td>
+<td>descriptors</td>
+</tr>
+<tr>
+<td><code>__post_init__</code></td>
+<td>after <code>@dataclass</code> init</td>
+</tr>
+<tr>
+<td><code>__slots__</code></td>
+<td>no instance dict (memory)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Prefer:</strong> composition over inheritance; <code>dataclass(frozen=True, slots=True)</code>
+for records; <code>Enum</code> for closed sets; ABC for a real contract, <code>Protocol</code> for
+structural typing; <code>super()</code> respects the MRO (C3 linearisation).</p>
+<h2 id="1910-files-exceptions-iteration">19.10 Files, exceptions, iteration</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>            <span class="c1"># text</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span> <span class="o">...</span>                              <span class="c1"># lazy, line by line</span>
+<span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">"d"</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">p</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">);</span> <span class="n">p</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+<span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">fh</span><span class="p">);</span> <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">fh</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span> <span class="n">risky</span><span class="p">()</span>
+<span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span> <span class="n">handle</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>        <span class="c1"># specific first</span>
+<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span> <span class="n">log</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"..."</span><span class="p">);</span> <span class="k">raise</span>        <span class="c1"># never bare except</span>
+<span class="k">else</span><span class="p">:</span> <span class="n">success_path</span><span class="p">()</span>                                 <span class="c1"># only if no exception</span>
+<span class="k">finally</span><span class="p">:</span> <span class="n">cleanup</span><span class="p">()</span>                                   <span class="c1"># always</span>
+<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"why"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>                     <span class="c1"># chain the cause</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Iterator need</th>
+<th>Tool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>iterate</td>
+<td><code>for x in it</code> (calls <code>__iter__</code>/<code>__next__</code>)</td>
+</tr>
+<tr>
+<td>produce lazily</td>
+<td><code>yield</code> in a function → generator</td>
+</tr>
+<tr>
+<td>delegate</td>
+<td><code>yield from other_iterable</code></td>
+</tr>
+<tr>
+<td>stop</td>
+<td><code>return</code> inside a generator → <code>StopIteration</code></td>
+</tr>
+<tr>
+<td>cleanup</td>
+<td><code>try/finally</code> around the <code>yield</code>, or <code>contextlib.closing</code></td>
+</tr>
+<tr>
+<td>close early</td>
+<td><code>gen.close()</code> throws <code>GeneratorExit</code> at the yield</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1911-decorators-closures">19.11 Decorators &amp; closures</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">deco</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>                 <span class="c1"># ALWAYS</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span><span class="n">before</span><span class="o">...</span>
+        <span class="k">try</span><span class="p">:</span> <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span> <span class="o">...</span><span class="n">after</span><span class="o">...</span>
+    <span class="k">return</span> <span class="n">wrapper</span>
+
+<span class="nd">@deco</span>
+<span class="nd">@other</span>                    <span class="c1"># applied bottom-up: other first, then deco</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">():</span> <span class="o">...</span>
+
+<span class="n">f</span> <span class="o">=</span> <span class="n">deco</span><span class="p">(</span><span class="n">arg</span><span class="p">)(</span><span class="n">f</span><span class="p">)</span>          <span class="c1"># decorator factory: deco(arg) returns the decorator</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Use</th>
+<th>Recipe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>timing</td>
+<td><code>perf_counter</code> around the call</td>
+</tr>
+<tr>
+<td>retry</td>
+<td>loop with <code>attempt</code>, sleep backoff, re-raise last</td>
+</tr>
+<tr>
+<td>cache</td>
+<td><code>functools.lru_cache(maxsize=…)</code></td>
+</tr>
+<tr>
+<td>logging</td>
+<td><code>functools.wraps</code> + logger call</td>
+</tr>
+<tr>
+<td>auth/validation</td>
+<td>check args, raise <code>PermissionError</code></td>
+</tr>
+<tr>
+<td>registration</td>
+<td>append <code>fn</code> to a module-level registry dict</td>
+</tr>
+<tr>
+<td>preserve signature</td>
+<td><code>ParamSpec</code> + <code>TypeVar</code> (module 14)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1912-typing-quick-reference">19.12 Typing quick reference</h2>
+<table>
+<thead>
+<tr>
+<th>Want</th>
+<th>Write</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>optional</td>
+<td><code>X \| None</code></td>
+</tr>
+<tr>
+<td>union</td>
+<td><code>A \| B</code></td>
+</tr>
+<tr>
+<td>containers</td>
+<td><code>list[int]</code>, <code>dict[str, int]</code>, <code>tuple[int, ...]</code></td>
+</tr>
+<tr>
+<td>params</td>
+<td><code>Sequence[T]</code>, <code>Mapping[K, V]</code>, <code>Iterable[T]</code></td>
+</tr>
+<tr>
+<td>callbacks</td>
+<td><code>Callable[[int], str]</code></td>
+</tr>
+<tr>
+<td>literals</td>
+<td><code>Literal["a", "b"]</code></td>
+</tr>
+<tr>
+<td>JSON shape</td>
+<td><code>TypedDict</code></td>
+</tr>
+<tr>
+<td>record</td>
+<td><code>@dataclass</code></td>
+</tr>
+<tr>
+<td>shape interface</td>
+<td><code>Protocol</code> (+<code>runtime_checkable</code>)</td>
+</tr>
+<tr>
+<td>generics</td>
+<td><code>T = TypeVar("T")</code>, <code>Generic[T]</code></td>
+</tr>
+<tr>
+<td>decorators</td>
+<td><code>ParamSpec</code></td>
+</tr>
+<tr>
+<td>distinct scalars</td>
+<td><code>NewType("UserId", int)</code></td>
+</tr>
+<tr>
+<td>metadata</td>
+<td><code>Annotated[int, Field(ge=0)]</code></td>
+</tr>
+<tr>
+<td>check</td>
+<td><code>mypy --strict src/</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="1913-testing-quick-reference">19.13 Testing quick reference</h2>
+<table>
+<thead>
+<tr>
+<th>Want</th>
+<th>Write</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>assert</td>
+<td>bare <code>assert x == y</code></td>
+</tr>
+<tr>
+<td>exception</td>
+<td><code>with pytest.raises(E) as ei:</code></td>
+</tr>
+<tr>
+<td>floats</td>
+<td><code>pytest.approx(v)</code></td>
+</tr>
+<tr>
+<td>cases</td>
+<td><code>@pytest.mark.parametrize("a,b", [(1,2)], ids=[…])</code></td>
+</tr>
+<tr>
+<td>setup/teardown</td>
+<td><code>@pytest.fixture</code> + <code>yield</code></td>
+</tr>
+<tr>
+<td>shared fixtures</td>
+<td><code>tests/conftest.py</code></td>
+</tr>
+<tr>
+<td>temp dir</td>
+<td><code>tmp_path</code></td>
+</tr>
+<tr>
+<td>env/attrs</td>
+<td><code>monkeypatch.setenv/setattr</code></td>
+</tr>
+<tr>
+<td>doubles</td>
+<td><code>unittest.mock.Mock(spec=…)</code> / <code>patch</code></td>
+</tr>
+<tr>
+<td>skip/expected-fail</td>
+<td><code>skipif(cond)</code>, <code>xfail(strict=True)</code></td>
+</tr>
+<tr>
+<td>output</td>
+<td><code>capsys.readouterr()</code></td>
+</tr>
+<tr>
+<td>coverage</td>
+<td><code>pytest --cov=src --cov-fail-under=90</code></td>
+</tr>
+<tr>
+<td>speed</td>
+<td><code>pytest -n auto</code>, <code>-m "not slow"</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="1914-concurrency-quick-reference">19.14 Concurrency quick reference</h2>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Tool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>blocking lib, many calls</td>
+<td><code>ThreadPoolExecutor(n).map(f, items)</code></td>
+</tr>
+<tr>
+<td>CPU-bound</td>
+<td><code>ProcessPoolExecutor</code> / NumPy</td>
+</tr>
+<tr>
+<td>async network fan-out</td>
+<td><code>asyncio.gather</code> + <code>Semaphore</code></td>
+</tr>
+<tr>
+<td>sync call inside async</td>
+<td><code>await asyncio.to_thread(fn)</code></td>
+</tr>
+<tr>
+<td>structured async</td>
+<td><code>async with asyncio.TaskGroup() as tg</code></td>
+</tr>
+<tr>
+<td>thread handoff</td>
+<td><code>queue.Queue(maxsize=…)</code></td>
+</tr>
+<tr>
+<td>mutual exclusion</td>
+<td><code>with lock:</code></td>
+</tr>
+<tr>
+<td>timeouts</td>
+<td><code>fut.result(timeout=…)</code>, <code>asyncio.timeout(…)</code></td>
+</tr>
+<tr>
+<td>durable background jobs</td>
+<td>Celery / arq + workers</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Remember:</strong> GIL → threads for waiting, processes for computing, asyncio for
+many idle connections.</p>
+<h2 id="1915-performance-quick-reference">19.15 Performance quick reference</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>quadratic blow-up</td>
+<td><code>set</code>/<code>dict</code> lookups, precompute index, memoise</td>
+</tr>
+<tr>
+<td>hot function</td>
+<td><code>cProfile</code> tottime → algorithm change</td>
+</tr>
+<tr>
+<td>string building</td>
+<td><code>"".join</code></td>
+</tr>
+<tr>
+<td>repeated pure calls</td>
+<td><code>functools.lru_cache(maxsize=…)</code></td>
+</tr>
+<tr>
+<td>many small objects</td>
+<td><code>__slots__</code>, tuples, <code>array</code>/NumPy</td>
+</tr>
+<tr>
+<td>memory growth</td>
+<td><code>tracemalloc</code> snapshot diff; bound caches</td>
+</tr>
+<tr>
+<td>N+1 queries</td>
+<td>batch/join</td>
+</tr>
+<tr>
+<td>serial I/O</td>
+<td>concurrency (module 16)</td>
+</tr>
+<tr>
+<td>need proof</td>
+<td><code>timeit.repeat</code>, pytest-benchmark</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1916-packaging-ci-quick-reference">19.16 Packaging &amp; CI quick reference</h2>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>env</td>
+<td><code>python -m venv .venv</code> / <code>uv venv</code></td>
+</tr>
+<tr>
+<td>install editable</td>
+<td><code>pip install -e '.[dev]'</code></td>
+</tr>
+<tr>
+<td>build</td>
+<td><code>python -m build</code></td>
+</tr>
+<tr>
+<td>publish</td>
+<td><code>twine upload dist/*</code> (or OIDC action on tag)</td>
+</tr>
+<tr>
+<td>lock</td>
+<td><code>uv lock</code> / <code>pip-compile</code></td>
+</tr>
+<tr>
+<td>lint/format</td>
+<td><code>ruff check . &amp;&amp; ruff format .</code></td>
+</tr>
+<tr>
+<td>types</td>
+<td><code>mypy src/</code></td>
+</tr>
+<tr>
+<td>tests</td>
+<td><code>pytest --cov=src --cov-fail-under=90</code></td>
+</tr>
+<tr>
+<td>version at runtime</td>
+<td><code>importlib.metadata.version("pkg")</code></td>
+</tr>
+<tr>
+<td>semver</td>
+<td>breaking → MAJOR, feature → MINOR, fix → PATCH</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1917-the-debugging-ladder">19.17 The debugging ladder</h2>
+<div class="codehilite"><pre><span></span><code>1  read the traceback BOTTOM-UP: last line = the error, frames above = the path
+2  reproduce it minimally: smallest input, one command
+3  print/log the values you assume (or use pdb: b file:line, c, p var, w)
+4  bisect the change: git bisect, or comment out halves
+5  check the boundary: types, None, empty, encoding, off-by-one
+6  write a failing test, then fix it - the test stays as proof
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pdb</code> / <code>breakpoint()</code></td>
+<td>interactive step-through</td>
+</tr>
+<tr>
+<td><code>repr(obj)</code>, <code>type(obj)</code></td>
+<td>what is this, really</td>
+</tr>
+<tr>
+<td><code>logging</code> (not print)</td>
+<td>levels, structured fields</td>
+</tr>
+<tr>
+<td><code>git bisect</code></td>
+<td>find the commit that broke it</td>
+</tr>
+<tr>
+<td><code>py-spy dump/top</code></td>
+<td>live process, no restart</td>
+</tr>
+<tr>
+<td><code>dis.dis(fn)</code></td>
+<td>what bytecode actually runs</td>
+</tr>
+<tr>
+<td><code>sys.getsizeof</code>, <code>tracemalloc</code></td>
+<td>memory</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1918-capstone-project">19.18 Capstone project</h2>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-19-a</span></div><p>Build <code>report.py</code>: a small sales-report pipeline that uses almost everything in
+this course — a custom exception hierarchy (<code>ReportError</code> → <code>ParseError</code>,
+<code>ValidationError</code>), frozen <code>slots=True</code> dataclasses (<code>Order</code>, <code>Summary</code>), a
+<strong>lazy</strong> CSV loader (<code>load_orders(text, strict=False)</code> generator that skips or
+raises on bad rows), money parsed to <code>Decimal</code>, a <code>retry(times, delay)</code>
+decorator with injectable sleep, <code>summarise(orders)</code> (totals, per-region
+aggregates, top customer), and <code>render_markdown(summary)</code> producing a stable
+table. The grader checks the pipeline end-to-end, including laziness, error
+handling and the retry decorator.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/19_capstone/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><p>Reference implementation: <code>exercises/19_capstone/solution.py</code>.</p></details>
+<h2 id="1919-where-to-go-next">19.19 Where to go next</h2>
+<table>
+<thead>
+<tr>
+<th>Direction</th>
+<th>Start with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>web APIs</td>
+<td>FastAPI + pydantic + httpx + uvicorn</td>
+</tr>
+<tr>
+<td>data work</td>
+<td>pandas / polars, NumPy, Jupyter, DuckDB</td>
+</tr>
+<tr>
+<td>CLI tools</td>
+<td>typer / argparse, rich, <code>pyproject.toml</code> scripts</td>
+</tr>
+<tr>
+<td>automation</td>
+<td>pathlib, subprocess, requests, schedule/cron</td>
+</tr>
+<tr>
+<td>ML</td>
+<td>scikit-learn → PyTorch, plus module 17 discipline</td>
+</tr>
+<tr>
+<td>systems</td>
+<td>asyncio services, Docker, queues, observability</td>
+</tr>
+</tbody>
+</table>
+<p>Whatever you pick, the loop stays the same: <strong>read the mechanism, type the
+example, write the test, measure the result.</strong></p>
+      <nav class="pager"><a class="prev" href="18-packaging-ci.html"><span>&larr; previous</span><strong>Packaging, environments & CI/CD: pyproject to PyPI</strong></a><span class="next"></span></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#191-the-course-on-one-picture">19.1 The course on one picture</a></li>
+<li><a href="#192-types-literals">19.2 Types &amp; literals</a></li>
+<li><a href="#193-operators-you-must-know-cold">19.3 Operators you must know cold</a></li>
+<li><a href="#194-strings">19.4 Strings</a></li>
+<li><a href="#195-control-flow">19.5 Control flow</a></li>
+<li><a href="#196-containers-operations-complexity">19.6 Containers: operations &amp; complexity</a></li>
+<li><a href="#197-comprehensions-generators">19.7 Comprehensions &amp; generators</a></li>
+<li><a href="#198-functions">19.8 Functions</a></li>
+<li><a href="#199-oop">19.9 OOP</a></li>
+<li><a href="#1910-files-exceptions-iteration">19.10 Files, exceptions, iteration</a></li>
+<li><a href="#1911-decorators-closures">19.11 Decorators &amp; closures</a></li>
+<li><a href="#1912-typing-quick-reference">19.12 Typing quick reference</a></li>
+<li><a href="#1913-testing-quick-reference">19.13 Testing quick reference</a></li>
+<li><a href="#1914-concurrency-quick-reference">19.14 Concurrency quick reference</a></li>
+<li><a href="#1915-performance-quick-reference">19.15 Performance quick reference</a></li>
+<li><a href="#1916-packaging-ci-quick-reference">19.16 Packaging &amp; CI quick reference</a></li>
+<li><a href="#1917-the-debugging-ladder">19.17 The debugging ladder</a></li>
+<li><a href="#1918-capstone-project">19.18 Capstone project</a></li>
+<li><a href="#1919-where-to-go-next">19.19 Where to go next</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

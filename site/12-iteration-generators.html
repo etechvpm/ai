@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Iteration protocol, comprehensions &amp; generators &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link active" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">30 min</span><span class="chip tag">iterators</span><span class="chip tag">generators</span><span class="chip tag">comprehensions</span><span class="chip tag">itertools</span><span class="chip tag">lazy</span></div>
+      <h1 id="12-iteration-comprehensions-generators">12. Iteration, comprehensions &amp; generators</h1>
+<blockquote>
+<p>The single biggest lever in Python performance and memory design is <em>not
+building the list</em>. This module teaches you to keep data flowing instead of
+parked.</p>
+</blockquote>
+<h2 id="121-definition">12.1 Definition</h2>
+<p><strong>Plain version.</strong> Anything you can loop over is iterable; a generator is a
+function that produces values one at a time instead of all at once.</p>
+<p><strong>Precise version.</strong> An <strong>iterable</strong> implements <code>__iter__</code> returning an
+<strong>iterator</strong>; an <strong>iterator</strong> implements <code>__next__</code> returning the next value
+and raising <code>StopIteration</code> when exhausted (and is its own <code>__iter__</code>). A
+<strong>generator function</strong> (contains <code>yield</code>) returns a <strong>generator object</strong> — an
+iterator whose frame is suspended and resumed, keeping local state between
+yields. A <strong>generator expression</strong> <code>(… for … in …)</code> is the lazy analogue of a
+list comprehension. <code>for</code>, <code>sum</code>, <code>any</code>, <code>join</code>, <code>list</code>, unpacking — all
+consume the iterator protocol, which is why your own objects plug into the
+whole language by implementing two methods.</p>
+<h2 id="122-syntax">12.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># comprehensions ----------------------------------------------------------</span>
+<span class="n">squares</span>  <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>              <span class="c1"># list</span>
+<span class="n">sq_set</span>   <span class="o">=</span> <span class="p">{</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)}</span>              <span class="c1"># set</span>
+<span class="n">sq_map</span>   <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)}</span>           <span class="c1"># dict</span>
+<span class="n">sq_lazy</span>  <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>              <span class="c1"># generator expression</span>
+<span class="n">evens</span>    <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">nums</span> <span class="k">if</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>         <span class="c1"># filter</span>
+<span class="n">pairs</span>    <span class="o">=</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">xs</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">ys</span><span class="p">]</span>        <span class="c1"># nested loops</span>
+<span class="n">label</span>    <span class="o">=</span> <span class="p">[</span><span class="n">fmt</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">if</span> <span class="n">ok</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"n/a"</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vs</span><span class="p">]</span>  <span class="c1"># inline conditional</span>
+
+<span class="c1"># generator functions -------------------------------------------------------</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">countdown</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">while</span> <span class="n">n</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">n</span>                 <span class="c1"># suspend here, resume on next()</span>
+        <span class="n">n</span> <span class="o">-=</span> <span class="mi">1</span>
+    <span class="k">return</span>                      <span class="c1"># StopIteration (value ignored by for)</span>
+
+<span class="n">gen</span> <span class="o">=</span> <span class="n">countdown</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="nb">next</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>          <span class="c1"># 3</span>
+<span class="nb">list</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>          <span class="c1"># [2, 1]     (already consumed 3!)</span>
+
+<span class="c1"># the protocol by hand ----------------------------------------------------------</span>
+<span class="n">it</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">])</span>
+<span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>           <span class="c1"># 10</span>
+<span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="s2">"done"</span><span class="p">)</span>   <span class="c1"># 20</span>
+<span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="s2">"done"</span><span class="p">)</span>   <span class="c1"># 'done'    (default instead of StopIteration)</span>
+</code></pre></div>
+
+<h2 id="123-first-examples">12.3 First examples</h2>
+<p><strong>Example 1 — comprehension vs loop, same result.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">" ada "</span><span class="p">,</span> <span class="s2">"GRACE"</span><span class="p">,</span> <span class="s2">"  "</span><span class="p">]</span>
+<span class="n">clean</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">title</span><span class="p">()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+<span class="c1"># ['Ada', 'Grace']</span>
+</code></pre></div>
+
+<p><strong>Example 2 — lazy file pipeline.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">errors</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span> <span class="k">if</span> <span class="s2">"ERROR"</span> <span class="ow">in</span> <span class="n">line</span><span class="p">)</span>   <span class="c1"># O(1) memory</span>
+</code></pre></div>
+
+<p><strong>Example 3 — an infinite sequence, safely.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fibs</span><span class="p">():</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">a</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">fibs</span><span class="p">(),</span> <span class="mi">10</span><span class="p">))</span>     <span class="c1"># [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]</span>
+</code></pre></div>
+
+<h2 id="124-the-picture">12.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 400" width="990" height="400" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The iterator protocol</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">for loops are just iter() + next() + StopIteration</text>
+<text x="40" y="88" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">for item in seq:</text>
+<text x="40" y="108" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    use(item)</text>
+<text x="40" y="140" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">is exactly equivalent to:</text>
+<text x="40" y="164" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="400" font-style="normal" fill="var(--dg-blue, #2563eb)">it = iter(seq)            # calls seq.__iter__()</text>
+<text x="40" y="183" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="400" font-style="normal" fill="var(--dg-blue, #2563eb)">while True:</text>
+<text x="40" y="202" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="400" font-style="normal" fill="var(--dg-blue, #2563eb)">    try:</text>
+<text x="40" y="221" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="400" font-style="normal" fill="var(--dg-blue, #2563eb)">        item = next(it)   # calls it.__next__()</text>
+<text x="40" y="240" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="400" font-style="normal" fill="var(--dg-blue, #2563eb)">    except StopIteration:</text>
+<text x="40" y="259" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="400" font-style="normal" fill="var(--dg-blue, #2563eb)">        break</text>
+<text x="40" y="278" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="400" font-style="normal" fill="var(--dg-blue, #2563eb)">    use(item)</text>
+<rect x="400" y="84" width="106" height="46" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="453.0" y="112" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">iter()</text>
+<rect x="400" y="150" width="106" height="40" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="453.0" y="175" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">&lt;iterator&gt;</text>
+<line x1="453.0" y1="130" x2="453.0" y2="150" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="520" y="84" width="106" height="46" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="573.0" y="112" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">next()</text>
+<rect x="520" y="150" width="106" height="40" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="573.0" y="175" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">10</text>
+<line x1="573.0" y1="130" x2="573.0" y2="150" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="506" y1="107" x2="520" y2="107" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="640" y="84" width="106" height="46" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="693.0" y="112" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">next()</text>
+<rect x="640" y="150" width="106" height="40" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="693.0" y="175" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">20</text>
+<line x1="693.0" y1="130" x2="693.0" y2="150" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="626" y1="107" x2="640" y2="107" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="760" y="84" width="106" height="46" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="813.0" y="112" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">next()</text>
+<rect x="760" y="150" width="106" height="40" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="813.0" y="175" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">30</text>
+<line x1="813.0" y1="130" x2="813.0" y2="150" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="746" y1="107" x2="760" y2="107" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="880" y="84" width="106" height="46" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="933.0" y="112" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">StopIteration</text>
+<rect x="880" y="150" width="106" height="40" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="933.0" y="175" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">loop ends</text>
+<line x1="933.0" y1="130" x2="933.0" y2="150" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="866" y1="107" x2="880" y2="107" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<text x="400" y="216" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">numbers = [10, 20, 30]</text>
+<rect x="40" y="244" width="440" height="128" rx="10" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="56" y="268" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">ITERABLE vs ITERATOR</text>
+<text x="56" y="292" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Iterable: has __iter__  (list, str, dict, file, range)</text>
+<text x="56" y="309" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Iterator: has __iter__ AND __next__, and is stateful -</text>
+<text x="56" y="326" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">          it remembers where it stopped.</text>
+<text x="56" y="343" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Every iterator is iterable; not every iterable is an</text>
+<text x="56" y="360" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">iterator. iter(list) gives a fresh one each call.</text>
+<rect x="500" y="244" width="450" height="128" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="516" y="268" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">Generators are iterators you write with yield</text>
+<text x="516" y="292" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">def squares(n):</text>
+<text x="516" y="310" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    for i in range(n):</text>
+<text x="516" y="328" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        yield i * i      # pauses, keeps state, resumes</text>
+<text x="516" y="356" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="italic" fill="var(--dg-slate, #475569)">One-shot: exhausting a generator leaves it empty.</text>
+</svg>
+<figcaption>The iterator protocol: for == iter() + next() + StopIteration; iterable vs iterator; generators as iterators written with yield.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 486" width="990" height="486" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Eager vs lazy memory use</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Same result, 10,000x less memory</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Reading 10 million lines: the list version must hold everything at once, the generator never does.</text>
+<text x="60" y="100" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">[x*2 for x in range(10_000_000)]</text>
+<rect x="60" y="110" width="380" height="26" rx="5" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="454" y="128" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">~800 MB in RAM, 4.1 s</text>
+<text x="60" y="176" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">(x*2 for x in range(10_000_000))</text>
+<rect x="60" y="186" width="8" height="26" rx="5" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="82" y="204" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">~200 BYTES, starts instantly</text>
+<text x="60" y="252" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">map(lambda x: x*2, range(10**7))</text>
+<rect x="60" y="262" width="8" height="26" rx="5" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="82" y="280" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">~200 bytes</text>
+<rect x="60" y="320" width="420" height="130" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="76" y="344" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">The pipeline pattern</text>
+<text x="76" y="366" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">rows   = read_csv(path)        # generator</text>
+<text x="76" y="384" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">clean  = (strip(r) for r in rows)</text>
+<text x="76" y="402" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">valid  = (r for r in clean if ok(r))</text>
+<text x="76" y="420" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">report = Counter(k for k in valid)</text>
+<text x="76" y="438" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Nothing is materialised until the final step consumes it.</text>
+<rect x="500" y="320" width="430" height="130" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="516" y="344" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Trade-offs you must know</text>
+<text x="516" y="366" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">- one-shot: a second `for` loop yields nothing</text>
+<text x="516" y="384" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">- no len(), no indexing, no reuse</text>
+<text x="516" y="402" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">- exceptions surface late, at consumption time</text>
+<text x="516" y="420" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">- per-item overhead: a list can be FASTER for small n</text>
+</svg>
+<figcaption>Eager vs lazy: the same ten million values as a list (hundreds of MB) or a generator (hundreds of bytes).</figcaption></figure>
+
+<h2 id="125-going-deeper">12.5 Going deeper</h2>
+<h3 id="1251-what-yield-really-does">12.5.1 What <code>yield</code> really does</h3>
+<p>Compiling a function containing <code>yield</code> makes it a <em>generator factory</em>: calling
+it runs <strong>nothing</strong>, it just builds a generator object wrapping the frame. Each
+<code>next()</code> resumes until the next <code>yield</code>, whose expression becomes the returned
+value; locals persist between resumes. <code>yield from sub</code> delegates: it pipes
+every value (and <code>.send()</code>/<code>.throw()</code>/<code>.close()</code>) to a sub-generator — the
+basis of coroutine pipelines and of <code>asyncio</code>&rsquo;s ancestry.</p>
+<h3 id="1252-generators-are-one-shot-and-that-is-a-feature-and-a-trap">12.5.2 Generators are one-shot, and that is a feature <em>and</em> a trap</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">g</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="nb">list</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>     <span class="c1"># [0, 2, 4]</span>
+<span class="nb">list</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>     <span class="c1"># []          exhausted forever</span>
+</code></pre></div>
+
+<p>Lists/re-runnable iterables can be looped repeatedly; generators and file
+objects cannot. When an API must support multiple passes, return a list or a
+callable producing fresh iterators; document one-shot iterators loudly.</p>
+<h3 id="1253-send-throw-close-generators-as-coroutines">12.5.3 <code>send</code>, <code>throw</code>, <code>close</code>: generators as coroutines</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">accumulator</span><span class="p">():</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">total</span>      <span class="c1"># yield AND receive</span>
+        <span class="n">total</span> <span class="o">+=</span> <span class="n">value</span>
+
+<span class="n">acc</span> <span class="o">=</span> <span class="n">accumulator</span><span class="p">();</span> <span class="nb">next</span><span class="p">(</span><span class="n">acc</span><span class="p">)</span>   <span class="c1"># prime it</span>
+<span class="n">acc</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span> <span class="n">acc</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>         <span class="c1"># 5, 12</span>
+</code></pre></div>
+
+<p>This two-way channel is how pre-asyncio frameworks built event loops; today
+you will mostly meet it inside libraries, but it explains <em>why</em> <code>async/await</code>
+looks the way it does (module 16).</p>
+<h3 id="1254-comprehension-semantics-worth-knowing">12.5.4 Comprehension semantics worth knowing</h3>
+<ul>
+<li>they have their <strong>own scope</strong> (loop variables don&rsquo;t leak — unlike <code>for</code>);</li>
+<li>the <code>if</code> clause filters, the inline <code>if/else</code> <strong>transforms</strong> (different
+  positions, different meanings);</li>
+<li>nested comprehensions read loop-order left-to-right: <code>[ (a,b) for a in A
+  for b in B ]</code> == nested for;</li>
+<li>a comprehension with a single <code>sum/any/all/max</code> around it should usually be
+  a <strong>generator expression</strong> (no intermediate list): <code>sum(x*x for x in xs)</code>;</li>
+<li>dict/set comprehensions deduplicate by key/hash as they build.</li>
+</ul>
+<h3 id="1255-itertools-the-standard-library-of-iteration-algebra">12.5.5 <code>itertools</code>: the standard library of iteration algebra</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Does</th>
+<th>Classic use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>chain(*its)</code></td>
+<td>concatenate lazily</td>
+<td>one loop over many sources</td>
+</tr>
+<tr>
+<td><code>islice(it, a, b)</code></td>
+<td>slice without materialising</td>
+<td>paging a stream</td>
+</tr>
+<tr>
+<td><code>takewhile / dropwhile</code></td>
+<td>cut by predicate</td>
+<td>leading header rows</td>
+</tr>
+<tr>
+<td><code>groupby(it, key)</code></td>
+<td>consecutive groups</td>
+<td>run-length segments</td>
+</tr>
+<tr>
+<td><code>zip_longest</code></td>
+<td>zip with fill</td>
+<td>ragged tables</td>
+</tr>
+<tr>
+<td><code>product / permutations / combinations</code></td>
+<td>combinatorics</td>
+<td>search spaces</td>
+</tr>
+<tr>
+<td><code>accumulate</code></td>
+<td>running fold</td>
+<td>prefix sums</td>
+</tr>
+<tr>
+<td><code>tee(it, n)</code></td>
+<td>n independent iterators (buffers!)</td>
+<td>look-ahead</td>
+</tr>
+<tr>
+<td><code>count / cycle / repeat</code></td>
+<td>infinite sources</td>
+<td>ids, round-robin</td>
+</tr>
+<tr>
+<td><code>starmap / filterfalse</code></td>
+<td>map/unpack, complement filter</td>
+<td>pipelines</td>
+</tr>
+</tbody>
+</table>
+<p><code>groupby</code> surprises everyone: it groups <strong>consecutive</strong> runs only — sort by
+the key first, or use a <code>defaultdict(list)</code> (module 06).</p>
+<h3 id="1256-the-memory-maths">12.5.6 The memory maths</h3>
+<p>A list of 10⁷ ints: ~80 MB for pointers + 10⁷ int objects (~280 MB) ≈ 360 MB.
+A generator: one frame, ~100 bytes. The decision rule:</p>
+<ul>
+<li>need random access / len / reuse → list;</li>
+<li>single pass, transform, aggregate → generator;</li>
+<li>unknown or unbounded size (logs, sockets, sensors) → generator <em>mandatory</em>;</li>
+<li>small n (&lt; ~10⁴) → list is fine and often faster (less per-item overhead).</li>
+</ul>
+<h3 id="1257-writing-your-own-iterable-class">12.5.7 Writing your own iterable class</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Range2</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">i</span>            <span class="c1"># generator method = easiest __iter__</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+</code></pre></div>
+
+<p>Using <code>yield</code> inside <code>__iter__</code> gives re-iterability (each <code>for</code> gets a fresh
+generator) — strictly better than returning <code>self</code> unless you <em>want</em> shared
+one-shot state.</p>
+<h2 id="126-industry-level">12.6 Industry level</h2>
+<h3 id="pipelines-as-composition-not-as-loops">Pipelines as composition, not as loops</h3>
+<p>Data-engineering style in pure Python: each stage a generator function, the
+pipeline a composition, consumption explicit:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>          <span class="c1"># stage 0: produce</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">line</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>        <span class="c1"># stage 1: transform, drop bad rows</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">row</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">enrich</span><span class="p">(</span><span class="n">rows</span><span class="p">):</span>        <span class="c1"># stage 2: join with reference data</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">row</span> <span class="o">+</span> <span class="p">[</span><span class="n">COUNTRY</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]]]</span>
+
+<span class="n">report</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">enrich</span><span class="p">(</span><span class="n">parse</span><span class="p">(</span><span class="n">read</span><span class="p">(</span><span class="s2">"sales.csv"</span><span class="p">))))</span>
+</code></pre></div>
+
+<p>Benefits reviewers care about: each stage is unit-testable with a list,
+memory is O(1) per stage, and adding a stage is additive. This is the same
+architecture as Unix pipes, and the same <em>idea</em> as Spark/Dask pipelines.</p>
+<h3 id="backpressure-and-batching-at-boundaries">Backpressure and batching at boundaries</h3>
+<p>When producing is fast and consuming is slow (network writes), batch:
+<code>itertools.islice</code> chunks of 500 records per API call. When consuming is fast
+and producing slow, that is a queue/worker problem (module 16), not a
+generator problem.</p>
+<h3 id="generator-based-context-and-resources">Generator-based context and resources</h3>
+<p>A generator that opens a resource must guarantee cleanup: wrap the body in
+<code>try/finally</code>, or use <code>contextlib.contextmanager</code> (the same machinery). Note
+that a generator is only closed when GC&rsquo;d or <code>.close()</code>d — <code>with
+contextlib.closing(gen):</code> makes it deterministic.</p>
+<h3 id="when-not-to-be-lazy">When NOT to be lazy</h3>
+<ul>
+<li>you need <code>len()</code>, indexing, or two passes → materialise;</li>
+<li>exceptions must surface at validation time, not 40 stages later → validate
+  eagerly at the edge;</li>
+<li>the dataset is tiny → clarity beats cleverness.</li>
+</ul>
+<h2 id="127-comparison-tables">12.7 Comparison tables</h2>
+<p><strong>Comprehension flavours:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Syntax</th>
+<th>Builds</th>
+<th>Lazy?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[e for x in it]</code></td>
+<td>list</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>{e for x in it}</code></td>
+<td>set</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>{k: v for x in it}</code></td>
+<td>dict</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>(e for x in it)</code></td>
+<td>generator</td>
+<td><strong>yes</strong></td>
+</tr>
+<tr>
+<td><code>bytes(e for …)</code></td>
+<td>bytes</td>
+<td>consumes lazily</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Iterable families:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Object</th>
+<th>Iterable?</th>
+<th>Iterator?</th>
+<th>Re-iterable?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>list/tuple/str/dict/set</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>range</code></td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>file object</td>
+<td>yes</td>
+<td><strong>yes</strong></td>
+<td>no (position moves)</td>
+</tr>
+<tr>
+<td>generator / genexp</td>
+<td>yes</td>
+<td><strong>yes</strong></td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>map</code>/<code>filter</code>/<code>zip</code></td>
+<td>yes</td>
+<td><strong>yes</strong></td>
+<td>no</td>
+</tr>
+<tr>
+<td>your class with <code>__iter__</code> yield</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Loop vs comprehension vs generator:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Choose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>side effects (write, log, mutate)</td>
+<td><code>for</code> loop</td>
+</tr>
+<tr>
+<td>new collection from old</td>
+<td>comprehension</td>
+</tr>
+<tr>
+<td>single aggregate</td>
+<td>builtin + genexp (<code>sum</code>, <code>any</code>, <code>max</code>)</td>
+</tr>
+<tr>
+<td>streaming / unbounded</td>
+<td>generator function</td>
+</tr>
+<tr>
+<td>combinatorial shapes</td>
+<td><code>itertools</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="128-mistakes-gotchas">12.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">Reusing an exhausted generator</p>
+<p>Second loop yields nothing. If callers iterate twice, return a list or a
+factory function.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>return value</code> in a generator</p>
+<p>The value lands in <code>StopIteration.value</code>, invisible to <code>for</code>. Use it only for
+<code>yield from</code> delegation results.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Mutable default state across yields</p>
+<p>A generator&rsquo;s locals persist between yields — great for accumulators,
+dangerous if you assume a fresh start per <code>next()</code> batch.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>groupby</code> groups only consecutive runs</p>
+<p>Sort first, or aggregate with a dict.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">List comprehension where genexp belongs</p>
+<p><code>sum([x*x for x in huge])</code> allocates the whole list for nothing. Drop the
+brackets.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Late binding in comprehension-created closures</p>
+<p><code>[lambda: i for i in range(3)]</code> → all return 2. Bind with <code>lambda i=i:</code>.</p>
+</div>
+<h2 id="129-interview-questions">12.9 Interview questions</h2>
+<ol>
+<li><strong>Iterable vs iterator?</strong> — <code>__iter__</code> vs <code>__iter__</code>+<code>__next__</code>; iterators
+   are stateful and one-shot.</li>
+<li><strong>What does <code>yield</code> do?</strong> — suspends the frame, returns a value, resumes on
+   <code>next()</code> with locals intact.</li>
+<li><strong>List comprehension vs generator expression?</strong> — eager list in memory vs
+   lazy O(1)-memory iterator.</li>
+<li><strong>How does <code>for</code> work internally?</strong> — <code>iter()</code> then <code>next()</code> until
+   <code>StopIteration</code>.</li>
+<li><strong>Why can&rsquo;t you <code>len()</code> a generator?</strong> — no stored size; it hasn&rsquo;t computed
+   the future.</li>
+<li><strong><code>yield from</code>?</strong> — delegates iteration (and send/throw/close) to a
+   sub-generator.</li>
+<li><strong>Name five itertools and their uses.</strong> — chain, islice, groupby,
+   accumulate, zip_longest, …</li>
+<li><strong>How do you make a class iterable?</strong> — <code>__iter__</code> (easiest: a generator
+   method).</li>
+</ol>
+<h2 id="1210-practice-exercises">12.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-12-a</span></div><p>Implement with comprehensions: <code>squares_map(n)</code> ({i: i*i}), <code>even_squares(nums)</code>,
+<code>word_lengths(words)</code> (dict, skipping blanks), and <code>flatten(matrix)</code> (one
+comprehension with two fors).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/12_iteration/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-12-b</span></div><p>Implement generators <code>take(n, it)</code>, <code>chunked(it, size)</code> (lists of ≤ size),
+<code>running_average(it)</code> (yield the mean so far), and <code>dedupe(it, key=None)</code>
+preserving order. Then <code>pipeline(*stages)</code> composing callables that each take
+and return iterables.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/12_iteration/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-12-c</span></div><p>Implement <code>CsvPipeline</code>-style stages over an iterable of raw lines:
+<code>parse_rows(lines)</code> (yield dicts, skip malformed with a recorded <code>.skipped</code>
+count), <code>validate(rows, rules)</code> (rules = {field: predicate}; failures go to
+<code>.rejected</code>, good rows yielded), <code>aggregate(rows, field)</code> (Counter), and a
+<code>Window(it, size)</code> sliding-window iterator. The whole chain must work on a
+generator input without ever materialising it.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/12_iteration/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/12_iteration/solution.py)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">chunked</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+    <span class="n">it</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">size</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">head</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">yield</span> <span class="n">head</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Window</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">it</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">it</span><span class="p">),</span> <span class="n">size</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">deque</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">it</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
+                                <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">it</span><span class="p">:</span>
+            <span class="n">buf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+</code></pre></div></details>
+<h2 id="1211-cheatsheet">12.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transform to list/set/dict</td>
+<td><code>[…]</code> / <code>{…}</code> / <code>{k: v …}</code> comprehension</td>
+</tr>
+<tr>
+<td>Lazy transform</td>
+<td><code>(… for …)</code> genexp</td>
+</tr>
+<tr>
+<td>Filter</td>
+<td><code>if cond</code> at the end of a comprehension</td>
+</tr>
+<tr>
+<td>Transform-or-default</td>
+<td><code>a if cond else b</code> at the front</td>
+</tr>
+<tr>
+<td>Aggregate</td>
+<td><code>sum/any/all/max/min(… for …)</code></td>
+</tr>
+<tr>
+<td>First match lazily</td>
+<td><code>next((x for x in it if p(x)), default)</code></td>
+</tr>
+<tr>
+<td>Custom lazy sequence</td>
+<td>generator function with <code>yield</code></td>
+</tr>
+<tr>
+<td>Delegate</td>
+<td><code>yield from sub</code></td>
+</tr>
+<tr>
+<td>Slice a stream</td>
+<td><code>itertools.islice(it, n)</code></td>
+</tr>
+<tr>
+<td>Concatenate streams</td>
+<td><code>itertools.chain(a, b)</code></td>
+</tr>
+<tr>
+<td>Consecutive groups</td>
+<td><code>itertools.groupby(sorted_it, key)</code></td>
+</tr>
+<tr>
+<td>Running totals</td>
+<td><code>itertools.accumulate</code></td>
+</tr>
+<tr>
+<td>Infinite ids</td>
+<td><code>itertools.count(start, step)</code></td>
+</tr>
+<tr>
+<td>Batching</td>
+<td><code>islice</code> in a while-loop, or <code>chunked</code></td>
+</tr>
+<tr>
+<td>Make class iterable</td>
+<td><code>def __iter__(self): yield …</code></td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="11-exceptions.html"><span>&larr; previous</span><strong>Exceptions & error handling design</strong></a><a class="next" href="13-decorators-closures.html"><span>next &rarr;</span><strong>Closures & decorators: cross-cutting behaviour</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#121-definition">12.1 Definition</a></li>
+<li><a href="#122-syntax">12.2 Syntax</a></li>
+<li><a href="#123-first-examples">12.3 First examples</a></li>
+<li><a href="#124-the-picture">12.4 The picture</a></li>
+<li><a href="#125-going-deeper">12.5 Going deeper</a><ul>
+<li><a href="#1251-what-yield-really-does">12.5.1 What yield really does</a></li>
+<li><a href="#1252-generators-are-one-shot-and-that-is-a-feature-and-a-trap">12.5.2 Generators are one-shot, and that is a feature and a trap</a></li>
+<li><a href="#1253-send-throw-close-generators-as-coroutines">12.5.3 send, throw, close: generators as coroutines</a></li>
+<li><a href="#1254-comprehension-semantics-worth-knowing">12.5.4 Comprehension semantics worth knowing</a></li>
+<li><a href="#1255-itertools-the-standard-library-of-iteration-algebra">12.5.5 itertools: the standard library of iteration algebra</a></li>
+<li><a href="#1256-the-memory-maths">12.5.6 The memory maths</a></li>
+<li><a href="#1257-writing-your-own-iterable-class">12.5.7 Writing your own iterable class</a></li>
+</ul>
+</li>
+<li><a href="#126-industry-level">12.6 Industry level</a><ul>
+<li><a href="#pipelines-as-composition-not-as-loops">Pipelines as composition, not as loops</a></li>
+<li><a href="#backpressure-and-batching-at-boundaries">Backpressure and batching at boundaries</a></li>
+<li><a href="#generator-based-context-and-resources">Generator-based context and resources</a></li>
+<li><a href="#when-not-to-be-lazy">When NOT to be lazy</a></li>
+</ul>
+</li>
+<li><a href="#127-comparison-tables">12.7 Comparison tables</a></li>
+<li><a href="#128-mistakes-gotchas">12.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#129-interview-questions">12.9 Interview questions</a></li>
+<li><a href="#1210-practice-exercises">12.10 Practice exercises</a></li>
+<li><a href="#1211-cheatsheet">12.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

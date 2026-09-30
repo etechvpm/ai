@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course home &amp; how to use these notes &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Orientation</span><span class="chip read">8 min</span><span class="chip tag">orientation</span><span class="chip tag">how-to</span></div>
+      <div class="hero">
+<h1>Python, From Zero to Industry</h1>
+<p>A visual, depth-first Python course. Every module takes one concept and
+pushes it from a one-line definition all the way to the questions a senior
+engineer gets asked in code review — with diagrams, comparison tables,
+worked examples and exercises your machine grades for you.</p>
+</div>
+
+<h2 id="how-each-module-is-built">How each module is built</h2>
+<p>Every module follows the same ladder, so you always know where you are:</p>
+<ol>
+<li><strong>Definition</strong> — one honest sentence, then the precise version.</li>
+<li><strong>Syntax</strong> — the grammar, annotated, with the smallest example that runs.</li>
+<li><strong>First examples</strong> — three tiny programs with their exact output.</li>
+<li><strong>The picture</strong> — a diagram of what is really happening in memory / the
+   interpreter / the network.</li>
+<li><strong>Going deeper</strong> — the mechanics under the syntax: how CPython implements
+   it, what it costs, where it surprises you.</li>
+<li><strong>Industry level</strong> — how this appears in a real codebase: patterns,
+   trade-offs, review comments, library choices.</li>
+<li><strong>Comparison tables</strong> — the decision-making view.</li>
+<li><strong>Mistakes &amp; gotchas</strong> — the bugs everyone writes once.</li>
+<li><strong>Interview questions</strong> — with the answers interviewers actually want.</li>
+<li><strong>Exercises</strong> — three tiers, auto-checked by <code>pytest</code>.</li>
+<li><strong>Cheatsheet</strong> — the one screen to re-read before an exam or interview.</li>
+</ol>
+<h2 id="the-loop-you-should-follow">The loop you should follow</h2>
+<p>Do not read a module top to bottom and move on. For each module:</p>
+<div class="codehilite"><pre><span></span><code>read 1-4          understand the shape of the idea
+type out 3        typing beats reading; your fingers learn the syntax
+read 5-7          now the depth will stick, because you have a handle for it
+do the exercises  beginner -&gt; intermediate -&gt; industry, in that order
+run pytest        green is the only acceptable outcome
+re-read 8-9       the gotchas now read like your own mistakes
+</code></pre></div>
+
+<h2 id="running-the-exercises">Running the exercises</h2>
+<p>Each module ships an exercise pack in <code>exercises/</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># from the repository root, inside your virtualenv</span>
+pip<span class="w"> </span>install<span class="w"> </span>pytest<span class="w">                      </span><span class="c1"># once</span>
+pytest<span class="w"> </span>exercises/06_data_structures<span class="w"> </span>-q<span class="w">  </span><span class="c1"># check one module's pack</span>
+pytest<span class="w"> </span>exercises<span class="w"> </span>-q<span class="w">                     </span><span class="c1"># check everything you've done</span>
+
+<span class="c1"># want to see the reference answers pass first?</span>
+<span class="nv">PYCOURSE_SOLUTION</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pytest<span class="w"> </span>exercises<span class="w"> </span>-q
+</code></pre></div>
+
+<p>Every exercise is a small set of functions with <code>TODO</code> markers in
+<code>exercises/&lt;pack&gt;/tasks.py</code>. The matching <code>test_tasks.py</code> grades them.
+<code>exercises/&lt;pack&gt;/solution.py</code> holds a reference answer — read it only after
+you have a green (or a genuinely stuck) attempt of your own.</p>
+<h2 id="regenerating-this-site-and-the-figures">Regenerating this site and the figures</h2>
+<p>The notes are plain Markdown in <code>notes/</code>; every diagram is generated code in
+<code>tools/</code>. Nothing here is a hand-exported binary:</p>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>tools/make_diagrams.py<span class="w">   </span><span class="c1"># redraw all 44 SVG figures</span>
+python<span class="w"> </span>tools/build_site.py<span class="w">      </span><span class="c1"># rebuild this website into site/</span>
+</code></pre></div>
+
+<h2 id="module-map">Module map</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Module</th>
+<th>You will be able to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td><a href="01-python-and-how-it-runs.html">How Python runs</a></td>
+<td>explain compilation, bytecode, the VM, and set up a professional environment</td>
+</tr>
+<tr>
+<td>02</td>
+<td><a href="02-variables-types-memory.html">Variables, types &amp; memory</a></td>
+<td>reason about names vs objects, mutability, aliasing and garbage collection</td>
+</tr>
+<tr>
+<td>03</td>
+<td><a href="03-operators-expressions.html">Operators &amp; expressions</a></td>
+<td>choose operators deliberately and read any expression correctly</td>
+</tr>
+<tr>
+<td>04</td>
+<td><a href="04-strings-text.html">Strings &amp; text</a></td>
+<td>slice, format, encode and process text without mojibake or O(n²) bugs</td>
+</tr>
+<tr>
+<td>05</td>
+<td><a href="05-control-flow.html">Control flow</a></td>
+<td>branch and loop idiomatically, including <code>match</code> and <code>for…else</code></td>
+</tr>
+<tr>
+<td>06</td>
+<td><a href="06-data-structures.html">Data structures</a></td>
+<td>pick the right container and know its complexity by heart</td>
+</tr>
+<tr>
+<td>07</td>
+<td><a href="07-functions.html">Functions</a></td>
+<td>design signatures, scopes and closures like a library author</td>
+</tr>
+<tr>
+<td>08</td>
+<td><a href="08-modules-packages.html">Modules &amp; packages</a></td>
+<td>structure an importable, installable project and debug import errors</td>
+</tr>
+<tr>
+<td>09</td>
+<td><a href="09-oop.html">Object-oriented Python</a></td>
+<td>model domains with classes, MRO, protocols and dataclasses</td>
+</tr>
+<tr>
+<td>10</td>
+<td><a href="10-files-io.html">Files &amp; I/O</a></td>
+<td>read/write any file safely with encodings and context managers</td>
+</tr>
+<tr>
+<td>11</td>
+<td><a href="11-exceptions.html">Exceptions</a></td>
+<td>design error handling and a clean exception hierarchy</td>
+</tr>
+<tr>
+<td>12</td>
+<td><a href="12-iteration-generators.html">Iteration, comprehensions &amp; generators</a></td>
+<td>write lazy pipelines that process data bigger than RAM</td>
+</tr>
+<tr>
+<td>13</td>
+<td><a href="13-decorators-closures.html">Closures &amp; decorators</a></td>
+<td>build cross-cutting behaviour: retries, caching, timing, auth</td>
+</tr>
+<tr>
+<td>14</td>
+<td><a href="14-type-hints.html">Type hints &amp; static analysis</a></td>
+<td>annotate a codebase so mypy and your editor catch bugs pre-run</td>
+</tr>
+<tr>
+<td>15</td>
+<td><a href="15-testing.html">Testing</a></td>
+<td>write pytest suites with fixtures, parametrisation and mocks</td>
+</tr>
+<tr>
+<td>16</td>
+<td><a href="16-concurrency.html">Concurrency</a></td>
+<td>choose threads, processes or asyncio correctly and explain the GIL</td>
+</tr>
+<tr>
+<td>17</td>
+<td><a href="17-performance.html">Performance</a></td>
+<td>profile first, then optimise the hotspot with the right tool</td>
+</tr>
+<tr>
+<td>18</td>
+<td><a href="18-packaging-ci.html">Packaging, tooling &amp; CI</a></td>
+<td>ship an installable package with lint, types, tests and CI</td>
+</tr>
+<tr>
+<td>19</td>
+<td><a href="19-cheatsheets.html">Cheatsheets</a></td>
+<td>revise everything from dense one-screen summaries</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">A promise</p>
+<p>Nothing in these notes is hand-waved. When a sentence says &ldquo;O(1)&rdquo; or &ldquo;the GIL
+is released&rdquo;, the module shows you the mechanism. If a claim feels wrong,
+test it — every claim here is something you can verify in a REPL in under a
+minute.</p>
+</div>
+      <nav class="pager"><span class="prev"></span><a class="next" href="01-python-and-how-it-runs.html"><span>next &rarr;</span><strong>How Python runs: source to bytecode to VM</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#how-each-module-is-built">How each module is built</a></li>
+<li><a href="#the-loop-you-should-follow">The loop you should follow</a></li>
+<li><a href="#running-the-exercises">Running the exercises</a></li>
+<li><a href="#regenerating-this-site-and-the-figures">Regenerating this site and the figures</a></li>
+<li><a href="#module-map">Module map</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

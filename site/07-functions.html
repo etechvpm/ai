@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Functions: signatures, scope, closures, first-class everything &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link active" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">32 min</span><span class="chip tag">functions</span><span class="chip tag">arguments</span><span class="chip tag">scope</span><span class="chip tag">closures</span><span class="chip tag">functools</span></div>
+      <h1 id="7-functions">7. Functions</h1>
+<blockquote>
+<p>A function is an object that happens to be callable. Accept that fully and
+half of Python&rsquo;s &ldquo;magic&rdquo; — decorators, callbacks, DI, <code>functools</code> — becomes
+ordinary code.</p>
+</blockquote>
+<h2 id="71-definition">7.1 Definition</h2>
+<p><strong>Plain version.</strong> A function is a named block of code you can call with
+inputs and get an output from.</p>
+<p><strong>Precise version.</strong> <code>def</code> creates a <strong>function object</strong> at runtime and binds
+it to a name. The object carries code (<code>__code__</code>), defaults
+(<code>__defaults__</code>, <code>__kwdefaults__</code>), a reference to the module globals where it
+was defined (<code>__globals__</code> — this is what makes closures-over-globals work),
+metadata (<code>__name__</code>, <code>__doc__</code>, <code>__annotations__</code>) and, for closures,
+captured cells (<code>__closure__</code>). Calling it pushes a <strong>stack frame</strong> holding
+the parameters and locals; returning pops it. Functions are <strong>first-class</strong>:
+they can be assigned, passed, returned, stored in dicts and put in lists.</p>
+<h2 id="72-syntax">7.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">greet</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">greeting</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Hello"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">loud</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return a greeting for *name*.            &lt;- docstring (first statement)</span>
+
+<span class="sd">    One-line summary, blank line, then details.</span>
+<span class="sd">    """</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">greeting</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!"</span>
+    <span class="k">return</span> <span class="n">message</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">if</span> <span class="n">loud</span> <span class="k">else</span> <span class="n">message</span>
+
+<span class="n">greet</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>                     <span class="c1"># positional + default</span>
+<span class="n">greet</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">,</span> <span class="n">greeting</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">)</span>      <span class="c1"># keyword</span>
+<span class="n">greet</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">,</span> <span class="n">loud</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>          <span class="c1"># keyword-only (after the *)</span>
+
+<span class="c1"># everything else -----------------------------------------------------------</span>
+<span class="n">total</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>              <span class="c1"># anonymous, single expression only</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">outer</span><span class="p">():</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">():</span>
+        <span class="k">nonlocal</span> <span class="n">count</span>                  <span class="c1"># write to the ENCLOSING scope</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">count</span>
+    <span class="k">return</span> <span class="n">inner</span>                        <span class="c1"># returning a function = closure</span>
+</code></pre></div>
+
+<h2 id="73-first-examples">7.3 First examples</h2>
+<p><strong>Example 1 — defaults and keywords.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">5432</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2"> t=</span><span class="si">{</span><span class="n">timeout</span><span class="si">}</span><span class="s2">"</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">connect</span><span class="p">(</span><span class="s2">"db"</span><span class="p">))</span>                     <span class="c1"># db:5432 t=5</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">connect</span><span class="p">(</span><span class="s2">"db"</span><span class="p">,</span> <span class="mi">5433</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>    <span class="c1"># db:5433 t=1</span>
+<span class="c1"># connect("db", 5433, 1)   TypeError: timeout is keyword-only</span>
+</code></pre></div>
+
+<p><strong>Example 2 — <code>*args</code> / <code>**kwargs</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="o">*</span><span class="n">messages</span><span class="p">,</span> <span class="o">**</span><span class="n">fields</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+
+<span class="n">log</span><span class="p">(</span><span class="s2">"INFO"</span><span class="p">,</span> <span class="s2">"started"</span><span class="p">,</span> <span class="s2">"pid"</span><span class="p">,</span> <span class="n">pid</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"h1"</span><span class="p">)</span>
+<span class="c1"># INFO ('started', 'pid') {'pid': 42, 'host': 'h1'}</span>
+</code></pre></div>
+
+<p><strong>Example 3 — functions as values.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">OPS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"add"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="s2">"mul"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span><span class="p">}</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_all</span><span class="p">(</span><span class="n">fns</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">fns</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">value</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">apply_all</span><span class="p">([</span><span class="nb">abs</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span><span class="p">],</span> <span class="o">-</span><span class="mi">3</span><span class="p">))</span>     <span class="c1"># 6</span>
+</code></pre></div>
+
+<h2 id="74-the-picture">7.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 400" width="990" height="400" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The five kinds of parameter</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Anatomy of a Python signature</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">def f(pos_only, /, pos_or_kw, *, kw_only, **kwargs) - the / and * are the dividers</text>
+<rect x="60" y="80" width="870" height="74" rx="12" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="148.6" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">def process(</text>
+<rect x="223.2" y="100" width="93.2" height="34" rx="7" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="268.8" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">user_id</text>
+<text x="348.4" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-muted, #64748b)">, /, </text>
+<rect x="382.4" y="100" width="58.4" height="34" rx="7" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="410.59999999999997" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">mode</text>
+<text x="495.99999999999994" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-muted, #64748b)">=&quot;fast&quot;, </text>
+<rect x="553.1999999999999" y="100" width="23.6" height="34" rx="7" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="563.9999999999999" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">*</text>
+<rect x="574.8" y="100" width="116.39999999999999" height="34" rx="7" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="632.0" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">, retries</text>
+<text x="717.4" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-muted, #64748b)">=3, </text>
+<rect x="745.5999999999999" y="100" width="116.39999999999999" height="34" rx="7" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="802.8" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">**options</text>
+<text x="876.5999999999999" y="123" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">):</text>
+<rect x="48.0" y="186" width="213" height="156" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="48.0" y="186" width="213" height="4" rx="2" fill="var(--dg-blue, #2563eb)"/>
+<text x="154.5" y="210" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">positional-only</text>
+<text x="154.5" y="228" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">before the /</text>
+<text x="62.0" y="254" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">process(42)</text>
+<text x="62.0" y="271" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">callers cannot use the name -</text>
+<text x="62.0" y="288" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">protects your API when a</text>
+<text x="62.0" y="305" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">parameter name is meaningless</text>
+<rect x="275.0" y="186" width="213" height="156" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="275.0" y="186" width="213" height="4" rx="2" fill="var(--dg-violet, #7c3aed)"/>
+<text x="381.5" y="210" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">positional or keyword</text>
+<text x="381.5" y="228" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">the default</text>
+<text x="289.0" y="254" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">process(42, &#x27;slow&#x27;)</text>
+<text x="289.0" y="271" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">process(42, mode=&#x27;slow&#x27;)</text>
+<text x="289.0" y="288" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">most parameters live here;</text>
+<text x="289.0" y="305" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">keywords self-document calls</text>
+<rect x="502.0" y="186" width="213" height="156" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="502.0" y="186" width="213" height="4" rx="2" fill="var(--dg-green, #059669)"/>
+<text x="608.5" y="210" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">keyword-only</text>
+<text x="608.5" y="228" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">after the *</text>
+<text x="516.0" y="254" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">process(42, retries=5)</text>
+<text x="516.0" y="271" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">cannot be passed positionally -</text>
+<text x="516.0" y="288" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">forces readable call sites</text>
+<text x="516.0" y="305" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">and lets you reorder later</text>
+<rect x="729.0" y="186" width="213" height="156" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="729.0" y="186" width="213" height="4" rx="2" fill="var(--dg-amber, #d97706)"/>
+<text x="835.5" y="210" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">**kwargs</text>
+<text x="835.5" y="228" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">catch-all dict</text>
+<text x="743.0" y="254" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">process(42, debug=True)</text>
+<text x="743.0" y="271" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">options == {&#x27;debug&#x27;: True}</text>
+<text x="743.0" y="288" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">great for wrappers and</text>
+<text x="743.0" y="305" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">forwarding to super()</text>
+<rect x="48.0" y="356" width="894" height="34" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="495" y="378" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">*args (positional var-args) collects extra positional arguments into a tuple - def total(*nums) -&gt; int: return sum(nums)</text>
+</svg>
+<figcaption>The five kinds of parameter and the two divider symbols that separate them.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 452" width="990" height="452" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The call stack</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">The call stack: who called whom, and what is still alive</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Each call pushes a frame holding its local variables. Returning pops it - locals disappear.</text>
+<rect x="120" y="62" width="460" height="78" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<rect x="120" y="62" width="6" height="78" rx="3" fill="var(--dg-slate, #475569)"/>
+<text x="142" y="88" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">main / &lt;module&gt;</text>
+<text x="142" y="114" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">total = None</text>
+<text x="590" y="106" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">frame 0</text>
+<rect x="160" y="152" width="460" height="78" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="160" y="152" width="6" height="78" rx="3" fill="var(--dg-blue, #2563eb)"/>
+<text x="182" y="178" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">calculate_total(items)</text>
+<text x="182" y="204" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">items = [...]   subtotal = 240</text>
+<text x="630" y="196" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">frame 1</text>
+<line x1="134" y1="142" x2="180" y2="152" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="200" y="242" width="460" height="78" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="200" y="242" width="6" height="78" rx="3" fill="var(--dg-green, #059669)"/>
+<text x="222" y="268" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">apply_tax(subtotal, 0.18)</text>
+<text x="222" y="294" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">subtotal = 240   rate = 0.18</text>
+<text x="670" y="286" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">frame 2</text>
+<line x1="174" y1="232" x2="220" y2="242" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="240" y="332" width="460" height="78" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="240" y="332" width="6" height="78" rx="3" fill="var(--dg-amber, #d97706)"/>
+<text x="262" y="358" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">round(value, 2)</text>
+<text x="262" y="384" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">value = 283.2   ndigits = 2</text>
+<text x="710" y="376" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">frame 3</text>
+<line x1="214" y1="322" x2="260" y2="332" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<line x1="700" y1="84" x2="700" y2="400" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="712" y="80" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">stack top</text>
+<rect x="726" y="100" width="244" height="150" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="742" y="124" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">RecursionError</text>
+<text x="742" y="148" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">The stack is finite: CPython</text>
+<text x="742" y="165" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">defaults to 1000 frames</text>
+<text x="742" y="182" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">(sys.getrecursionlimit()).</text>
+<text x="742" y="199" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Deep recursion blows up -</text>
+<text x="742" y="216" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">prefer iteration or an</text>
+<text x="742" y="233" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">explicit worklist.</text>
+<rect x="726" y="268" width="244" height="132" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="742" y="292" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Why you care</text>
+<text x="742" y="314" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* a traceback IS this stack,</text>
+<text x="742" y="331" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  printed newest-first</text>
+<text x="742" y="348" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* closures keep a frame&#x27;s</text>
+<text x="742" y="365" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  variables alive after return</text>
+<text x="742" y="382" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* profilers count time per frame</text>
+</svg>
+<figcaption>The call stack: each call pushes a frame with its locals; returning pops it.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 430" width="990" height="430" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>LEGB name resolution</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Name lookup: L → E → G → B</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Python searches four scopes in order and stops at the FIRST match.</text>
+<rect x="26" y="66" width="938" height="300" rx="14" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="2"/>
+<text x="44" y="90" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">B - Builtins</text>
+<text x="44" y="110" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">len, print, range, sum, TypeError ...</text>
+<rect x="56" y="96" width="878" height="240" rx="14" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="2"/>
+<text x="74" y="120" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">G - Global (module)</text>
+<text x="74" y="140" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">names defined at the top level of the file; lives as long as the process</text>
+<rect x="86" y="126" width="818" height="180" rx="14" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="2"/>
+<text x="104" y="150" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">E - Enclosing (outer functions)</text>
+<text x="104" y="170" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">locals of any function that contains this one - kept alive by a closure</text>
+<rect x="116" y="156" width="758" height="120" rx="14" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="2"/>
+<text x="134" y="180" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">L - Local</text>
+<text x="134" y="200" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">assigned inside the current function; created on call, destroyed on return</text>
+<text x="495" y="224" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">count = 0</text>
+<text x="495" y="241" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">def outer():</text>
+<text x="495" y="258" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def inner():</text>
+<text x="495" y="275" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        return count      # found in G (no local assignment)</text>
+<text x="495" y="292" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    return inner()</text>
+<rect x="26" y="370" width="938" height="54" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="42" y="390" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Assignment creates a LOCAL. Inside a function `count += 1` raises UnboundLocalError unless you</text>
+<text x="42" y="408" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">declare `global count` (module scope) or `nonlocal count` (an enclosing function&#x27;s scope).</text>
+</svg>
+<figcaption>LEGB: local, enclosing, global, builtin - the four scopes Python searches, in order.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 400" width="990" height="400" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Closures</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">A closure is a function plus the variables it captured</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">make_counter() has already returned - yet `count` is still alive inside the returned function.</text>
+<rect x="40" y="76" width="400" height="200" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="56" y="98" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">make_counter() - FINISHED, frame popped</text>
+<text x="56" y="122" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">def make_counter():</text>
+<text x="56" y="140" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    count = 0</text>
+<text x="56" y="158" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def inc():</text>
+<text x="56" y="176" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        nonlocal count</text>
+<text x="56" y="194" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        count += 1</text>
+<text x="56" y="212" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        return count</text>
+<text x="56" y="230" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    return inc</text>
+<line x1="440" y1="176" x2="540" y2="176" stroke="var(--dg-violet, #7c3aed)" stroke-width="2.2" marker-end="url(#arviolet)"/>
+<rect x="463.67" y="153.55" width="52.66" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="490" y="164" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">returns</text>
+<rect x="540" y="76" width="410" height="200" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="556" y="98" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">the closure object (still callable)</text>
+<rect x="556" y="112" width="378" height="60" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="745" y="134" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">inc  &lt;function&gt;</text>
+<text x="745" y="156" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">__code__  +  __closure__</text>
+<rect x="556" y="190" width="378" height="66" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="572" y="212" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">captured cell (shared, mutable):</text>
+<text x="572" y="236" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">count -&gt; cell_contents = 3</text>
+<rect x="40" y="292" width="910" height="92" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="56" y="314" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Two traps every team eventually hits</text>
+<text x="56" y="338" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1.  Late binding in loops:  [lambda: i for i in range(3)]  -&gt;  all three return 2.  The closure captures the VARIABLE, not its value.</text>
+<text x="56" y="355" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    Fix with a default argument:  [lambda i=i: i for i in range(3)].</text>
+<text x="56" y="372" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">2.  Writing to a captured name needs `nonlocal` (or `global`); reading it does not.</text>
+</svg>
+<figcaption>A closure: the inner function keeps the outer function&#x27;s variables alive in a cell after the outer call has returned.</figcaption></figure>
+
+<h2 id="75-going-deeper">7.5 Going deeper</h2>
+<h3 id="751-how-arguments-actually-bind">7.5.1 How arguments actually bind</h3>
+<p>On call, Python matches in this order: positional parameters (left to right),
+then keyword parameters by name; leftovers go to <code>*args</code> / <code>**kwargs</code>;
+anything still missing takes its default; anything still missing →
+<code>TypeError</code>. Duplicate supply (<code>f(1, a=1)</code>) is an error. This algorithm is why
+keyword-only parameters let you <strong>reorder or rename later without breaking
+callers</strong> — the signature becomes an API contract.</p>
+<h3 id="752-defaults-are-evaluated-once-at-def-time">7.5.2 Defaults are evaluated ONCE, at <code>def</code> time</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">stamp</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()):</span>     <span class="c1"># evaluated at import, not per call!</span>
+    <span class="k">return</span> <span class="n">when</span>
+</code></pre></div>
+
+<p>…and the infamous mutable version:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">bag</span><span class="o">=</span><span class="p">[]):</span>        <span class="c1"># ONE list shared by ALL calls</span>
+    <span class="n">bag</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">);</span> <span class="k">return</span> <span class="n">bag</span>
+<span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="n">add</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>                <span class="c1"># [1, 2]  (!)</span>
+</code></pre></div>
+
+<p>The professional pattern:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">bag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">bag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bag</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">bag</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">);</span> <span class="k">return</span> <span class="n">bag</span>
+</code></pre></div>
+
+<p>Inspect the stored defaults any time: <code>add.__defaults__</code>.</p>
+<h3 id="753-scope-legb-and-what-assignment-does">7.5.3 Scope: LEGB, and what assignment does</h3>
+<p>Reading a name searches <strong>L</strong>ocal → <strong>E</strong>nclosing → <strong>G</strong>lobal → <strong>B</strong>uiltin.
+<strong>Assigning</strong> to a name anywhere in a function makes it <em>local for the whole
+function</em>, which is the source of <code>UnboundLocalError</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">bump</span><span class="p">():</span>
+    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>        <span class="c1"># UnboundLocalError: 'count' is local (because assigned)</span>
+</code></pre></div>
+
+<p>Fixes: <code>global count</code> (module scope), <code>nonlocal count</code> (enclosing function),
+or — better — don&rsquo;t use shared mutable state: pass it in, return it out.</p>
+<p>Comprehensions have their own scope; <code>for</code> loops do not (module 05).</p>
+<h3 id="754-closures-and-cells">7.5.4 Closures and cells</h3>
+<p>When an inner function reads or writes a name from an enclosing function, the
+compiler puts that name in a <strong>cell</strong>: a tiny mutable box shared by both
+frames. The outer frame can return and the cell survives, referenced by the
+inner function&rsquo;s <code>__closure__</code>. This is the entire mechanism behind
+decorators (module 13), callbacks that remember configuration, and private
+state without classes:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_counter</span><span class="p">():</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inc</span><span class="p">():</span>
+        <span class="k">nonlocal</span> <span class="n">count</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">count</span>
+    <span class="k">return</span> <span class="n">inc</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">make_counter</span><span class="p">();</span> <span class="n">c</span><span class="p">();</span> <span class="n">c</span><span class="p">()</span>     <span class="c1"># 2  — state without a class</span>
+</code></pre></div>
+
+<p><strong>Late-binding trap:</strong> closures capture the <em>variable</em>, not its value:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">fns</span> <span class="o">=</span> <span class="p">[</span><span class="k">lambda</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="p">[</span><span class="n">f</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fns</span><span class="p">]</span>               <span class="c1"># [2, 2, 2]</span>
+<span class="n">fns</span> <span class="o">=</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>    <span class="c1"># bind NOW via a default</span>
+<span class="p">[</span><span class="n">f</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fns</span><span class="p">]</span>               <span class="c1"># [0, 1, 2]</span>
+</code></pre></div>
+
+<h3 id="755-recursion-usable-bounded">7.5.5 Recursion: usable, bounded</h3>
+<p>CPython caps the stack (~1000 frames, <code>sys.setrecursionlimit</code> raises the cap
+but risks a C-stack segfault). Recursion suits recursive <em>data</em> (trees, JSON);
+for linear iteration prefer a loop or an explicit stack — no Tail-Call
+Optimisation exists in CPython.</p>
+<h3 id="756-the-functools-toolkit">7.5.6 The <code>functools</code> toolkit</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>functools.wraps(fn)</code></td>
+<td>copy name/doc/signature onto a wrapper (decorators!)</td>
+</tr>
+<tr>
+<td><code>functools.lru_cache(maxsize=…)</code></td>
+<td>memoise a pure function; <code>.cache_info()</code></td>
+</tr>
+<tr>
+<td><code>functools.partial(fn, …)</code></td>
+<td>freeze some arguments → new callable</td>
+</tr>
+<tr>
+<td><code>functools.reduce(fn, seq, init)</code></td>
+<td>fold a sequence to one value</td>
+</tr>
+<tr>
+<td><code>functools.cmp_to_key(fn)</code></td>
+<td>bridge legacy comparison functions to <code>key=</code></td>
+</tr>
+<tr>
+<td><code>functools.singledispatch</code></td>
+<td>overload by the type of the first argument</td>
+</tr>
+<tr>
+<td><code>functools.cache</code></td>
+<td><code>lru_cache(maxsize=None)</code></td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">lru_cache</span><span class="p">,</span> <span class="n">partial</span>
+
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">n</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">fib</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">fib</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">double</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">mul</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>      <span class="c1"># double(21) == 42</span>
+</code></pre></div>
+
+<p><code>lru_cache</code> requires hashable arguments and is <em>state</em>: watch memory in
+servers, and never cache impure functions (the cache would freeze &ldquo;now&rdquo;).</p>
+<h2 id="76-industry-level">7.6 Industry level</h2>
+<h3 id="signature-design-rules-teams-enforce">Signature design rules teams enforce</h3>
+<ol>
+<li><strong>Booleans are keyword-only.</strong> <code>fetch(url, retries=3, *, verify=True)</code> —
+   <code>fetch(url, 3, True)</code> is unreadable at the call site and unrefactorable
+   later.</li>
+<li><strong><code>None</code> as the &ldquo;absent&rdquo; default</strong>, never a sentinel mutable or a magic
+   value.</li>
+<li><strong>Positional-only (<code>/</code>) for parameters whose names are meaningless</strong>
+   (<code>len(obj)</code>, <code>min(a, b)</code>); it frees you to rename internals.</li>
+<li><strong>Accept narrow, return useful</strong>: take <code>Iterable</code>/<code>Sequence</code> (via type
+   hints) rather than demanding <code>list</code>; return concrete types callers need.</li>
+<li><strong>No flag-parameter explosions.</strong> Three booleans = eight behaviours = eight
+   untested paths. Split into functions or take an enum/strategy object.</li>
+<li><strong>Inject collaborators</strong>: <code>def report(db, clock=system_clock)</code> makes tests
+   trivial (module 15) — that is dependency injection without a framework.</li>
+</ol>
+<h3 id="pure-functions-as-the-default">Pure functions as the default</h3>
+<p>A pure function (same inputs → same output, no side effects) is testable,
+cacheable, parallelisable and reason-able. Keep impurity at the edges (I/O,
+clock, RNG) and pass it in:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">next_retry</span><span class="p">(</span><span class="n">attempt</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">float</span><span class="p">],</span> <span class="n">rand</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">):</span>
+    <span class="o">...</span>
+</code></pre></div>
+
+<h3 id="docstrings-are-an-api-contract">Docstrings are an API contract</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">transfer</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Receipt</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Move *amount* from *account* to the settlement account.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InsufficientFunds: when the balance would go negative.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        The persisted receipt; never None.</span>
+<span class="sd">    """</span>
+</code></pre></div>
+
+<p>Tools (<code>pydocstyle</code>, Sphinx, mkdocstrings) lint and render these; reviewers
+read them before the body.</p>
+<h3 id="callables-beyond-def">Callables beyond <code>def</code></h3>
+<p>Any object with <code>__call__</code> is a function as far as Python is concerned —
+classes (constructors), instances with <code>__call__</code> (stateful strategies),
+bound methods, <code>partial</code> objects, lambdas. Dispatch tables of callables
+(module 05) are the idiomatic replacement for long <code>if/elif</code> chains.</p>
+<h2 id="77-comparison-tables">7.7 Comparison tables</h2>
+<p><strong>Parameter kinds recap:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Syntax</th>
+<th>Call site</th>
+<th>Use for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>positional-only</td>
+<td><code>a, /</code></td>
+<td><code>f(1)</code></td>
+<td>C-like APIs, rename freedom</td>
+</tr>
+<tr>
+<td>positional-or-keyword</td>
+<td><code>a</code></td>
+<td><code>f(1)</code> / <code>f(a=1)</code></td>
+<td>most parameters</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>a=1</code></td>
+<td>optional</td>
+<td>stable optionals</td>
+</tr>
+<tr>
+<td>keyword-only</td>
+<td><code>*, a</code></td>
+<td><code>f(a=1)</code></td>
+<td>booleans, dangerous options</td>
+</tr>
+<tr>
+<td><code>*args</code></td>
+<td><code>*rest</code></td>
+<td>extra positionals → tuple</td>
+<td>forwarding, variadic</td>
+</tr>
+<tr>
+<td><code>**kwargs</code></td>
+<td><code>**opts</code></td>
+<td>extra keywords → dict</td>
+<td>wrappers, config</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>lambda</code> vs <code>def</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>lambda</code></th>
+<th><code>def</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>one expression</td>
+<td>statements</td>
+</tr>
+<tr>
+<td>name</td>
+<td><code>&lt;lambda&gt;</code> in tracebacks (!)</td>
+<td>real name</td>
+</tr>
+<tr>
+<td>docstring</td>
+<td>impossible</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>annotations</td>
+<td>impossible</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>use</td>
+<td>tiny inline key/callback</td>
+<td>everything else</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Scope keywords:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(none)</td>
+<td>assignment creates a LOCAL</td>
+</tr>
+<tr>
+<td><code>global x</code></td>
+<td>bind to the module-level name</td>
+</tr>
+<tr>
+<td><code>nonlocal x</code></td>
+<td>bind to the nearest enclosing function&rsquo;s name</td>
+</tr>
+<tr>
+<td>reading only</td>
+<td>searches LEGB, no binding</td>
+</tr>
+</tbody>
+</table>
+<h2 id="78-mistakes-gotchas">7.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">Mutable default arguments</p>
+<p><code>def f(x, bag=[])</code> shares one list forever. Use <code>None</code> + create inside.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Default computed once</p>
+<p><code>def f(ts=datetime.now())</code> freezes import time. Use <code>ts=None</code> then compute.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Late-binding closures in loops</p>
+<p>All lambdas see the final <code>i</code>. Bind with a default: <code>lambda i=i: …</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>UnboundLocalError</code> from a stray assignment</p>
+<p>Assigning anywhere in the function makes the name local everywhere in it.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Forgetting <code>return</code></p>
+<p>The function returns <code>None</code>; callers then crash two frames later on
+<code>None.something</code>. Annotate <code>-&gt; None</code> when that is the intent.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title"><code>lambda</code> hurts debugging</p>
+<p>Tracebacks say <code>&lt;lambda&gt;</code>; profilers and coverage can&rsquo;t name it. If it needs
+a comment, it needs a <code>def</code>.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Recursion for linear work</p>
+<p><code>factorial</code> via recursion is fine to teach, wrong to ship at n=10⁵. Iterate.</p>
+</div>
+<h2 id="79-interview-questions">7.9 Interview questions</h2>
+<ol>
+<li><strong>Are arguments passed by value or reference?</strong> — by object reference
+   (call-by-sharing): rebinding a parameter is local; mutating a shared
+   mutable is visible to the caller.</li>
+<li><strong>Why is <code>def f(x=[])</code> dangerous?</strong> — the default list is created once at
+   <code>def</code> time and shared by all calls.</li>
+<li><strong><code>*args</code> vs <code>**kwargs</code>?</strong> — extra positionals as a tuple vs extra keywords
+   as a dict.</li>
+<li><strong>What is a closure?</strong> — a function plus the cells of enclosing-scope names
+   it references, kept alive after the outer call returns.</li>
+<li><strong><code>global</code> vs <code>nonlocal</code>?</strong> — module scope vs nearest enclosing function
+   scope.</li>
+<li><strong>What does <code>functools.wraps</code> do and why care?</strong> — copies <code>__name__</code>,
+   <code>__doc__</code>, <code>__dict__</code>, <code>__wrapped__</code>, signature metadata so tooling
+   (help, pytest, FastAPI) sees the original function.</li>
+<li><strong>How would you memoise?</strong> — <code>@functools.lru_cache</code> on a pure function with
+   hashable args; check <code>.cache_info()</code>.</li>
+<li><strong>Why keyword-only booleans?</strong> — call-site readability and signature
+   evolution without breakage.</li>
+</ol>
+<h2 id="710-practice-exercises">7.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-07-a</span></div><p>Implement <code>repeat(fn, n, value)</code> (apply <code>fn</code> n times), <code>compose(f, g)</code>
+(returning <code>x -&gt; f(g(x))</code>), and <code>apply_all(fns, value)</code> (left to right).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/07_functions/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-07-b</span></div><p>Implement <code>retry(fn, attempts, exceptions=(Exception,))</code> (re-raise the last
+error when exhausted), <code>memoize(fn)</code> returning a wrapped function exposing
+<code>.cache</code> (dict) and <code>.hits</code>/<code>.misses</code> counters, and <code>pipeline(*stages)</code>
+returning one callable that threads a value through all stages.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/07_functions/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-07-c</span></div><p>Implement <code>retry_with_backoff(fn, *, attempts=3, base_delay=0.1, sleep=…)</code>
+with exponential delays (<code>base_delay * 2**attempt</code>) using an INJECTABLE sleep
+so tests can assert the delay schedule without waiting; a <code>register(name)</code>
+decorator filling a <code>REGISTRY</code> dict plus <code>dispatch(name, *a, **kw)</code> raising
+<code>KeyError</code> for unknown names; and <code>TypeDispatcher</code> with
+<code>.register(type)(fn)</code> and <code>__call__(value)</code> dispatching on <code>type(value)</code>
+walking the MRO, raising <code>TypeError</code> when unhandled.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/07_functions/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/07_functions/solution.py)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">retry_with_backoff</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">attempts</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">base_delay</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">sleep</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">):</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">attempts</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>            <span class="c1"># noqa: BLE001 - deliberate</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="n">exc</span>
+            <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">attempts</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">sleep</span><span class="p">(</span><span class="n">base_delay</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">attempt</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">last</span>
+
+<span class="n">REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deco</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="n">REGISTRY</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span>
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">deco</span>
+</code></pre></div></details>
+<h2 id="711-cheatsheet">7.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Define</td>
+<td><code>def name(params) -&gt; ret:</code></td>
+</tr>
+<tr>
+<td>One-expression anonymous</td>
+<td><code>lambda x: …</code> (sparingly)</td>
+</tr>
+<tr>
+<td>Optional mutable</td>
+<td><code>x=None</code> then create inside</td>
+</tr>
+<tr>
+<td>Keyword-only option</td>
+<td><code>def f(a, *, flag=False)</code></td>
+</tr>
+<tr>
+<td>Variadic</td>
+<td><code>*args</code>, <code>**kwargs</code></td>
+</tr>
+<tr>
+<td>Enclosing-scope write</td>
+<td><code>nonlocal</code></td>
+</tr>
+<tr>
+<td>Module-scope write</td>
+<td><code>global</code> (avoid; pass state instead)</td>
+</tr>
+<tr>
+<td>Freeze arguments</td>
+<td><code>functools.partial(fn, …)</code></td>
+</tr>
+<tr>
+<td>Memoise pure fn</td>
+<td><code>@functools.lru_cache(maxsize=…)</code></td>
+</tr>
+<tr>
+<td>Keep metadata in wrappers</td>
+<td><code>@functools.wraps(fn)</code></td>
+</tr>
+<tr>
+<td>Dispatch by key</td>
+<td>dict of callables</td>
+</tr>
+<tr>
+<td>Dispatch by type</td>
+<td><code>functools.singledispatch</code></td>
+</tr>
+<tr>
+<td>Fold</td>
+<td><code>functools.reduce(fn, seq, init)</code></td>
+</tr>
+<tr>
+<td>Docs</td>
+<td>docstring: summary line, blank line, Args/Returns/Raises</td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="06-data-structures.html"><span>&larr; previous</span><strong>Data structures: list, tuple, dict, set and friends</strong></a><a class="next" href="08-modules-packages.html"><span>next &rarr;</span><strong>Modules, packages & the import system</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#71-definition">7.1 Definition</a></li>
+<li><a href="#72-syntax">7.2 Syntax</a></li>
+<li><a href="#73-first-examples">7.3 First examples</a></li>
+<li><a href="#74-the-picture">7.4 The picture</a></li>
+<li><a href="#75-going-deeper">7.5 Going deeper</a><ul>
+<li><a href="#751-how-arguments-actually-bind">7.5.1 How arguments actually bind</a></li>
+<li><a href="#752-defaults-are-evaluated-once-at-def-time">7.5.2 Defaults are evaluated ONCE, at def time</a></li>
+<li><a href="#753-scope-legb-and-what-assignment-does">7.5.3 Scope: LEGB, and what assignment does</a></li>
+<li><a href="#754-closures-and-cells">7.5.4 Closures and cells</a></li>
+<li><a href="#755-recursion-usable-bounded">7.5.5 Recursion: usable, bounded</a></li>
+<li><a href="#756-the-functools-toolkit">7.5.6 The functools toolkit</a></li>
+</ul>
+</li>
+<li><a href="#76-industry-level">7.6 Industry level</a><ul>
+<li><a href="#signature-design-rules-teams-enforce">Signature design rules teams enforce</a></li>
+<li><a href="#pure-functions-as-the-default">Pure functions as the default</a></li>
+<li><a href="#docstrings-are-an-api-contract">Docstrings are an API contract</a></li>
+<li><a href="#callables-beyond-def">Callables beyond def</a></li>
+</ul>
+</li>
+<li><a href="#77-comparison-tables">7.7 Comparison tables</a></li>
+<li><a href="#78-mistakes-gotchas">7.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#79-interview-questions">7.9 Interview questions</a></li>
+<li><a href="#710-practice-exercises">7.10 Practice exercises</a></li>
+<li><a href="#711-cheatsheet">7.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

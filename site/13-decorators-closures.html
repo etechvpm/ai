@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Closures &amp; decorators: cross-cutting behaviour &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link active" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Intermediate → Industry</span><span class="chip read">30 min</span><span class="chip tag">decorators</span><span class="chip tag">closures</span><span class="chip tag">functools</span><span class="chip tag">patterns</span></div>
+      <h1 id="13-closures-decorators">13. Closures &amp; decorators</h1>
+<blockquote>
+<p>A decorator is just a function that writes boilerplate for you, once, at
+import time, for every function that opts in with one line. Everything
+&ldquo;framework-y&rdquo; in Python — routes, fixtures, ORM columns, CLI commands — is
+this idea.</p>
+</blockquote>
+<h2 id="131-definition">13.1 Definition</h2>
+<p><strong>Plain version.</strong> A decorator wraps a function with extra behaviour without
+editing its body; you apply it with <code>@name</code> above the <code>def</code>.</p>
+<p><strong>Precise version.</strong> A decorator is a <strong>callable that takes a callable and
+returns a callable</strong>. The statement</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@deco</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">():</span> <span class="o">...</span>
+</code></pre></div>
+
+<p>is exactly <code>f = deco(f)</code> executed <strong>at definition time</strong> (import time for
+module-level code). Because the wrapper closes over the original function (a
+<em>closure</em>, module 07), it can run code before/after/instead of the call,
+inspect arguments, cache results, retry failures or refuse to run at all.
+Decorator <em>factories</em> (<code>@deco(arg)</code>) add one more layer: <code>deco(arg)</code> returns
+the actual decorator.</p>
+<h2 id="132-syntax">13.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">functools</span><span class="o">,</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">logged</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>                       <span class="c1"># plain decorator</span>
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>              <span class="c1"># keep name/doc/signature</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"call"</span><span class="p">,</span> <span class="n">fn</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wrapper</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">retry</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>     <span class="c1"># decorator FACTORY</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">times</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">attempt</span> <span class="o">==</span> <span class="n">times</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">raise</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">decorator</span>
+
+<span class="nd">@logged</span>                               <span class="c1"># no parentheses: decorator itself</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span> <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="nd">@retry</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>            <span class="c1"># parentheses: factory call first</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">(</span><span class="n">url</span><span class="p">):</span> <span class="o">...</span>
+
+<span class="nd">@logged</span>
+<span class="nd">@retry</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>                       <span class="c1"># stacking: retry applied first,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">():</span> <span class="o">...</span>                       <span class="c1"># then logged wraps that</span>
+<span class="c1"># equivalent to: load = logged(retry(times=2)(load))</span>
+</code></pre></div>
+
+<h2 id="133-first-examples">13.3 First examples</h2>
+<p><strong>Example 1 — timing.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">timed</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">wrapper</span><span class="o">.</span><span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="n">wrapper</span><span class="o">.</span><span class="n">elapsed</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">return</span> <span class="n">wrapper</span>
+
+<span class="nd">@timed</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">work</span><span class="p">():</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">work</span><span class="p">();</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">work</span><span class="o">.</span><span class="n">elapsed</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Example 2 — a registry (the framework pattern).</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">ROUTES</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">route</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="n">ROUTES</span><span class="p">[(</span><span class="n">method</span><span class="p">,</span> <span class="n">path</span><span class="p">)]</span> <span class="o">=</span> <span class="n">fn</span>
+        <span class="k">return</span> <span class="n">fn</span>
+    <span class="k">return</span> <span class="n">decorator</span>
+
+<span class="nd">@route</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"/users"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_users</span><span class="p">():</span> <span class="k">return</span> <span class="p">[</span><span class="s2">"ada"</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Example 3 — class-based decorator with state.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CountCalls</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span> <span class="n">functools</span><span class="o">.</span><span class="n">update_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">);</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span> <span class="o">=</span> <span class="n">fn</span><span class="p">;</span> <span class="bp">self</span><span class="o">.</span><span class="n">calls</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calls</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+<span class="nd">@CountCalls</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ping</span><span class="p">():</span> <span class="k">return</span> <span class="s2">"pong"</span>
+<span class="n">ping</span><span class="p">();</span> <span class="n">ping</span><span class="p">();</span> <span class="nb">print</span><span class="p">(</span><span class="n">ping</span><span class="o">.</span><span class="n">calls</span><span class="p">)</span>      <span class="c1"># 2</span>
+</code></pre></div>
+
+<h2 id="134-the-picture">13.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 452" width="990" height="452" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Stacked decorators</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Decorators wrap: the one closest to the function runs first</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">@a  @b  @c  def f()  ==  f = a(b(c(f)))   -   but at CALL time the outer layer executes first</text>
+<rect x="160" y="76" width="440" height="40" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.5"/>
+<text x="380.0" y="101" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">a - logging</text>
+<text x="680" y="101" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">outermost: applied last, entered first</text>
+<rect x="196" y="120" width="368" height="40" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.5"/>
+<text x="380.0" y="145" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">b - timing</text>
+<text x="680" y="145" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">middle</text>
+<rect x="232" y="164" width="296" height="40" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.5"/>
+<text x="380.0" y="189" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">c - retry</text>
+<text x="680" y="189" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">innermost: applied first, closest to the code</text>
+<rect x="268" y="208" width="224" height="40" rx="10" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.8"/>
+<text x="380.0" y="233" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">def f()  -&gt;  your actual logic</text>
+<text x="680" y="233" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">the wrapped function</text>
+<line x1="96" y1="96" x2="96" y2="240" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<rect x="55.46" y="252.025" width="81.08" height="15.75" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="96" y="262" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">call goes IN</text>
+<line x1="660" y1="240" x2="660" y2="96" stroke="var(--dg-violet, #7c3aed)" stroke-width="2" marker-end="url(#arviolet)"/>
+<rect x="607.28" y="252.025" width="105.44" height="15.75" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="660" y="262" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">result comes OUT</text>
+<rect x="120" y="286" width="380" height="148" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="136" y="308" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">The template you should memorise</text>
+<text x="136" y="332" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">def deco(fn):</text>
+<text x="136" y="345" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    @functools.wraps(fn)      # keep __name__/__doc__</text>
+<text x="136" y="358" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def wrapper(*a, **kw):</text>
+<text x="136" y="371" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        ...before...</text>
+<text x="136" y="384" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        result = fn(*a, **kw)</text>
+<text x="136" y="397" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        ...after...</text>
+<text x="136" y="410" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        return result</text>
+<text x="136" y="423" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    return wrapper</text>
+<rect x="520" y="286" width="440" height="148" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="536" y="308" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">Forgetting functools.wraps is a real bug</text>
+<text x="536" y="332" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Without it the decorated function is named &#x27;wrapper&#x27;:</text>
+<text x="536" y="349" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* help(f) and stack traces show the wrong name</text>
+<text x="536" y="366" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* pytest cannot discover test_* functions any more</text>
+<text x="536" y="383" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* FastAPI/inspect cannot read the signature, so</text>
+<text x="536" y="400" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  dependency injection and OpenAPI docs break</text>
+</svg>
+<figcaption>Stacked decorators: applied bottom-up at definition time, executed top-down at call time.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 434" width="990" height="434" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Decorators in the wild</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Where you will actually meet decorators</text>
+<rect x="33.0" y="58" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="33.0" y="58" width="5" height="62" rx="2" fill="var(--dg-blue, #2563eb)"/>
+<text x="49.0" y="80" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">@staticmethod</text>
+<text x="49.0" y="95" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">@classmethod</text>
+<text x="49.0" y="112" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">no instance / class-bound behaviour</text>
+<rect x="345.0" y="58" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="345.0" y="58" width="5" height="62" rx="2" fill="var(--dg-blue, #2563eb)"/>
+<text x="361.0" y="80" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">@property</text>
+<text x="361.0" y="102" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">computed attribute with a getter/setter</text>
+<rect x="657.0" y="58" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="657.0" y="58" width="5" height="62" rx="2" fill="var(--dg-violet, #7c3aed)"/>
+<text x="673.0" y="80" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">@dataclass</text>
+<text x="673.0" y="102" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">generates __init__, __repr__, __eq__</text>
+<rect x="33.0" y="132" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="33.0" y="132" width="5" height="62" rx="2" fill="var(--dg-green, #059669)"/>
+<text x="49.0" y="154" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">@functools.lru_cache</text>
+<text x="49.0" y="176" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">memoisation - free speed-up</text>
+<rect x="345.0" y="132" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="345.0" y="132" width="5" height="62" rx="2" fill="var(--dg-green, #059669)"/>
+<text x="361.0" y="154" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">@functools.wraps</text>
+<text x="361.0" y="176" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">preserves metadata of the wrapped fn</text>
+<rect x="657.0" y="132" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="657.0" y="132" width="5" height="62" rx="2" fill="var(--dg-amber, #d97706)"/>
+<text x="673.0" y="154" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">@app.get(&#x27;/users&#x27;)</text>
+<text x="673.0" y="176" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">route registration - Flask / FastAPI</text>
+<rect x="33.0" y="206" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="33.0" y="206" width="5" height="62" rx="2" fill="var(--dg-amber, #d97706)"/>
+<text x="49.0" y="228" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">@pytest.fixture</text>
+<text x="49.0" y="243" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">@pytest.mark.parametrize</text>
+<text x="49.0" y="260" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">test setup and data-driven tests</text>
+<rect x="345.0" y="206" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<rect x="345.0" y="206" width="5" height="62" rx="2" fill="var(--dg-red, #dc2626)"/>
+<text x="361.0" y="228" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">@retry(times=3)</text>
+<text x="361.0" y="250" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">resilience: backoff around flaky I/O</text>
+<rect x="657.0" y="206" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<rect x="657.0" y="206" width="5" height="62" rx="2" fill="var(--dg-red, #dc2626)"/>
+<text x="673.0" y="228" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">@require_auth</text>
+<text x="673.0" y="250" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">cross-cutting policy: authz, rate limits</text>
+<rect x="33.0" y="280" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<rect x="33.0" y="280" width="5" height="62" rx="2" fill="var(--dg-cyan, #0891b2)"/>
+<text x="49.0" y="302" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">@timeit / @log_call</text>
+<text x="49.0" y="324" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">observability without touching business code</text>
+<rect x="345.0" y="280" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<rect x="345.0" y="280" width="5" height="62" rx="2" fill="var(--dg-cyan, #0891b2)"/>
+<text x="361.0" y="302" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">@abstractmethod</text>
+<text x="361.0" y="324" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">forces subclasses to implement</text>
+<rect x="657.0" y="280" width="300" height="62" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<rect x="657.0" y="280" width="5" height="62" rx="2" fill="var(--dg-slate, #475569)"/>
+<text x="673.0" y="302" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">@deprecated</text>
+<text x="673.0" y="324" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">warns callers, keeps old code working</text>
+<rect x="33.0" y="358" width="924" height="56" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="495" y="382" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">The unifying idea: a decorator adds CROSS-CUTTING behaviour (logging, caching, security, retries)</text>
+<text x="495" y="400" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">to many functions at once, without editing a single line of their bodies. That is the whole point.</text>
+</svg>
+<figcaption>Where decorators actually appear in industry code: properties, dataclasses, routes, fixtures, caches, retries, auth, metrics.</figcaption></figure>
+
+<h2 id="135-going-deeper">13.5 Going deeper</h2>
+<h3 id="1351-when-decoration-happens-and-why-it-matters">13.5.1 When decoration happens — and why it matters</h3>
+<p><code>@deco</code> runs when the <code>def</code> statement executes: at <strong>import</strong> for module-level
+functions, at <strong>class creation</strong> for methods, at <strong>call</strong> time for functions
+defined inside functions. Consequences: decorator side effects (registration,
+validation of configuration) happen once per process; a decorator that
+requires runtime state (a DB handle) must capture it lazily inside the
+wrapper, not at decoration time.</p>
+<h3 id="1352-functoolswraps-and-the-metadata-contract">13.5.2 <code>functools.wraps</code> and the metadata contract</h3>
+<p>Without <code>wraps</code>, the wrapper&rsquo;s <code>__name__</code> is <code>"wrapper"</code>, its docstring is
+gone, and <code>inspect.signature</code> describes <code>(*args, **kwargs)</code>. That breaks:
+tracebacks, <code>help()</code>, Sphinx, pytest discovery (<code>test_*</code> renamed!), FastAPI&rsquo;s
+signature-based dependency injection, and CLI builders. <code>wraps</code> copies
+<code>__module__</code>, <code>__name__</code>, <code>__qualname__</code>, <code>__doc__</code>, <code>__dict__</code> and sets
+<code>__wrapped__</code> — which also lets anyone unwrap: <code>original = f.__wrapped__</code>
+(useful in tests).</p>
+<p>For class-based decorators use <code>functools.update_wrapper(self, fn)</code>.</p>
+<h3 id="1353-stacking-order-precisely">13.5.3 Stacking order, precisely</h3>
+<div class="codehilite"><pre><span></span><code><span class="nd">@a</span>
+<span class="nd">@b</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">():</span> <span class="o">...</span>      <span class="c1"># f = a(b(f))</span>
+</code></pre></div>
+
+<p>Definition time: <code>b</code> first, then <code>a</code>. Call time: <code>a</code>&rsquo;s wrapper body runs
+first, and decides whether/when to call into <code>b</code>&rsquo;s wrapper. So <code>@cache</code>
+outside <code>@retry</code> caches final results including retries; inside, it caches
+each attempt. Order is a design decision — draw it when reviewing.</p>
+<h3 id="1354-decorators-on-methods-and-classes">13.5.4 Decorators on methods and classes</h3>
+<p>Decorating a method works identically (the wrapper receives <code>self</code> as first
+argument). Two classic traps:</p>
+<ul>
+<li><code>@lru_cache</code> on a method caches <strong>forever per instance-argument</strong>, keeping
+  <code>self</code> (and everything it references) alive — a memory leak; prefer
+  caching a pure module-level function or <code>functools.cache</code> on a hashable key;</li>
+<li>decorating a <strong>class</strong> (<code>@dataclass</code>, <code>@singleton</code>) replaces the class
+  object itself — subclasses then decorate independently.</li>
+</ul>
+<h3 id="1355-stateful-decorators-caches-limits-metrics">13.5.5 Stateful decorators: caches, limits, metrics</h3>
+<p>The closure is the state. Guard it when threads are involved:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rate_limit</span><span class="p">(</span><span class="n">per_second</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">deque</span><span class="p">()</span>
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">lock</span><span class="p">:</span>
+                <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
+                <span class="k">while</span> <span class="n">window</span> <span class="ow">and</span> <span class="n">now</span> <span class="o">-</span> <span class="n">window</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+                    <span class="n">window</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">per_second</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"rate limited"</span><span class="p">)</span>
+                <span class="n">window</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">now</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">decorator</span>
+</code></pre></div>
+
+<p>Rule: state created in the <em>factory</em> is shared by all calls of that decorated
+function (usually what you want); state created in the <em>wrapper</em> is per-call
+(useless for caches).</p>
+<h3 id="1356-typing-decorators-module-14-preview">13.5.6 Typing decorators (module 14 preview)</h3>
+<p>A wrapper typed as <code>(*args, **kwargs) -&gt; Any</code> destroys the caller&rsquo;s type
+information. <code>ParamSpec</code> preserves it:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">ParamSpec</span><span class="p">,</span> <span class="n">TypeVar</span>
+<span class="n">P</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">ParamSpec</span><span class="p">(</span><span class="s2">"P"</span><span class="p">),</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">"R"</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">logged</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">R</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">R</span><span class="p">]:</span> <span class="o">...</span>
+</code></pre></div>
+
+<p>Static checkers then keep validating call sites of decorated functions.</p>
+<h3 id="1357-decorator-vs-context-manager-vs-base-class">13.5.7 Decorator vs context manager vs base class</h3>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Tool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>behaviour for <em>every</em> call of a named function</td>
+<td>decorator</td>
+</tr>
+<tr>
+<td>behaviour for <em>one</em> dynamic block of code</td>
+<td>context manager (<code>with</code>)</td>
+</tr>
+<tr>
+<td>shared behaviour + shared state across a family</td>
+<td>base class / mixin</td>
+</tr>
+<tr>
+<td>one-off wrapping at a call site</td>
+<td>plain higher-order function</td>
+</tr>
+<tr>
+<td>per-instance policy</td>
+<td>dependency injection (pass a strategy)</td>
+</tr>
+</tbody>
+</table>
+<p>If you find yourself decorating 20 functions with the same policy, ask whether
+the policy belongs at a boundary (middleware, interceptor) instead.</p>
+<h2 id="136-industry-level">13.6 Industry level</h2>
+<h3 id="the-production-decorator-catalogue">The production decorator catalogue</h3>
+<ul>
+<li><strong>Resilience</strong>: <code>@retry</code>, <code>@circuit_breaker</code>, <code>@timeout(seconds)</code>;</li>
+<li><strong>Performance</strong>: <code>@cache/TTL</code>, <code>@debounce</code>, <code>@rate_limit</code>;</li>
+<li><strong>Security</strong>: <code>@require_auth(roles=…)</code>, <code>@audit_logged</code>;</li>
+<li><strong>Observability</strong>: <code>@traced</code>, <code>@timed</code>, <code>@count_exceptions</code> (metrics);</li>
+<li><strong>Registration</strong>: <code>@app.get(path)</code>, <code>@cli.command()</code>, <code>@pytest.fixture</code>,
+  <code>@dataclass</code>;</li>
+<li><strong>Lifecycle</strong>: <code>@deprecated(since=…, remove_in=…)</code>, <code>@experimental</code>.</li>
+</ul>
+<p>All of them share the discipline: validate configuration at decoration time
+(fail fast at import), keep the wrapper signature-transparent (<code>wraps</code> +
+<code>ParamSpec</code>), keep state thread-safe or document otherwise, and make the
+decorator <strong>unit-testable on its own</strong> (decorate a dummy function in tests).</p>
+<h3 id="registries-are-contracts">Registries are contracts</h3>
+<p>The <code>@route</code> pattern scales into plugin systems when the registry is explicit
+and validated:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">command</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"bad command name </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>   <span class="c1"># import-time check</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deco</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">COMMANDS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"duplicate command </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">COMMANDS</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span>
+        <span class="k">return</span> <span class="n">fn</span>
+    <span class="k">return</span> <span class="n">deco</span>
+</code></pre></div>
+
+<p>Import-time failure for duplicate routes/commands is a <em>feature</em>: CI catches
+conflicts before deployment instead of at 3 a.m.</p>
+<h3 id="deprecation-done-politely">Deprecation, done politely</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">deprecated</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">since</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">remove_in</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">use</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deco</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">fn</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is deprecated since </span><span class="si">{</span><span class="n">since</span><span class="si">}</span><span class="s2">; use </span><span class="si">{</span><span class="n">use</span><span class="si">}</span><span class="s2">; removal in </span><span class="si">{</span><span class="n">remove_in</span><span class="si">}</span><span class="s2">"</span>
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">deco</span>
+</code></pre></div>
+
+<p><code>stacklevel=2</code> points the warning at the <em>caller</em>, which is the difference
+between a usable and an ignorable warning.</p>
+<h2 id="137-comparison-tables">13.7 Comparison tables</h2>
+<p><strong>Decorator flavours:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Flavour</th>
+<th>Shape</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>plain</td>
+<td><code>def deco(fn)</code></td>
+<td>no configuration</td>
+</tr>
+<tr>
+<td>factory</td>
+<td><code>def deco(cfg): def deco2(fn)</code></td>
+<td>configuration</td>
+</tr>
+<tr>
+<td>class-based</td>
+<td><code>__init__(fn)</code> + <code>__call__</code></td>
+<td>visible state, methods</td>
+</tr>
+<tr>
+<td>on classes</td>
+<td>returns a new/altered class</td>
+<td><code>@dataclass</code>, <code>@singleton</code></td>
+</tr>
+<tr>
+<td>async</td>
+<td><code>async def wrapper</code></td>
+<td>awaiting the wrapped coroutine</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Built-ins you already use:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Decorator</th>
+<th>Adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@property</code> / <code>.setter</code></td>
+<td>attribute access with logic</td>
+</tr>
+<tr>
+<td><code>@staticmethod</code> / <code>@classmethod</code></td>
+<td>binding behaviour</td>
+</tr>
+<tr>
+<td><code>@abstractmethod</code></td>
+<td>contract enforcement via ABC</td>
+</tr>
+<tr>
+<td><code>@dataclass</code></td>
+<td>generated dunders</td>
+</tr>
+<tr>
+<td><code>@functools.lru_cache/cache</code></td>
+<td>memoisation</td>
+</tr>
+<tr>
+<td><code>@functools.wraps</code></td>
+<td>metadata preservation (inside decorators)</td>
+</tr>
+<tr>
+<td><code>@contextlib.contextmanager</code></td>
+<td>generator → context manager</td>
+</tr>
+<tr>
+<td><code>@pytest.fixture/parametrize</code></td>
+<td>test wiring</td>
+</tr>
+</tbody>
+</table>
+<h2 id="138-mistakes-gotchas">13.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">Forgetting <code>functools.wraps</code></p>
+<p>Wrong names in tracebacks, broken help/docs, pytest can&rsquo;t find the test,
+FastAPI can&rsquo;t read the signature. Lint rule: every wrapper gets <code>wraps</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Side effects at decoration time</p>
+<p>The decorator body (not the wrapper) runs at import. Connecting to a DB there
+makes importing your module require a live DB.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Stacking order assumed, not drawn</p>
+<p><code>@cache</code> over <code>@retry</code> vs under it behaves differently under failure. Decide
+deliberately.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>lru_cache</code> on methods</p>
+<p>The cache keys include <code>self</code>, so instances (and their graphs) never get
+collected. Cache pure functions instead.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Mutable state shared across threads, unguarded</p>
+<p>Two calls mutate the same closure dict → lost updates. Lock it or make it
+per-call.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Decorators as a substitute for design</p>
+<p>Ten stacked decorators on one function is a smell: the function is doing too
+much, or the cross-cutting concern belongs in middleware.</p>
+</div>
+<h2 id="139-interview-questions">13.9 Interview questions</h2>
+<ol>
+<li><strong>What does <code>@deco</code> above a def do?</strong> — <code>f = deco(f)</code> at definition time.</li>
+<li><strong>Why <code>functools.wraps</code>?</strong> — preserve metadata/signature; sets <code>__wrapped__</code>.</li>
+<li><strong>Order of stacked decorators?</strong> — applied bottom-up, executed top-down.</li>
+<li><strong>Decorator vs decorator factory?</strong> — the factory takes config and returns
+   the decorator; needs <code>@deco(...)</code> with parentheses.</li>
+<li><strong>How do you test a decorator?</strong> — decorate a dummy function and assert
+   behaviour; or call <code>deco(fn)</code> directly.</li>
+<li><strong>Where does decorator state live?</strong> — in the closure created per
+   decoration (shared by calls) or per call inside the wrapper.</li>
+<li><strong>How would you keep types through a decorator?</strong> — <code>ParamSpec</code> +
+   <code>TypeVar</code> (or <code>Callable[P, R]</code>).</li>
+</ol>
+<h2 id="1310-practice-exercises">13.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-13-a</span></div><p>Implement <code>logged(fn, sink=print)</code> recording <code>("call", name, args, kwargs)</code>
+and <code>("return", name, result)</code> into <code>sink</code>; <code>double_result(fn)</code>; and
+<code>count_calls(fn)</code> exposing <code>.calls</code> (class- or closure-based).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/13_decorators/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-13-b</span></div><p>Implement <code>timed(clock=time.monotonic)</code> storing <code>.elapsed</code> on the wrapper;
+<code>retry_dec(attempts, exceptions=(Exception,), sleep=time.sleep)</code>; and
+<code>ttl_cache(seconds, clock)</code> expiring entries (hits after expiry recompute).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/13_decorators/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-13-c</span></div><p>Implement <code>route(method, path)</code> filling a <code>ROUTES</code> registry with import-time
+duplicate detection and <code>dispatch(method, path, **params)</code>; <code>validate(**specs)</code>
+checking parameter types at call time (<code>TypeError</code> naming the parameter); and
+a <code>singleton</code> class decorator making <code>Klass() is Klass()</code> while preserving
+<code>isinstance</code> and the class name.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/13_decorators/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/13_decorators/solution.py)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ttl_cache</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="n">clock</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">())))</span>
+            <span class="n">now</span> <span class="o">=</span> <span class="n">clock</span><span class="p">()</span>
+            <span class="n">hit</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">hit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">now</span> <span class="o">-</span> <span class="n">hit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">seconds</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">hit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">store</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">now</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="n">wrapper</span><span class="o">.</span><span class="n">cache_clear</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">clear</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">decorator</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">singleton</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="n">instance</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">nonlocal</span> <span class="n">instance</span>
+        <span class="k">if</span> <span class="n">instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">instance</span>
+    <span class="n">get_instance</span><span class="o">.</span><span class="n">__wrapped_class__</span> <span class="o">=</span> <span class="bp">cls</span>
+    <span class="k">return</span> <span class="n">get_instance</span>
+</code></pre></div></details>
+<h2 id="1311-cheatsheet">13.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wrap a function</td>
+<td><code>def deco(fn): @wraps(fn) def wrapper(*a, **kw): …</code></td>
+</tr>
+<tr>
+<td>Configure the wrap</td>
+<td>factory: <code>def deco(cfg): return real_deco</code></td>
+</tr>
+<tr>
+<td>Keep metadata</td>
+<td><code>@functools.wraps(fn)</code> / <code>update_wrapper(self, fn)</code></td>
+</tr>
+<tr>
+<td>Unwrap for tests</td>
+<td><code>f.__wrapped__</code></td>
+</tr>
+<tr>
+<td>State per decorated fn</td>
+<td>closure in the factory</td>
+</tr>
+<tr>
+<td>Thread-safe state</td>
+<td><code>threading.Lock</code> around the closure</td>
+</tr>
+<tr>
+<td>Register at import</td>
+<td>decorator writing into a module-level dict</td>
+</tr>
+<tr>
+<td>Memoise pure fn</td>
+<td><code>@functools.lru_cache(maxsize=…)</code></td>
+</tr>
+<tr>
+<td>One block, not all calls</td>
+<td><code>@contextlib.contextmanager</code> + <code>with</code></td>
+</tr>
+<tr>
+<td>Type-preserving wrapper</td>
+<td><code>Callable[ParamSpec, TypeVar]</code></td>
+</tr>
+<tr>
+<td>Deprecate</td>
+<td>warn <code>DeprecationWarning, stacklevel=2</code></td>
+</tr>
+<tr>
+<td>Async function</td>
+<td><code>async def wrapper: return await fn(...)</code></td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="12-iteration-generators.html"><span>&larr; previous</span><strong>Iteration protocol, comprehensions & generators</strong></a><a class="next" href="14-type-hints.html"><span>next &rarr;</span><strong>Type hints & static analysis: mypy, protocols, generics</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#131-definition">13.1 Definition</a></li>
+<li><a href="#132-syntax">13.2 Syntax</a></li>
+<li><a href="#133-first-examples">13.3 First examples</a></li>
+<li><a href="#134-the-picture">13.4 The picture</a></li>
+<li><a href="#135-going-deeper">13.5 Going deeper</a><ul>
+<li><a href="#1351-when-decoration-happens-and-why-it-matters">13.5.1 When decoration happens — and why it matters</a></li>
+<li><a href="#1352-functoolswraps-and-the-metadata-contract">13.5.2 functools.wraps and the metadata contract</a></li>
+<li><a href="#1353-stacking-order-precisely">13.5.3 Stacking order, precisely</a></li>
+<li><a href="#1354-decorators-on-methods-and-classes">13.5.4 Decorators on methods and classes</a></li>
+<li><a href="#1355-stateful-decorators-caches-limits-metrics">13.5.5 Stateful decorators: caches, limits, metrics</a></li>
+<li><a href="#1356-typing-decorators-module-14-preview">13.5.6 Typing decorators (module 14 preview)</a></li>
+<li><a href="#1357-decorator-vs-context-manager-vs-base-class">13.5.7 Decorator vs context manager vs base class</a></li>
+</ul>
+</li>
+<li><a href="#136-industry-level">13.6 Industry level</a><ul>
+<li><a href="#the-production-decorator-catalogue">The production decorator catalogue</a></li>
+<li><a href="#registries-are-contracts">Registries are contracts</a></li>
+<li><a href="#deprecation-done-politely">Deprecation, done politely</a></li>
+</ul>
+</li>
+<li><a href="#137-comparison-tables">13.7 Comparison tables</a></li>
+<li><a href="#138-mistakes-gotchas">13.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#139-interview-questions">13.9 Interview questions</a></li>
+<li><a href="#1310-practice-exercises">13.10 Practice exercises</a></li>
+<li><a href="#1311-cheatsheet">13.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

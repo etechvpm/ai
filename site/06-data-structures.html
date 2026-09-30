@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data structures: list, tuple, dict, set and friends &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link active" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">35 min</span><span class="chip tag">list</span><span class="chip tag">tuple</span><span class="chip tag">dict</span><span class="chip tag">set</span><span class="chip tag">collections</span><span class="chip tag">complexity</span></div>
+      <h1 id="6-data-structures">6. Data structures</h1>
+<blockquote>
+<p>Choosing a container is a performance decision and a design decision at the
+same time. This module gives you the cost table, the memory layout, and the
+<code>collections</code> tools that make hand-rolled loops unnecessary.</p>
+</blockquote>
+<h2 id="61-definition">6.1 Definition</h2>
+<p><strong>Plain version.</strong> Containers hold several values: lists (ordered, editable),
+tuples (ordered, fixed), dicts (key → value), sets (unique, unordered).</p>
+<p><strong>Precise version.</strong> Python&rsquo;s four core containers split into three
+<em>protocols</em>: <strong>sequences</strong> (<code>list</code>, <code>tuple</code> — positional, indexable, ordered),
+<strong>mappings</strong> (<code>dict</code> — key-addressed, insertion-ordered since 3.7), and
+<strong>sets</strong> (<code>set</code>, <code>frozenset</code> — uniqueness and O(1) membership, no order).
+Underneath: a list is a <strong>resizable array of pointers</strong>; a tuple is a <strong>fixed
+array of pointers</strong>; a dict and a set are <strong>hash tables</strong> (dict&rsquo;s entries also
+keep a dense insertion-order array). Those four sentences predict every
+complexity number in this module.</p>
+<h2 id="62-syntax">6.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># list ------------------------------------------------------------------</span>
+<span class="n">xs</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="n">xs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>        <span class="n">xs</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>     <span class="n">xs</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">xs</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>            <span class="n">xs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>          <span class="n">xs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>      <span class="mi">3</span> <span class="ow">in</span> <span class="n">xs</span>
+<span class="n">xs</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>           <span class="n">xs</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>          <span class="n">xs</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>          <span class="n">xs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="nb">sorted</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">key</span><span class="o">=...</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=...</span><span class="p">)</span>          <span class="c1"># returns a NEW list</span>
+
+<span class="c1"># tuple -------------------------------------------------------------------</span>
+<span class="n">pt</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>         <span class="n">single</span> <span class="o">=</span> <span class="p">(</span><span class="mi">42</span><span class="p">,)</span>        <span class="c1"># the comma makes it a tuple!</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pt</span>           <span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">rest</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>  <span class="c1"># unpacking / starred unpacking</span>
+<span class="n">pt</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>         <span class="n">pt</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="c1"># dict ----------------------------------------------------------------------</span>
+<span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"b"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+<span class="n">d</span><span class="p">[</span><span class="s2">"c"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>          <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"z"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>         <span class="n">d</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"z"</span><span class="p">,</span> <span class="p">[])</span>
+<span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>  <span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>  <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>           <span class="c1"># live views</span>
+<span class="n">d</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"a"</span><span class="p">)</span>          <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"x"</span><span class="p">:</span> <span class="mi">9</span><span class="p">})</span>    <span class="s2">"a"</span> <span class="ow">in</span> <span class="n">d</span>          <span class="c1"># key test</span>
+<span class="n">d</span> <span class="o">|</span> <span class="p">{</span><span class="s2">"y"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>        <span class="n">d1</span> <span class="o">|</span> <span class="n">d2</span>               <span class="c1"># merge (3.9+)</span>
+
+<span class="c1"># set --------------------------------------------------------------------------</span>
+<span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">}</span>       <span class="n">empty</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>         <span class="c1"># NOT {}  (that's a dict!)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>            <span class="n">s</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>          <span class="n">s</span> <span class="o">|</span> <span class="n">t</span>   <span class="n">s</span> <span class="o">&amp;</span> <span class="n">t</span>   <span class="n">s</span> <span class="o">-</span> <span class="n">t</span>   <span class="n">s</span> <span class="o">^</span> <span class="n">t</span>
+<span class="n">s</span> <span class="o">&lt;=</span> <span class="n">t</span>              <span class="n">s</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>         <span class="nb">frozenset</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="63-first-examples">6.3 First examples</h2>
+<p><strong>Example 1 — the membership upgrade (O(n) → O(1)).</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">banned</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"spam"</span><span class="p">,</span> <span class="s2">"scam"</span><span class="p">,</span> <span class="s2">"phish"</span><span class="p">]</span>            <span class="c1"># list: 'in' scans</span>
+<span class="k">if</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">banned</span><span class="p">:</span> <span class="o">...</span>                        <span class="c1"># O(n) per check</span>
+
+<span class="n">banned</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">banned</span><span class="p">)</span>                          <span class="c1"># build ONCE</span>
+<span class="k">if</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">banned</span><span class="p">:</span> <span class="o">...</span>                        <span class="c1"># O(1) per check</span>
+</code></pre></div>
+
+<p><strong>Example 2 — tuples as records, unpacking as API.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">row</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"ada"</span><span class="p">,</span> <span class="mi">36</span><span class="p">,</span> <span class="s2">"engineer"</span><span class="p">)</span>
+<span class="n">name</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">role</span> <span class="o">=</span> <span class="n">row</span>
+<span class="n">first</span><span class="p">,</span> <span class="o">*</span><span class="n">middle</span><span class="p">,</span> <span class="n">last</span> <span class="o">=</span> <span class="s2">"grace brewster hopper"</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">middle</span><span class="p">,</span> <span class="n">last</span><span class="p">)</span>     <span class="c1"># grace ['brewster'] hopper</span>
+</code></pre></div>
+
+<p><strong>Example 3 — dict as an index.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">by_id</span> <span class="o">=</span> <span class="p">{</span><span class="n">u</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]:</span> <span class="n">u</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">users</span><span class="p">}</span>           <span class="c1"># O(n) build</span>
+<span class="n">by_id</span><span class="p">[</span><span class="mi">7</span><span class="p">][</span><span class="s2">"name"</span><span class="p">]</span>                              <span class="c1"># O(1) forever after</span>
+</code></pre></div>
+
+<h2 id="64-the-picture">6.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 596" width="990" height="596" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Choosing a data structure</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Which container should I use?</text>
+<path d="M 495.0,52 L 615,75.0 L 495.0,98 L 375,75.0" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="var(--dg-slatebg, #e2e8f0)" stroke-linecap="round"/>
+<text x="495.0" y="79.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">What do you need?</text>
+<line x1="495" y1="98" x2="116.0" y2="140" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="30" y="168" width="172" height="132" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="116.0" y="192" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">Ordered collection</text>
+<text x="116.0" y="205" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">you will change</text>
+<text x="116.0" y="230" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">list</text>
+<rect x="42" y="246" width="148" height="20" rx="4" fill="var(--dg-panel2, #eef2f7)"/>
+<text x="116.0" y="260" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">[1, 2, 3]</text>
+<text x="40" y="282" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">append O(1), index O(1), s</text>
+<text x="40" y="294" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">earch O(n)</text>
+<line x1="495" y1="98" x2="308.0" y2="140" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="222" y="168" width="172" height="132" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="308.0" y="192" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">Fixed record</text>
+<text x="308.0" y="205" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">heterogeneous fields</text>
+<text x="308.0" y="230" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">tuple /</text>
+<text x="308.0" y="246" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">namedtuple</text>
+<rect x="234" y="246" width="148" height="20" rx="4" fill="var(--dg-panel2, #eef2f7)"/>
+<text x="308.0" y="260" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">(3, &#x27;ada&#x27;)</text>
+<text x="232" y="282" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">immutable, hashable, unpac</text>
+<text x="232" y="294" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">kable</text>
+<line x1="495" y1="98" x2="500.0" y2="140" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="414" y="168" width="172" height="132" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="500.0" y="192" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">Key -&gt; value</text>
+<text x="500.0" y="205" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">lookups</text>
+<text x="500.0" y="230" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">dict</text>
+<rect x="426" y="246" width="148" height="20" rx="4" fill="var(--dg-panel2, #eef2f7)"/>
+<text x="500.0" y="260" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">{&#x27;id&#x27;: 7}</text>
+<text x="424" y="282" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">get O(1), insertion-ordere</text>
+<text x="424" y="294" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">d since 3.7</text>
+<line x1="495" y1="98" x2="692.0" y2="140" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="606" y="168" width="172" height="132" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="692.0" y="192" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">Uniqueness or</text>
+<text x="692.0" y="205" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">fast membership</text>
+<text x="692.0" y="230" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">set</text>
+<rect x="618" y="246" width="148" height="20" rx="4" fill="var(--dg-panel2, #eef2f7)"/>
+<text x="692.0" y="260" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">{1, 2, 3}</text>
+<text x="616" y="282" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">in O(1), union/intersect/d</text>
+<text x="616" y="294" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">ifference</text>
+<line x1="495" y1="98" x2="884.0" y2="140" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="798" y="168" width="172" height="132" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="884.0" y="192" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">Frequent inserts at</text>
+<text x="884.0" y="205" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">BOTH ends</text>
+<text x="884.0" y="230" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">collections.deque</text>
+<rect x="810" y="246" width="148" height="20" rx="4" fill="var(--dg-panel2, #eef2f7)"/>
+<text x="884.0" y="260" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">deque([1,2])</text>
+<text x="808" y="282" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">appendleft/pop O(1) - list</text>
+<text x="808" y="294" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)"> is O(n)</text>
+<rect x="60" y="334" width="870" height="30" rx="6" fill="var(--dg-slate, #475569)"/>
+<rect x="60" y="358" width="870" height="6" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="70" y="353.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">operation</text>
+<text x="256" y="353.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">list</text>
+<text x="384" y="353.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">tuple</text>
+<text x="512" y="353.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">dict</text>
+<text x="662" y="353.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">set</text>
+<text x="780" y="353.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">deque</text>
+<rect x="60" y="364" width="870" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="70" y="381.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">index  a[i]</text>
+<text x="256" y="381.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<text x="384" y="381.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<text x="512" y="381.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1) by key</text>
+<text x="662" y="381.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">none</text>
+<text x="780" y="381.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1) at ends</text>
+<rect x="60" y="391" width="870" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="70" y="408.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">search  x in a</text>
+<text x="256" y="408.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">O(n)</text>
+<text x="384" y="408.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">O(n)</text>
+<text x="512" y="408.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1) keys</text>
+<text x="662" y="408.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<text x="780" y="408.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">O(n)</text>
+<rect x="60" y="418" width="870" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="70" y="435.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">append at end</text>
+<text x="256" y="435.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1)*</text>
+<text x="384" y="435.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-amber, #d97706)">fixed size</text>
+<text x="512" y="435.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<text x="662" y="435.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<text x="780" y="435.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<rect x="60" y="445" width="870" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="70" y="462.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">insert at front</text>
+<text x="256" y="462.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">O(n)</text>
+<text x="384" y="462.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-amber, #d97706)">fixed size</text>
+<text x="512" y="462.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">n/a</text>
+<text x="662" y="462.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">n/a</text>
+<text x="780" y="462.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<rect x="60" y="472" width="870" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="70" y="489.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">delete by value</text>
+<text x="256" y="489.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">O(n)</text>
+<text x="384" y="489.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-amber, #d97706)">immutable</text>
+<text x="512" y="489.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1) by key</text>
+<text x="662" y="489.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<text x="780" y="489.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">O(n)</text>
+<rect x="60" y="499" width="870" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="70" y="516.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">sort</text>
+<text x="256" y="516.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">built-in</text>
+<text x="384" y="516.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no (immutable)</text>
+<text x="512" y="516.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<text x="662" y="516.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<text x="780" y="516.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<rect x="60" y="526" width="870" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="70" y="543.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">hashable (dict key)?</text>
+<text x="256" y="543.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<text x="384" y="543.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">yes</text>
+<text x="512" y="543.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<text x="662" y="543.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<text x="780" y="543.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">no</text>
+<rect x="60" y="334" width="870" height="219" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<line x1="246" y1="364" x2="246" y2="553" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="374" y1="364" x2="374" y2="553" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="502" y1="364" x2="502" y2="553" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="652" y1="364" x2="652" y2="553" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="770" y1="364" x2="770" y2="553" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<text x="495" y="571" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">* O(1) amortised: a list over-allocates capacity so most appends never copy the whole array.</text>
+</svg>
+<figcaption>Decision guide: which container for which need, with the complexity of each operation.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 372" width="990" height="372" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>How a list is stored</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arblue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-blue, #2563eb)"/></marker>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+    <marker id="aramber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-amber, #d97706)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+    <marker id="arcyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-cyan, #0891b2)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">A list is an array of POINTERS, not of values</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">That single fact explains mixed types, aliasing, and why `a[i] = x` is O(1) but `x in a` is O(n).</text>
+<rect x="48" y="96" width="250" height="150" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="173" y="120" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">list object</text>
+<text x="64" y="146" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ob_refcnt</text>
+<text x="282" y="146" text-anchor="end" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">1</text>
+<text x="64" y="172" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ob_type</text>
+<text x="282" y="172" text-anchor="end" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">list</text>
+<text x="64" y="198" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ob_size</text>
+<text x="282" y="198" text-anchor="end" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">4</text>
+<text x="64" y="224" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ob_item</text>
+<text x="282" y="224" text-anchor="end" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">-&gt;</text>
+<rect x="380" y="150" width="66" height="44" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="413.0" y="140" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">[0]</text>
+<rect x="452" y="150" width="66" height="44" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="485.0" y="140" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">[1]</text>
+<rect x="524" y="150" width="66" height="44" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="557.0" y="140" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">[2]</text>
+<rect x="596" y="150" width="66" height="44" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="629.0" y="140" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">[3]</text>
+<line x1="298" y1="226" x2="380" y2="172" stroke="var(--dg-blue, #2563eb)" stroke-width="1.8" marker-end="url(#arblue)"/>
+<rect x="313.7" y="206.5" width="48.599999999999994" height="15.0" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="338" y="216" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">ob_item</text>
+<line x1="413.0" y1="194" x2="413.0" y2="250" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" marker-end="url(#arviolet)"/>
+<rect x="372" y="250" width="82" height="44" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="413.0" y="278" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">1</text>
+<text x="413.0" y="312" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">separate object</text>
+<line x1="485.0" y1="194" x2="485.0" y2="250" stroke="var(--dg-amber, #d97706)" stroke-width="1.6" marker-end="url(#aramber)"/>
+<rect x="444" y="250" width="82" height="44" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="485.0" y="278" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">&#x27;two&#x27;</text>
+<text x="485.0" y="312" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">separate object</text>
+<line x1="557.0" y1="194" x2="557.0" y2="250" stroke="var(--dg-green, #059669)" stroke-width="1.6" marker-end="url(#argreen)"/>
+<rect x="516" y="250" width="82" height="44" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="557.0" y="278" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">3.0</text>
+<text x="557.0" y="312" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">separate object</text>
+<line x1="629.0" y1="194" x2="629.0" y2="250" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6" marker-end="url(#arcyan)"/>
+<rect x="588" y="250" width="82" height="44" rx="8" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="629.0" y="278" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">[4]</text>
+<text x="629.0" y="312" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">separate object</text>
+<rect x="700" y="96" width="262" height="218" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="716" y="120" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Consequences</text>
+<text x="716" y="144" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* each slot holds a reference,</text>
+<text x="716" y="161" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  so types can differ</text>
+<text x="716" y="178" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* copying a list copies the</text>
+<text x="716" y="195" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  POINTERS, not the objects</text>
+<text x="716" y="212" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* a[1] is a pointer chase:</text>
+<text x="716" y="229" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  ~2-3x slower than a C array</text>
+<text x="716" y="246" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* over-allocation makes</text>
+<text x="716" y="263" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  append amortised O(1)</text>
+<text x="495" y="348" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Shallow copy a[:], list(a), a.copy() all duplicate pointers. Deep-copy nested data with copy.deepcopy().</text>
+</svg>
+<figcaption>A list is an array of pointers into the heap - which is why mixed types work and copying is shallow.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 452" width="990" height="452" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>How a dict works</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+    <marker id="aramber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-amber, #d97706)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Inside a dictionary: hash -&gt; index -&gt; entry</text>
+<rect x="40" y="96" width="220" height="56" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="150" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">key: &#x27;name&#x27;</text>
+<text x="150" y="140" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">hash(&#x27;name&#x27;)</text>
+<line x1="260" y1="124" x2="330" y2="124" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<rect x="272.86" y="101.55" width="46.279999999999994" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="296" y="112" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">hash()</text>
+<rect x="330" y="96" width="180" height="56" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="420" y="120" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">0x9f31c2a4...</text>
+<text x="420" y="140" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">-&gt; % table_size</text>
+<line x1="510" y1="124" x2="580" y2="124" stroke="var(--dg-amber, #d97706)" stroke-width="2" marker-end="url(#aramber)"/>
+<rect x="522.86" y="101.55" width="46.279999999999994" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="546" y="112" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-amber, #d97706)">slot 3</text>
+<rect x="580" y="66" width="382" height="250" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="596" y="88" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">hash table (sparse indices -&gt; dense entries)</text>
+<rect x="596" y="100" width="180" height="26" rx="6" fill="var(--dg-slate, #475569)"/>
+<rect x="596" y="120" width="180" height="6" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="606" y="117.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">idx</text>
+<text x="676" y="117.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">-&gt; entry</text>
+<rect x="596" y="126" width="180" height="24" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="606" y="142.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">0</text>
+<text x="676" y="142.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">empty</text>
+<rect x="596" y="150" width="180" height="24" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="606" y="166.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1</text>
+<text x="676" y="166.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">empty</text>
+<rect x="596" y="174" width="180" height="24" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="606" y="190.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">2</text>
+<text x="676" y="190.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">empty</text>
+<rect x="596" y="198" width="180" height="24" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="606" y="214.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">3</text>
+<text x="676" y="214.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">**entry 0</text>
+<rect x="596" y="222" width="180" height="24" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="606" y="238.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">4</text>
+<text x="676" y="238.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">empty</text>
+<rect x="596" y="246" width="180" height="24" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="606" y="262.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">5</text>
+<text x="676" y="262.0" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">**entry 1</text>
+<rect x="596" y="100" width="180" height="170" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<line x1="666" y1="126" x2="666" y2="270" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<rect x="796" y="100" width="150" height="26" rx="6" fill="var(--dg-slate, #475569)"/>
+<rect x="796" y="120" width="150" height="6" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="871" y="117" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">entries (dense)</text>
+<rect x="796" y="126" width="150" height="26" rx="0" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<text x="871" y="143" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">hash | key | value</text>
+<rect x="796" y="152" width="150" height="26" rx="0" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<text x="871" y="169" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">h0 | &#x27;name&#x27; | &#x27;ada&#x27;</text>
+<rect x="796" y="178" width="150" height="26" rx="0" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<text x="871" y="195" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">h1 | &#x27;age&#x27; | 36</text>
+<rect x="40" y="190" width="500" height="126" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="56" y="212" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Why dicts are so fast - and so ordered</text>
+<text x="56" y="236" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* lookup does not scan: it jumps straight to a slot  -&gt;  O(1)</text>
+<text x="56" y="254" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* since 3.6 the table is split: a sparse index array + a dense</text>
+<text x="56" y="272" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  entry array, which is ~25% smaller AND keeps insertion order</text>
+<text x="56" y="290" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* collisions are resolved by probing, then the table is resized</text>
+<rect x="40" y="336" width="922" height="76" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="56" y="358" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">The contract you must keep</text>
+<text x="56" y="380" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">A key must be HASHABLE: __hash__() must stay constant and equal keys must have equal hashes.</text>
+<text x="56" y="398" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Mutating a key after inserting it corrupts the table silently - which is why lists can never be keys.</text>
+</svg>
+<figcaption>Inside a dict: hash the key, jump to a slot, read the dense entry - O(1) lookup and preserved insertion order.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 472" width="990" height="472" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Growth of complexity classes</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-ink, #0f172a)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">How cost grows with input size n</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Same algorithm, different n. The gap between O(n) and O(n²) is what turns 1 s into 3 hours.</text>
+<line x1="90" y1="330" x2="610" y2="330" stroke="var(--dg-ink, #0f172a)" stroke-width="1.8" marker-end="url(#arink)"/>
+<line x1="90" y1="330" x2="90" y2="100" stroke="var(--dg-ink, #0f172a)" stroke-width="1.8" marker-end="url(#arink)"/>
+<text x="624" y="335" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">n</text>
+<text x="78" y="90" text-anchor="end" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">work</text>
+<path d="M 90.0,316.2 L 98.66666666666667,316.2 L 107.33333333333333,316.2 L 116.0,316.2 L 124.66666666666666,316.2 L 133.33333333333331,316.2 L 142.0,316.2 L 150.66666666666666,316.2 L 159.33333333333331,316.2 L 168.0,316.2 L 176.66666666666666,316.2 L 185.33333333333331,316.2 L 194.0,316.2 L 202.66666666666669,316.2 L 211.33333333333331,316.2 L 220.0,316.2 L 228.66666666666666,316.2 L 237.33333333333334,316.2 L 246.0,316.2 L 254.66666666666666,316.2 L 263.3333333333333,316.2 L 272.0,316.2 L 280.66666666666663,316.2 L 289.33333333333337,316.2 L 298.0,316.2 L 306.6666666666667,316.2 L 315.33333333333337,316.2 L 324.0,316.2 L 332.66666666666663,316.2 L 341.33333333333337,316.2 L 350.0,316.2 L 358.6666666666667,316.2 L 367.3333333333333,316.2 L 376.0,316.2 L 384.6666666666667,316.2 L 393.33333333333337,316.2 L 402.0,316.2 L 410.6666666666667,316.2 L 419.3333333333333,316.2 L 428.0,316.2 L 436.66666666666663,316.2 L 445.3333333333333,316.2 L 454.0,316.2 L 462.6666666666667,316.2 L 471.3333333333333,316.2 L 480.0,316.2 L 488.6666666666667,316.2 L 497.3333333333333,316.2 L 506.0,316.2 L 514.6666666666667,316.2 L 523.3333333333334,316.2 L 532.0,316.2 L 540.6666666666667,316.2 L 549.3333333333333,316.2 L 558.0,316.2 L 566.6666666666666,316.2 L 575.3333333333333,316.2 L 584.0,316.2 L 592.6666666666667,316.2 L 601.3333333333333,316.2 L 610.0,316.2" stroke="var(--dg-green, #059669)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,307.0 L 98.66666666666667,301.85676052059415 L 107.33333333333333,297.3449950675963 L 116.0,293.3264611232846 L 124.66666666666666,289.7038664437569 L 133.33333333333331,286.4061390039764 L 142.0,283.3797769888559 L 150.66666666666666,280.58349561206836 L 159.33333333333331,277.98476913859486 L 168.0,275.5575159238567 L 176.66666666666666,273.2805010670311 L 185.33333333333331,271.1362052480688 L 194.0,269.1100054477334 L 202.66666666666669,267.1895697310564 L 211.33333333333331,265.3644022971275 L 220.0,263.6254961346274 L 228.66666666666666,261.96506411630617 L 237.33333333333334,260.37632819166646 L 246.0,258.85335223687343 L 254.66666666666666,257.39090814257133 L 263.3333333333333,255.98436751078805 L 272.0,254.62961329987206 L 280.66666666666663,253.32296716465777 L 289.33333333333337,252.06112926064412 L 298.0,250.8411280313822 L 306.6666666666667,249.66027805588698 L 315.33333333333337,248.5161444517098 L 324.0,247.4065126470285 L 332.66666666666663,246.32936257838435 L 341.33333333333337,245.28284655858872 L 350.0,244.26527020562594 L 358.6666666666667,243.27507593817273 L 367.3333333333333,242.31082863407266 L 376.0,241.3712031202826 L 384.6666666666667,240.45497322060302 L 393.33333333333337,239.56100213406216 L 402.0,238.68823395454496 L 410.6666666666667,237.83568617298448 L 419.3333333333333,237.00244302859335 L 428.0,236.18764959631187 L 436.66666666666663,235.39050651476447 L 445.3333333333333,234.6102652732223 L 454.0,233.8462239879201 L 462.6666666666667,233.09772360799397 L 471.3333333333333,232.36414449964388 L 480.0,231.6449033641586 L 488.6666666666667,230.9394504513945 L 497.3333333333333,230.24726703535862 L 506.0,229.56786312285635 L 514.6666666666667,228.9007753698503 L 523.3333333333334,228.24556518333725 L 532.0,227.6018169892686 L 540.6666666666667,226.96913664938288 L 549.3333333333333,226.34715001184708 L 558.0,225.7355015823608 L 566.6666666666666,225.13385330390452 L 575.3333333333333,224.54188343464475 L 584.0,223.9592855146709 L 592.6666666666667,223.3857674132564 L 601.3333333333333,222.8210504492289 L 610.0,222.26486857781913" stroke="var(--dg-cyan, #0891b2)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,316.2 L 98.66666666666667,314.59 L 107.33333333333333,312.98 L 116.0,311.37 L 124.66666666666666,309.76 L 133.33333333333331,308.15 L 142.0,306.54 L 150.66666666666666,304.93 L 159.33333333333331,303.32 L 168.0,301.71 L 176.66666666666666,300.1 L 185.33333333333331,298.49 L 194.0,296.88 L 202.66666666666669,295.27 L 211.33333333333331,293.65999999999997 L 220.0,292.05 L 228.66666666666666,290.44 L 237.33333333333334,288.83 L 246.0,287.22 L 254.66666666666666,285.61 L 263.3333333333333,284.0 L 272.0,282.39 L 280.66666666666663,280.78000000000003 L 289.33333333333337,279.17 L 298.0,277.56 L 306.6666666666667,275.95 L 315.33333333333337,274.34000000000003 L 324.0,272.73 L 332.66666666666663,271.12 L 341.33333333333337,269.51 L 350.0,267.9 L 358.6666666666667,266.28999999999996 L 367.3333333333333,264.68 L 376.0,263.07 L 384.6666666666667,261.46000000000004 L 393.33333333333337,259.85 L 402.0,258.24 L 410.6666666666667,256.63 L 419.3333333333333,255.02 L 428.0,253.41 L 436.66666666666663,251.8 L 445.3333333333333,250.19 L 454.0,248.57999999999998 L 462.6666666666667,246.97 L 471.3333333333333,245.36 L 480.0,243.75 L 488.6666666666667,242.14 L 497.3333333333333,240.53000000000003 L 506.0,238.92000000000002 L 514.6666666666667,237.31 L 523.3333333333334,235.7 L 532.0,234.09 L 540.6666666666667,232.48000000000002 L 549.3333333333333,230.87 L 558.0,229.26 L 566.6666666666666,227.65 L 575.3333333333333,226.04 L 584.0,224.43 L 592.6666666666667,222.82 L 601.3333333333333,221.21 L 610.0,219.60000000000002" stroke="var(--dg-blue, #2563eb)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,316.2 L 98.66666666666667,316.0781225904011 L 107.33333333333333,315.74241796613285 L 116.0,315.22794989129886 L 124.66666666666666,314.5605601393032 L 133.33333333333331,313.7599751461257 L 142.0,312.8416828075683 L 150.66666666666666,311.8181262862719 L 159.33333333333331,310.6994959842528 L 168.0,309.49427363180365 L 176.66666666666666,308.20961728618846 L 185.33333333333331,306.8516407367767 L 194.0,305.4256207686113 L 202.66666666666669,303.93615388450655 L 211.33333333333331,302.387276828881 L 220.0,300.7825606752791 L 228.66666666666666,299.12518526835674 L 237.33333333333334,297.4179988373813 L 246.0,295.66356625872146 L 254.66666666666666,293.86420851787807 L 263.3333333333333,292.0220352688929 L 272.0,290.13897192197345 L 280.66666666666663,288.216782351143 L 289.33333333333337,286.2570880643013 L 298.0,284.26138449229745 L 306.6666666666667,282.2310549136724 L 315.33333333333337,280.16738242517806 L 324.0,278.07156028628117 L 332.66666666666663,275.94470090231016 L 341.33333333333337,273.7878436611924 L 350.0,271.6019617995134 L 358.6666666666667,269.3879684424773 L 367.3333333333333,267.1467219374164 L 376.0,264.8790305804154 L 384.6666666666667,262.5856568193443 L 393.33333333333337,260.2673210033191 L 402.0,257.9247047377362 L 410.6666666666667,255.55845389505492 L 419.3333333333333,253.1691813240814 L 428.0,250.75746929431932 L 436.66666666666663,248.32387170679144 L 445.3333333333333,245.868916098392 L 454.0,243.3931054631749 L 462.6666666666667,240.8969199108835 L 471.3333333333333,238.38081818039868 L 480.0,235.84523902353698 L 488.6666666666667,233.29060247271303 L 497.3333333333333,230.71731100433075 L 506.0,228.12575060835036 L 514.6666666666667,225.51629177325225 L 523.3333333333334,222.88929039455712 L 532.0,220.24508861413892 L 540.6666666666667,217.5840155967649 L 549.3333333333333,214.90638824959473 L 558.0,212.21251188975572 L 566.6666666666666,209.5026808645743 L 575.3333333333333,206.7771791285672 L 584.0,204.03628078087934 L 592.6666666666667,201.2802505664851 L 601.3333333333333,198.509344344144 L 610.0,195.72380952380954" stroke="var(--dg-amber, #d97706)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,316.2 L 98.66666666666667,316.13930555555555 L 107.33333333333333,315.95722222222224 L 116.0,315.65375 L 124.66666666666666,315.2288888888889 L 133.33333333333331,314.6826388888889 L 142.0,314.015 L 150.66666666666666,313.2259722222222 L 159.33333333333331,312.31555555555553 L 168.0,311.28375 L 176.66666666666666,310.1305555555556 L 185.33333333333331,308.85597222222225 L 194.0,307.46 L 202.66666666666669,305.9426388888889 L 211.33333333333331,304.3038888888889 L 220.0,302.54375 L 228.66666666666666,300.6622222222222 L 237.33333333333334,298.65930555555553 L 246.0,296.535 L 254.66666666666666,294.28930555555553 L 263.3333333333333,291.9222222222222 L 272.0,289.43375000000003 L 280.66666666666663,286.8238888888889 L 289.33333333333337,284.09263888888887 L 298.0,281.24 L 306.6666666666667,278.2659722222222 L 315.33333333333337,275.17055555555555 L 324.0,271.95375 L 332.66666666666663,268.61555555555555 L 341.33333333333337,265.1559722222222 L 350.0,261.575 L 358.6666666666667,257.8726388888889 L 367.3333333333333,254.04888888888888 L 376.0,250.10375 L 384.6666666666667,246.03722222222223 L 393.33333333333337,241.84930555555553 L 402.0,237.54000000000002 L 410.6666666666667,233.10930555555555 L 419.3333333333333,228.55722222222224 L 428.0,223.88375000000002 L 436.66666666666663,219.0888888888889 L 445.3333333333333,214.17263888888888 L 454.0,209.13500000000005 L 462.6666666666667,203.9759722222222 L 471.3333333333333,198.6955555555556 L 480.0,193.29375000000002 L 488.6666666666667,187.77055555555555 L 497.3333333333333,182.12597222222223 L 506.0,176.35999999999996 L 514.6666666666667,170.4726388888889 L 523.3333333333334,164.4638888888889 L 532.0,158.33375 L 540.6666666666667,152.0822222222222 L 549.3333333333333,145.70930555555557 L 558.0,139.21500000000003 L 566.6666666666666,132.5993055555556 L 575.3333333333333,125.86222222222224 L 584.0,119.00375000000003 L 592.6666666666667,112.0238888888889 L 601.3333333333333,104.92263888888891 L 610.0,100.0" stroke="var(--dg-red, #dc2626)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,325.4 L 98.66666666666667,325.137969898677 L 107.33333333333333,324.85713298969335 L 116.0,324.55613944334397 L 124.66666666666666,324.233542547972 L 133.33333333333331,323.8877917564157 L 142.0,323.51722523337475 L 150.66666666666666,323.1200618678751 L 159.33333333333331,322.694392712441 L 168.0,322.23817180782646 L 176.66666666666666,321.74920634920636 L 185.33333333333331,321.2251461465604 L 194.0,320.66347232859306 L 202.66666666666669,320.0614852358943 L 211.33333333333331,319.4162914451503 L 220.0,318.7247898620377 L 228.66666666666666,317.98365681595584 L 237.33333333333334,317.18933008495657 L 246.0,316.3379917740883 L 254.66666666666666,315.42554996485933 L 263.3333333333333,314.44761904761907 L 272.0,313.39949864232716 L 280.66666666666663,312.2761510063925 L 289.33333333333337,311.07217682099486 L 298.0,309.7817892395069 L 306.6666666666667,308.39878607328177 L 315.33333333333337,306.916519981118 L 324.0,305.3278665191195 L 332.66666666666663,303.62518989738305 L 341.33333333333337,301.800306278925 L 350.0,299.84444444444443 L 358.6666666666667,297.7482036338606 L 367.3333333333333,295.50150836199134 L 376.0,293.0935599911961 L 384.6666666666667,290.5127848282202 L 393.33333333333337,287.74677849576995 L 402.0,284.78224631144235 L 410.6666666666667,281.6049393874453 L 419.3333333333333,278.19958614397245 L 428.0,274.5498189070563 L 436.66666666666663,270.6380952380952 L 445.3333333333333,266.44561361692763 L 454.0,261.9522230731891 L 462.6666666666667,257.1363263315985 L 471.3333333333333,251.97477600564685 L 480.0,246.44276334074618 L 488.6666666666667,240.513698972091 L 497.3333333333333,234.15908512409692 L 506.0,227.34837863715114 L 514.6666666666667,220.04884416331896 L 523.3333333333334,212.22539682539684 L 532.0,203.84043358306167 L 540.6666666666667,194.85365249558447 L 549.3333333333333,185.22185901240346 L 558.0,174.89875836049993 L 566.6666666666666,163.83473303069874 L 575.3333333333333,151.97660429338845 L 584.0,139.2673765974003 L 592.6666666666667,125.6459636235088 L 601.3333333333333,111.04689467584444 L 610.0,100.0" stroke="var(--dg-violet, #7c3aed)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<rect x="656" y="108" width="26" height="4" rx="2" fill="var(--dg-green, #059669)"/>
+<text x="692" y="116" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<rect x="656" y="134" width="26" height="4" rx="2" fill="var(--dg-cyan, #0891b2)"/>
+<text x="692" y="142" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">O(log n)</text>
+<rect x="656" y="160" width="26" height="4" rx="2" fill="var(--dg-blue, #2563eb)"/>
+<text x="692" y="168" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">O(n)</text>
+<rect x="656" y="186" width="26" height="4" rx="2" fill="var(--dg-amber, #d97706)"/>
+<text x="692" y="194" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">O(n log n)</text>
+<rect x="656" y="212" width="26" height="4" rx="2" fill="var(--dg-red, #dc2626)"/>
+<text x="692" y="220" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">O(n²)</text>
+<rect x="656" y="238" width="26" height="4" rx="2" fill="var(--dg-violet, #7c3aed)"/>
+<text x="692" y="246" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">O(2ⁿ)</text>
+<text x="692" y="144" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">dict lookup, list index</text>
+<text x="692" y="170" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">binary search, sortedcontainers</text>
+<text x="692" y="196" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">sum(), linear scan</text>
+<text x="692" y="222" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">sorted(), merge sort</text>
+<text x="692" y="248" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">nested loops, bubble sort</text>
+<text x="692" y="274" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">naive subsets, recursive fib</text>
+<rect x="90" y="348" width="800" height="28" rx="6" fill="var(--dg-slate, #475569)"/>
+<rect x="90" y="370" width="800" height="6" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="100" y="366.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">n</text>
+<text x="250" y="366.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">O(n)</text>
+<text x="400" y="366.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">O(n²)</text>
+<text x="640" y="366.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">O(2ⁿ)</text>
+<rect x="90" y="376" width="800" height="26" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="100" y="393.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">10</text>
+<text x="250" y="393.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">10 ops</text>
+<text x="400" y="393.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">100 ops</text>
+<text x="640" y="393.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,024 ops</text>
+<rect x="90" y="402" width="800" height="26" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="100" y="419.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,000</text>
+<text x="250" y="419.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,000 ops</text>
+<text x="400" y="419.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,000,000 ops</text>
+<text x="640" y="419.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">10³⁰⁰ ops</text>
+<rect x="90" y="428" width="800" height="26" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="100" y="445.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,000,000</text>
+<text x="250" y="445.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">10⁶ ops</text>
+<text x="400" y="445.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">10¹² ops (~31 years)</text>
+<text x="640" y="445.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">heat death of the universe</text>
+<rect x="90" y="348" width="800" height="106" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<line x1="240" y1="376" x2="240" y2="454" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="390" y1="376" x2="390" y2="454" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="630" y1="376" x2="630" y2="454" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+</svg>
+<figcaption>How cost scales: the difference between O(n) and O(n^2) is the difference between a second and a year.</figcaption></figure>
+
+<h2 id="65-going-deeper">6.5 Going deeper</h2>
+<h3 id="651-list-over-allocation-and-amortised-o1-append">6.5.1 list: over-allocation and amortised O(1) append</h3>
+<p>CPython grows a list by allocating <strong>more</strong> space than needed (roughly
+<code>new = old + old//2 + 6</code>), so most appends write into already-owned memory.
+Occasionally a realloc copies everything — but spread over the cheap appends,
+the <em>amortised</em> cost stays O(1). <code>insert(0, x)</code> and <code>pop(0)</code> are O(n) because
+every later pointer must shift; that is exactly what <code>collections.deque</code>
+fixes with a doubly-linked block list (O(1) at both ends).</p>
+<h3 id="652-tuple-fixed-cacheable-hashable">6.5.2 tuple: fixed, cacheable, hashable</h3>
+<p>Tuples allocate exactly their size, are immutable, and therefore hashable
+when their contents are. CPython additionally caches small tuples internally,
+so creating <code>(1, 2)</code> in hot code can be nearly free. Because they cannot
+change, tuples are the right type for <em>records</em> and <em>function returns of
+multiple values</em> — the immutability documents intent and enables use as dict
+keys.</p>
+<h3 id="653-dict-the-hash-table-precisely">6.5.3 dict: the hash table, precisely</h3>
+<ul>
+<li><code>hash(key)</code> → an index; collisions resolved by <strong>open addressing</strong> (probe
+  other slots), never by chaining;</li>
+<li>since 3.6 the table is <strong>compact</strong>: a sparse index array plus a dense entry
+  array in insertion order → order is guaranteed (3.7+) <em>and</em> memory dropped;</li>
+<li>load factor ≤ 2/3: past it the table resizes (rehashes everything) — so
+  pre-sizing with <code>dict.fromkeys</code>/known capacity avoids mid-loop resizes;</li>
+<li>keys must be <strong>hashable and stable</strong>: equal objects must hash equally.
+  Mutating a key object corrupts lookups silently — hence lists/dicts/sets
+  can never be keys;</li>
+<li>string hashing is <strong>randomised per process</strong> (<code>PYTHONHASHSEED</code>) as a
+  DoS defence, which is why <code>set</code>/<code>dict</code> iteration order of strings can differ
+  between runs while staying insertion-ordered for equal inputs.</li>
+</ul>
+<h3 id="654-set-a-dict-without-values">6.5.4 set: a dict without values</h3>
+<p>Same machinery, membership and uniqueness only. Set algebra is C-speed:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">active</span> <span class="o">&amp;</span> <span class="n">premium</span>            <span class="c1"># intersection</span>
+<span class="n">new_users</span> <span class="o">-</span> <span class="n">seen</span>            <span class="c1"># difference</span>
+<span class="n">a</span> <span class="o">|</span> <span class="n">b</span> <span class="o">|</span> <span class="n">c</span>                   <span class="c1"># union</span>
+<span class="n">a</span> <span class="o">^</span> <span class="n">b</span>                       <span class="c1"># symmetric difference</span>
+</code></pre></div>
+
+<p>These replace nested membership loops and are the idiomatic way to express
+&ldquo;which of these are in that&rdquo;.</p>
+<h3 id="655-sorting-stable-key-driven-and-never-a-comparison-function">6.5.5 Sorting: stable, key-driven, and never a comparison function</h3>
+<p><code>sorted</code>/<code>list.sort</code> use <strong>Timsort</strong> (O(n log n), exploits existing runs,
+<em>stable</em> — equal keys keep input order). Stability is a feature you compose:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">rows</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="s2">"name"</span><span class="p">])</span>       <span class="c1"># then</span>
+<span class="n">rows</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="s2">"dept"</span><span class="p">])</span>       <span class="c1"># -&gt; sorted by dept, then name</span>
+</code></pre></div>
+
+<p>or in one pass with a tuple key: <code>key=lambda r: (r["dept"], r["name"])</code>.
+Comparison functions (<code>cmp</code>) are gone; <code>functools.cmp_to_key</code> bridges legacy.</p>
+<h3 id="656-the-collections-module-the-professional-toolkit">6.5.6 The <code>collections</code> module: the professional toolkit</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Solves</th>
+<th>One-liner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>deque</code></td>
+<td>queues/stacks with O(1) both ends</td>
+<td><code>dq.appendleft(x)</code>, <code>dq.popleft()</code></td>
+</tr>
+<tr>
+<td><code>Counter</code></td>
+<td>counting &amp; top-k</td>
+<td><code>Counter(words).most_common(3)</code></td>
+</tr>
+<tr>
+<td><code>defaultdict</code></td>
+<td>grouping without key-existence checks</td>
+<td><code>defaultdict(list)</code></td>
+</tr>
+<tr>
+<td><code>OrderedDict</code></td>
+<td>explicit move-to-end / legacy order needs</td>
+<td>mostly replaced by dict</td>
+</tr>
+<tr>
+<td><code>namedtuple</code></td>
+<td>lightweight immutable records</td>
+<td><code>Point = namedtuple("Point", "x y")</code></td>
+</tr>
+<tr>
+<td><code>ChainMap</code></td>
+<td>layered lookups (scopes, configs)</td>
+<td><code>ChainMap(local, global)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Grouping, the most common real-world loop, collapses to:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="n">groups</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+    <span class="n">groups</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">"dept"</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+</code></pre></div>
+
+<p>…and counting to <code>Counter(words)</code>. Both are faster and shorter than the
+<code>if key not in d: d[key] = []</code> ritual.</p>
+<h3 id="657-beyond-the-builtins">6.5.7 Beyond the builtins</h3>
+<ul>
+<li><code>array.array</code> / <code>bytes</code> / <code>bytearray</code>: homogeneous numeric/byte data,
+  ~10× less memory than a list of ints;</li>
+<li><code>bisect</code> for sorted-list insertion/binary search (O(log n) lookups without a
+  third-party tree);</li>
+<li><code>heapq</code> for priority queues (O(log n) push/pop, O(1) peek);</li>
+<li><code>dataclasses</code> for records with behaviour (module 09);</li>
+<li>NumPy arrays / pandas for numeric columns at scale (module 17).</li>
+</ul>
+<h2 id="66-industry-level">6.6 Industry level</h2>
+<h3 id="choose-by-operation-profile-not-by-habit">Choose by operation profile, not by habit</h3>
+<p>The review question is always &ldquo;what will you do with this most?&rdquo;. Read the
+cost table in §6.4&rsquo;s figure; then:</p>
+<ul>
+<li>reading a config → <code>dict</code> (or a <code>dataclass</code>/<code>TypedDict</code> at the boundary);</li>
+<li>a work queue → <code>deque</code>;</li>
+<li>a record passing between functions → <code>tuple</code>/<code>namedtuple</code>/<code>dataclass</code>;</li>
+<li>dedupe/membership/difference → <code>set</code>;</li>
+<li>counts/top-k → <code>Counter</code>;</li>
+<li>an index for repeated lookups → build a <code>dict</code> once (space for time).</li>
+</ul>
+<h3 id="precompute-indexes-never-scan-in-a-loop">Precompute indexes; never scan in a loop</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># O(n*m): rescans orders for every customer</span>
+<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">customers</span><span class="p">:</span>
+    <span class="n">c_orders</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">orders</span> <span class="k">if</span> <span class="n">o</span><span class="o">.</span><span class="n">customer_id</span> <span class="o">==</span> <span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+
+<span class="c1"># O(n+m): one pass to index, one pass to consume</span>
+<span class="n">orders_by_customer</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">orders</span><span class="p">:</span>
+    <span class="n">orders_by_customer</span><span class="p">[</span><span class="n">o</span><span class="o">.</span><span class="n">customer_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+</code></pre></div>
+
+<p>This single transformation is the most frequent performance fix in Python
+codebases.</p>
+<h3 id="immutability-at-the-boundaries">Immutability at the boundaries</h3>
+<p>Frozen sets for constant whitelists, tuples for coordinates, frozen
+dataclasses for DTOs: immutable containers cannot be corrupted by a callee and
+are safe across threads. When a container must not change, say so in the type.</p>
+<h3 id="views-are-live-and-that-bites">Views are live, and that bites</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="n">keys</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+<span class="n">d</span><span class="p">[</span><span class="s2">"b"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="s2">"b"</span> <span class="ow">in</span> <span class="n">keys</span>            <span class="c1"># True: the view tracks the dict</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+    <span class="k">del</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>           <span class="c1"># RuntimeError: dictionary changed size during iteration</span>
+</code></pre></div>
+
+<p>Iterate over <code>list(d)</code> when you intend to mutate during the loop.</p>
+<h2 id="67-comparison-tables">6.7 Comparison tables</h2>
+<p><strong>list vs tuple:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>list</code></th>
+<th><code>tuple</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>literal</td>
+<td><code>[1, 2]</code></td>
+<td><code>(1, 2)</code></td>
+</tr>
+<tr>
+<td>mutable</td>
+<td>yes</td>
+<td>no</td>
+</tr>
+<tr>
+<td>hashable</td>
+<td>no</td>
+<td>yes (if contents are)</td>
+</tr>
+<tr>
+<td>methods</td>
+<td>11 (mutating)</td>
+<td>2 (<code>count</code>, <code>index</code>)</td>
+</tr>
+<tr>
+<td>memory (3 ints)</td>
+<td>smaller header, over-allocated</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>use for</td>
+<td>working collection</td>
+<td>record, key, multi-return</td>
+</tr>
+<tr>
+<td>as dict key</td>
+<td>never</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<p><strong>dict flavours:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Flavour</th>
+<th>Behaviour on missing key</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dict</code></td>
+<td><code>KeyError</code></td>
+<td>default; explicit is good</td>
+</tr>
+<tr>
+<td><code>d.get(k, default)</code></td>
+<td>returns default (evaluated eagerly!)</td>
+<td>cheap fallbacks</td>
+</tr>
+<tr>
+<td><code>defaultdict(list)</code></td>
+<td>creates &amp; inserts via factory</td>
+<td>grouping/accumulating</td>
+</tr>
+<tr>
+<td><code>Counter</code></td>
+<td>returns 0</td>
+<td>counting</td>
+</tr>
+<tr>
+<td><code>d.setdefault(k, v)</code></td>
+<td>inserts v, returns existing or v</td>
+<td>one-time init per key</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Set operations vs loops:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Intent</th>
+<th>Set form</th>
+<th>Loop form it replaces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>common</td>
+<td><code>a &amp; b</code></td>
+<td><code>[x for x in a if x in b]</code></td>
+</tr>
+<tr>
+<td>only-in-a</td>
+<td><code>a - b</code></td>
+<td>filter with <code>not in</code></td>
+</tr>
+<tr>
+<td>either-not-both</td>
+<td><code>a ^ b</code></td>
+<td>two filters + concat</td>
+</tr>
+<tr>
+<td>subset test</td>
+<td><code>a &lt;= b</code></td>
+<td><code>all(x in b for x in a)</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="68-mistakes-gotchas">6.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>empty = {}</code> is a dict</p>
+<p><code>set()</code> is the empty set. <code>{}</code> creates <code>{}</code> the dict — a classic silent bug
+when you later call <code>.add</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>(42)</code> is an int</p>
+<p>Parentheses group; the comma makes a tuple: <code>single = (42,)</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>sort()</code> and <code>append()</code> return None</p>
+<p>They mutate in place. <code>xs = xs.sort()</code> destroys your list reference. Use
+<code>sorted(xs)</code> when you need a value.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>in</code> on a list inside a loop</p>
+<p>O(n) per probe → O(n·m) overall. Build a <code>set</code> first whenever the collection
+is not tiny.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Mutating a dict while iterating its view</p>
+<p><code>RuntimeError: dictionary changed size during iteration</code>. Snapshot with
+<code>list(d)</code> first.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">A tuple containing a list is not hashable</p>
+<p><code>hash((1, [2]))</code> raises. Immutability is only skin deep.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title"><code>defaultdict</code> in read-only code paths</p>
+<p>Accidentally <em>reading</em> a missing key inserts it. For lookups that must not
+mutate, use a plain dict with <code>.get</code>.</p>
+</div>
+<h2 id="69-interview-questions">6.9 Interview questions</h2>
+<ol>
+<li><strong>Why is <code>x in set</code> fast but <code>x in list</code> slow?</strong> — hash-table slot jump
+   O(1) vs linear scan O(n).</li>
+<li><strong>Why is dict insertion order guaranteed now but not in 3.5?</strong> — the
+   compact layout (3.6, implementation detail) became a language guarantee in
+   3.7.</li>
+<li><strong>What makes an object usable as a dict key?</strong> — stable <code>__hash__</code> and
+   <code>__eq__</code> agreement; i.e. effective immutability.</li>
+<li><strong>list append complexity?</strong> — O(1) amortised via over-allocation;
+   <code>insert(0, …)</code> is O(n).</li>
+<li><strong>tuple vs list for a function return?</strong> — tuple: immutable, hashable,
+   signals &ldquo;record, don&rsquo;t edit&rdquo;.</li>
+<li><strong>How would you count words and get the top 5?</strong> —
+   <code>Counter(words).most_common(5)</code>.</li>
+<li><strong>What data structure for a FIFO queue?</strong> — <code>deque</code>; a list&rsquo;s <code>pop(0)</code> is
+   O(n).</li>
+<li><strong>Is sorting stable and why care?</strong> — Timsort is stable; enables
+   multi-key sorting by successive sorts or tuple keys.</li>
+</ol>
+<h2 id="610-practice-exercises">6.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-06-a</span></div><p>Implement <code>frequency(words)</code> (dict of counts, insertion-ordered by first
+appearance), <code>transpose(matrix)</code> (rows→columns, ragged input raises
+<code>ValueError</code>), and <code>unique_preserve(seq)</code> (first occurrence order kept).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/06_data_structures/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-06-b</span></div><p>Implement <code>group_by(records, key)</code> (dict of lists via <code>defaultdict</code>),
+<code>invert(mapping)</code> (value→list of keys, collisions collected, deterministic
+order), <code>merge_counts(a, b)</code> (sum per key), and <code>top_k(words, k)</code> (count desc,
+then alphabetical, using <code>Counter.most_common</code> or equivalent).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/06_data_structures/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-06-c</span></div><p>Implement <code>LRUCache(capacity)</code> with <code>get</code>/<code>put</code> in O(1) (dict ordering +
+move-to-end; evict least-recently-used on overflow) and <code>InvertedIndex</code> with
+<code>add(doc_id, text)</code> / <code>search(term)</code> / <code>search_all(terms)</code> (AND) /
+<code>search_any(terms)</code> (OR) using set algebra. Finally <code>sliding_window_max(nums,
+k)</code> in O(n) using a monotonic <code>deque</code>.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/06_data_structures/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/06_data_structures/solution.py)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">deque</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">LRUCache</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cap</span> <span class="o">=</span> <span class="n">capacity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>                      <span class="c1"># dict IS the LRU order (3.7+)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="c1"># move to end = most recent</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cap</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)))</span>   <span class="c1"># oldest = first key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sliding_window_max</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+    <span class="n">dq</span><span class="p">,</span> <span class="n">out</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(),</span> <span class="p">[]</span>          <span class="c1"># dq holds indexes, values decreasing</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">nums</span><span class="p">):</span>
+        <span class="k">while</span> <span class="n">dq</span> <span class="ow">and</span> <span class="n">nums</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">:</span>
+            <span class="n">dq</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">dq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">-</span> <span class="n">k</span><span class="p">:</span>
+            <span class="n">dq</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nums</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+    <span class="k">return</span> <span class="n">out</span>
+</code></pre></div></details>
+<h2 id="611-cheatsheet">6.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ordered editable sequence</td>
+<td><code>list</code></td>
+</tr>
+<tr>
+<td>Fixed record / dict key</td>
+<td><code>tuple</code></td>
+</tr>
+<tr>
+<td>Key → value</td>
+<td><code>dict</code></td>
+</tr>
+<tr>
+<td>Uniqueness / membership / algebra</td>
+<td><code>set</code></td>
+</tr>
+<tr>
+<td>Queue / stack</td>
+<td><code>collections.deque</code></td>
+</tr>
+<tr>
+<td>Counting / top-k</td>
+<td><code>collections.Counter</code></td>
+</tr>
+<tr>
+<td>Grouping</td>
+<td><code>collections.defaultdict(list)</code></td>
+</tr>
+<tr>
+<td>Light immutable record</td>
+<td><code>namedtuple</code> / <code>dataclass(frozen=True)</code></td>
+</tr>
+<tr>
+<td>Sorted insert / binary search</td>
+<td><code>bisect</code></td>
+</tr>
+<tr>
+<td>Priority queue</td>
+<td><code>heapq</code></td>
+</tr>
+<tr>
+<td>Homogeneous numbers, low memory</td>
+<td><code>array.array</code></td>
+</tr>
+<tr>
+<td>Sort by several keys</td>
+<td><code>key=(a, b)</code> tuple, or successive stable sorts</td>
+</tr>
+<tr>
+<td>First match or default</td>
+<td><code>next((x for x in xs if p(x)), default)</code></td>
+</tr>
+<tr>
+<td>Merge dicts</td>
+<td><code>a \| b</code> (3.9+) or <code>{**a, **b}</code></td>
+</tr>
+<tr>
+<td>Safe missing key</td>
+<td><code>d.get(k, default)</code> / <code>setdefault</code> / <code>defaultdict</code></td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="05-control-flow.html"><span>&larr; previous</span><strong>Control flow: branching, looping, and match</strong></a><a class="next" href="07-functions.html"><span>next &rarr;</span><strong>Functions: signatures, scope, closures, first-class everything</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#61-definition">6.1 Definition</a></li>
+<li><a href="#62-syntax">6.2 Syntax</a></li>
+<li><a href="#63-first-examples">6.3 First examples</a></li>
+<li><a href="#64-the-picture">6.4 The picture</a></li>
+<li><a href="#65-going-deeper">6.5 Going deeper</a><ul>
+<li><a href="#651-list-over-allocation-and-amortised-o1-append">6.5.1 list: over-allocation and amortised O(1) append</a></li>
+<li><a href="#652-tuple-fixed-cacheable-hashable">6.5.2 tuple: fixed, cacheable, hashable</a></li>
+<li><a href="#653-dict-the-hash-table-precisely">6.5.3 dict: the hash table, precisely</a></li>
+<li><a href="#654-set-a-dict-without-values">6.5.4 set: a dict without values</a></li>
+<li><a href="#655-sorting-stable-key-driven-and-never-a-comparison-function">6.5.5 Sorting: stable, key-driven, and never a comparison function</a></li>
+<li><a href="#656-the-collections-module-the-professional-toolkit">6.5.6 The collections module: the professional toolkit</a></li>
+<li><a href="#657-beyond-the-builtins">6.5.7 Beyond the builtins</a></li>
+</ul>
+</li>
+<li><a href="#66-industry-level">6.6 Industry level</a><ul>
+<li><a href="#choose-by-operation-profile-not-by-habit">Choose by operation profile, not by habit</a></li>
+<li><a href="#precompute-indexes-never-scan-in-a-loop">Precompute indexes; never scan in a loop</a></li>
+<li><a href="#immutability-at-the-boundaries">Immutability at the boundaries</a></li>
+<li><a href="#views-are-live-and-that-bites">Views are live, and that bites</a></li>
+</ul>
+</li>
+<li><a href="#67-comparison-tables">6.7 Comparison tables</a></li>
+<li><a href="#68-mistakes-gotchas">6.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#69-interview-questions">6.9 Interview questions</a></li>
+<li><a href="#610-practice-exercises">6.10 Practice exercises</a></li>
+<li><a href="#611-cheatsheet">6.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

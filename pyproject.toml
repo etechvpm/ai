@@ -1,0 +1,41 @@
+# Course repository: notes (Markdown), generated figures, exercise packs and
+# the website builder.  See module 18 for a full discussion of this file.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-from-zero-to-industry"
+version = "1.0.0"
+description = "Visual, depth-first Python course notes with auto-checked exercises"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+# tools needed to regenerate the figures and rebuild the website
+docs = ["markdown>=3.5", "pygments>=2.17"]
+# tools needed to run the exercise graders
+dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
+
+[tool.pytest.ini_options]
+# importlib mode: every pack may keep the readable name test_tasks.py
+# without basename collisions between directories.
+addopts = "--import-mode=importlib"
+testpaths = ["exercises"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "N"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_ignores = true
+warn_redundant_casts = true

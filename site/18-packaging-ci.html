@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Packaging, environments &amp; CI/CD: pyproject to PyPI &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link active" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Intermediate → Industry</span><span class="chip read">34 min</span><span class="chip tag">packaging</span><span class="chip tag">pyproject</span><span class="chip tag">pip</span><span class="chip tag">uv</span><span class="chip tag">ci</span><span class="chip tag">github-actions</span><span class="chip tag">release</span></div>
+      <h1 id="18-packaging-environments-cicd">18. Packaging, environments &amp; CI/CD</h1>
+<blockquote>
+<p>Packaging is how your code becomes something other people (and future you)
+can install; CI is how you stop shipping broken things. Both are
+configuration you write once and profit from on every commit.</p>
+</blockquote>
+<h2 id="181-definition">18.1 Definition</h2>
+<p><strong>Plain version.</strong> <code>pyproject.toml</code> describes the project; a build backend
+turns it into an installable file; CI runs your checks on every push.</p>
+<p><strong>Precise version.</strong> A <strong>distribution</strong> is an artifact: a <em>wheel</em> (<code>.whl</code>,
+pre-built, &ldquo;installed&rdquo; by unpacking) or an <em>sdist</em> (<code>.tar.gz</code>, source, built on
+the target). Metadata follows <strong>PEP 621</strong> (<code>[project]</code> table), the build
+system is declared in <code>[build-system]</code>, and tools (pip, uv, poetry, hatch)
+consume the same file. <strong>Environments</strong> (venv/conda) isolate dependencies per
+project; <strong>lockfiles</strong> pin the full resolved graph for reproducibility; <strong>CI</strong>
+(GitHub Actions et al.) executes lint → typecheck → test matrix → build →
+publish, failing the pull request when any gate fails.</p>
+<h2 id="182-syntax">18.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># pyproject.toml -------------------------------------------------------</span>
+<span class="k">[build-system]</span>
+<span class="n">requires</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"hatchling"</span><span class="p">]</span>
+<span class="n">build-backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"hatchling.build"</span>
+
+<span class="k">[project]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"acme-reports"</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"1.4.2"</span><span class="w">                     </span><span class="c1"># single source of truth</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Report generation for the ACME platform"</span>
+<span class="n">readme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"README.md"</span>
+<span class="n">requires-python</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"&gt;=3.11"</span>
+<span class="n">license</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"MIT"</span><span class="w"> </span><span class="p">}</span>
+<span class="n">authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"ACME Eng"</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"eng@acme.dev"</span><span class="w"> </span><span class="p">}]</span>
+<span class="n">keywords</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"reports"</span><span class="p">,</span><span class="w"> </span><span class="s2">"etl"</span><span class="p">]</span>
+<span class="n">classifiers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"Programming Language :: Python :: 3.11"</span><span class="p">,</span>
+<span class="w">               </span><span class="s2">"Typing :: Typed"</span><span class="p">]</span>
+<span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"httpx&gt;=0.27"</span><span class="p">,</span><span class="w"> </span><span class="s2">"pydantic&gt;=2.7"</span><span class="p">,</span><span class="w"> </span><span class="s2">"rich&gt;=13"</span><span class="p">]</span>
+
+<span class="k">[project.optional-dependencies]</span><span class="w">        </span><span class="c1"># extras: pip install '.[dev]'</span>
+<span class="n">dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"pytest&gt;=8"</span><span class="p">,</span><span class="w"> </span><span class="s2">"pytest-cov"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ruff"</span><span class="p">,</span><span class="w"> </span><span class="s2">"mypy"</span><span class="p">]</span>
+<span class="n">postgres</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"asyncpg&gt;=0.29"</span><span class="p">]</span>
+
+<span class="k">[project.scripts]</span><span class="w">                      </span><span class="c1"># console entry points</span>
+<span class="n">acme-report</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"acme_reports.cli:main"</span>
+
+<span class="k">[project.urls]</span>
+<span class="n">Homepage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://github.com/acme/reports"</span>
+<span class="n">Changelog</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://github.com/acme/reports/releases"</span>
+
+<span class="k">[tool.ruff]</span>
+<span class="n">line-length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+<span class="n">target-version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"py311"</span>
+<span class="k">[tool.ruff.lint]</span>
+<span class="n">select</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"E"</span><span class="p">,</span><span class="w"> </span><span class="s2">"F"</span><span class="p">,</span><span class="w"> </span><span class="s2">"I"</span><span class="p">,</span><span class="w"> </span><span class="s2">"UP"</span><span class="p">,</span><span class="w"> </span><span class="s2">"B"</span><span class="p">,</span><span class="w"> </span><span class="s2">"SIM"</span><span class="p">,</span><span class="w"> </span><span class="s2">"RUF"</span><span class="p">]</span>
+
+<span class="k">[tool.mypy]</span>
+<span class="n">strict</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">python_version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"3.11"</span>
+
+<span class="k">[tool.pytest.ini_options]</span>
+<span class="n">addopts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"-q --strict-markers"</span>
+<span class="n">testpaths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"tests"</span><span class="p">]</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># .github/workflows/ci.yml ------------------------------------------------</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CI</span>
+<span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">push</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">pull_request</span><span class="p p-Indicator">]</span>
+<span class="nt">jobs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quality</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/setup-python@v5</span>
+<span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> python-version</span><span class="p">:</span><span class="w"> </span><span class="s">"3.12"</span><span class="p p-Indicator">,</span><span class="nt"> cache</span><span class="p">:</span><span class="w"> </span><span class="nv">pip</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install -e '.[dev]'</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ruff check . &amp;&amp; ruff format --check .</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mypy src/</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytest --cov=src --cov-fail-under=90</span>
+<span class="w">  </span><span class="nt">matrix</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="w">    </span><span class="nt">strategy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">matrix</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> python-version</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"3.11"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"3.12"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"3.13"</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/setup-python@v5</span>
+<span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> python-version</span><span class="p">:</span><span class="w"> </span><span class="s">"${{</span><span class="nv"> </span><span class="s">matrix.python-version</span><span class="nv"> </span><span class="s">}}"</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install -e '.[dev]' &amp;&amp; pytest</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s1">'.[dev]'</span><span class="w">          </span><span class="c1"># editable install of your own project</span>
+python<span class="w"> </span>-m<span class="w"> </span>build<span class="w">                  </span><span class="c1"># -&gt; dist/*.whl and dist/*.tar.gz</span>
+twine<span class="w"> </span>check<span class="w"> </span>dist/*<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>twine<span class="w"> </span>upload<span class="w"> </span>dist/*
+uv<span class="w"> </span>sync<span class="w">                          </span><span class="c1"># or: pip install -r requirements.lock</span>
+</code></pre></div>
+
+<h2 id="183-first-examples">18.3 First examples</h2>
+<p><strong>Example 1 — the smallest package that installs.</strong></p>
+<div class="codehilite"><pre><span></span><code>reports/
+    pyproject.toml
+    src/
+        acme_reports/
+            __init__.py          # __version__ optional
+            cli.py               # def main() -&gt; None
+</code></pre></div>
+
+<p><code>pip install -e .</code> → <code>import acme_reports</code> works <em>and</em> the <code>acme-report</code>
+command is on your PATH.</p>
+<p><strong>Example 2 — read your own metadata at runtime (no duplication).</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="n">version</span><span class="p">(</span><span class="s2">"acme-reports"</span><span class="p">)</span>     <span class="c1"># comes from pyproject/installed dist</span>
+</code></pre></div>
+
+<p><strong>Example 3 — what a wheel filename tells you.</strong></p>
+<div class="codehilite"><pre><span></span><code>acme_reports-1.4.2-py3-none-any.whl
+   name     ver   py  abi platform      -&gt; pure Python, any OS
+numpy-2.1.0-cp312-cp312-manylinux_2_17_x86_64.whl
+                      -&gt; compiled for CPython 3.12 on Linux x86-64
+</code></pre></div>
+
+<h2 id="184-the-picture">18.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 306" width="990" height="306" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The everyday Python toolchain</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="30" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">The seven tools you will touch every day</text>
+<rect x="15.0" y="62" width="120" height="92" rx="8" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="75.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Editor / IDE</text>
+<text x="75.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">VS Code, PyCharm</text>
+<text x="75.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">or Neovim</text>
+<rect x="15.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="75.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">code .</text>
+<rect x="155.0" y="62" width="120" height="92" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="215.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Virtual env</text>
+<text x="215.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">isolated deps</text>
+<text x="215.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">per project</text>
+<line x1="135.0" y1="108.0" x2="155.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="155.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="215.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">python -m venv .venv</text>
+<rect x="295.0" y="62" width="120" height="92" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="355.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Interpreter</text>
+<text x="355.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">runs your code</text>
+<text x="355.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">3.11+ recommended</text>
+<line x1="275.0" y1="108.0" x2="295.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="295.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="355.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">python app.py</text>
+<rect x="435.0" y="62" width="120" height="92" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="495.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Tests</text>
+<text x="495.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">pytest</text>
+<text x="495.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">safety net</text>
+<line x1="415.0" y1="108.0" x2="435.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="435.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="495.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">pytest -q</text>
+<rect x="575.0" y="62" width="120" height="92" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="635.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Lint / Types</text>
+<text x="635.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">ruff, black</text>
+<text x="635.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">mypy</text>
+<line x1="555.0" y1="108.0" x2="575.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="575.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="635.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ruff check .</text>
+<rect x="715.0" y="62" width="120" height="92" rx="8" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="775.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Git</text>
+<text x="775.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">history</text>
+<text x="775.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">collaboration</text>
+<line x1="695.0" y1="108.0" x2="715.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="715.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="775.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">git commit -am &#x27;fix&#x27;</text>
+<rect x="855.0" y="62" width="120" height="92" rx="8" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="915.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">CI / CD</text>
+<text x="915.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">GitHub Actions</text>
+<text x="915.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">runs on push</text>
+<line x1="835.0" y1="108.0" x2="855.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="855.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="915.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">gh pr create</text>
+<rect x="15.0" y="206" width="960" height="54" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="33.0" y="228" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Industry reality: nobody &#x27;just runs python&#x27;.  Code is formatted, linted, type-checked,</text>
+<text x="33.0" y="245" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">tested and reviewed automatically before it reaches production.</text>
+</svg>
+<figcaption>The everyday toolchain: editor -&gt; venv -&gt; ruff/mypy -&gt; pytest -&gt; build -&gt; publish, with the artifacts each step produces.</figcaption></figure>
+
+<p><figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 596" width="990" height="596" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Anatomy of pyproject.toml</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arblue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-blue, #2563eb)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+    <marker id="aramber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-amber, #d97706)"/></marker>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+  </defs>
+<text x="495" y="30" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">One file describes the build, the metadata and the tools</text>
+<text x="495" y="50" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">PEP 517/518 build system + PEP 621 project metadata + [tool.*] configuration</text>
+<rect x="24" y="76" width="520" height="421" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="38" y="93" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-muted, #64748b)">pyproject.toml</text>
+<rect x="30" y="98" width="508" height="18" rx="4" fill="var(--dg-bluebg, #dbeafe)" opacity="0.55"/>
+<text x="40" y="110" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">[build-system]</text>
+<text x="56" y="131" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">requires = [&quot;hatchling&quot;]</text>
+<text x="56" y="152" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">build-backend = &quot;hatchling.build&quot;</text>
+<text x="40" y="173" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)"></text>
+<rect x="30" y="182" width="508" height="18" rx="4" fill="var(--dg-greenbg, #d1fae5)" opacity="0.55"/>
+<text x="40" y="194" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">[project]</text>
+<text x="56" y="215" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">name = &quot;acme-reports&quot;</text>
+<text x="56" y="236" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">version = &quot;1.4.2&quot;</text>
+<text x="56" y="257" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">requires-python = &quot;&gt;=3.11&quot;</text>
+<text x="56" y="278" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">dependencies = [&quot;httpx&gt;=0.27&quot;, &quot;pydantic&gt;=2.7&quot;]</text>
+<text x="40" y="299" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)"></text>
+<rect x="30" y="308" width="508" height="18" rx="4" fill="var(--dg-amberbg, #fef3c7)" opacity="0.55"/>
+<text x="40" y="320" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">[project.optional-dependencies]</text>
+<text x="56" y="341" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">dev = [&quot;pytest&gt;=8&quot;, &quot;ruff&quot;, &quot;mypy&quot;]</text>
+<text x="40" y="362" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)"></text>
+<rect x="30" y="371" width="508" height="18" rx="4" fill="var(--dg-violetbg, #ede9fe)" opacity="0.55"/>
+<text x="40" y="383" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">[project.scripts]</text>
+<text x="56" y="404" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">acme-report = &quot;acme_reports.cli:main&quot;</text>
+<text x="40" y="425" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)"></text>
+<rect x="30" y="434" width="508" height="18" rx="4" fill="var(--dg-cyanbg, #cffafe)" opacity="0.55"/>
+<text x="40" y="446" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">[tool.ruff]  line-length = 100</text>
+<rect x="30" y="455" width="508" height="18" rx="4" fill="var(--dg-cyanbg, #cffafe)" opacity="0.55"/>
+<text x="40" y="467" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">[tool.mypy]  strict = true</text>
+<rect x="30" y="476" width="508" height="18" rx="4" fill="var(--dg-cyanbg, #cffafe)" opacity="0.55"/>
+<text x="40" y="488" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">[tool.pytest.ini_options]  testpaths = [&#x27;tests&#x27;]</text>
+<rect x="568" y="84" width="398" height="67" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="582" y="102" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">[build-system]</text>
+<text x="582" y="120" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">which backend builds the artifact</text>
+<text x="582" y="135" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">python -m build isolates, installs it,</text>
+<text x="582" y="150" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">then calls it -&gt; dist/*.whl + *.tar.gz</text>
+<line x1="542" y1="106" x2="566" y2="117.5" stroke="var(--dg-blue, #2563eb)" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#arblue)"/>
+<rect x="568" y="163" width="398" height="67" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="582" y="181" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">[project]</text>
+<text x="582" y="199" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">PEP 621 metadata shown on PyPI</text>
+<text x="582" y="214" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">version = single source of truth</text>
+<text x="582" y="229" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">libraries use RANGES, apps use locks</text>
+<line x1="542" y1="190" x2="566" y2="196.5" stroke="var(--dg-green, #059669)" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#argreen)"/>
+<rect x="568" y="242" width="398" height="67" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="582" y="260" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">[project.optional-dependencies]</text>
+<text x="582" y="278" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">extras: pip install &#x27;.[dev]&#x27;</text>
+<text x="582" y="293" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">keeps dev tooling out of the runtime</text>
+<text x="582" y="308" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">install for your users</text>
+<line x1="542" y1="316" x2="566" y2="275.5" stroke="var(--dg-amber, #d97706)" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#aramber)"/>
+<rect x="568" y="321" width="398" height="67" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="582" y="339" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">[project.scripts]</text>
+<text x="582" y="357" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">console entry points</text>
+<text x="582" y="372" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">creates an executable on PATH that</text>
+<text x="582" y="387" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">calls acme_reports.cli:main()</text>
+<line x1="542" y1="379" x2="566" y2="354.5" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#arviolet)"/>
+<rect x="568" y="400" width="398" height="67" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="582" y="418" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">[tool.*]</text>
+<text x="582" y="436" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">ruff / mypy / pytest / coverage config</text>
+<text x="582" y="451" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">one file the whole toolchain reads -</text>
+<text x="582" y="466" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">no setup.cfg, no .flake8, no pytest.ini</text>
+<rect x="24" y="512" width="942" height="66" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="42" y="536" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">python -m venv .venv  -&gt;  pip install -e &#x27;.[dev]&#x27;  -&gt;  ruff check .  -&gt;  mypy src/  -&gt;  pytest</text>
+<text x="42" y="556" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">python -m build  -&gt;  twine check dist/*  -&gt;  (on tag v*)  publish with OIDC trusted publishing</text>
+</svg>
+<figcaption>Anatomy of pyproject.toml: build-system, project, optional-dependencies, scripts and the [tool.*] sections.</figcaption></figure></p>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 396" width="990" height="396" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The CI pipeline</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+    <marker id="arred" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-red, #dc2626)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">What happens between `git push` and production</text>
+<rect x="24.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<rect x="24.0" y="68" width="126" height="28" rx="10" fill="var(--dg-slate, #475569)"/>
+<rect x="24.0" y="86" width="126" height="10" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="87.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">git push / PR</text>
+<text x="87.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">developer</text>
+<rect x="160.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="160.0" y="68" width="126" height="28" rx="10" fill="var(--dg-blue, #2563eb)"/>
+<rect x="160.0" y="86" width="126" height="10" rx="0" fill="var(--dg-blue, #2563eb)"/>
+<text x="223.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">install deps</text>
+<text x="223.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">pip install -e .[dev]</text>
+<text x="223.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">from a lockfile</text>
+<line x1="150.0" y1="120.0" x2="160.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="296.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<rect x="296.0" y="68" width="126" height="28" rx="10" fill="var(--dg-cyan, #0891b2)"/>
+<rect x="296.0" y="86" width="126" height="10" rx="0" fill="var(--dg-cyan, #0891b2)"/>
+<text x="359.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">format + lint</text>
+<text x="359.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ruff format</text>
+<text x="359.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ruff check</text>
+<line x1="286.0" y1="120.0" x2="296.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="432.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="432.0" y="68" width="126" height="28" rx="10" fill="var(--dg-violet, #7c3aed)"/>
+<rect x="432.0" y="86" width="126" height="10" rx="0" fill="var(--dg-violet, #7c3aed)"/>
+<text x="495.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">type check</text>
+<text x="495.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">mypy --strict</text>
+<text x="495.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">pyright</text>
+<line x1="422.0" y1="120.0" x2="432.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="568.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="568.0" y="68" width="126" height="28" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="568.0" y="86" width="126" height="10" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="631.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">tests + coverage</text>
+<text x="631.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">pytest --cov</text>
+<text x="631.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">fail below 90%</text>
+<line x1="558.0" y1="120.0" x2="568.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="704.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="704.0" y="68" width="126" height="28" rx="10" fill="var(--dg-amber, #d97706)"/>
+<rect x="704.0" y="86" width="126" height="10" rx="0" fill="var(--dg-amber, #d97706)"/>
+<text x="767.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">build</text>
+<text x="767.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">python -m build</text>
+<text x="767.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">wheel + sdist</text>
+<line x1="694.0" y1="120.0" x2="704.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="840.0" y="68" width="126" height="104" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<rect x="840.0" y="68" width="126" height="28" rx="10" fill="var(--dg-red, #dc2626)"/>
+<rect x="840.0" y="86" width="126" height="10" rx="0" fill="var(--dg-red, #dc2626)"/>
+<text x="903.0" y="87" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">deploy</text>
+<text x="903.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">container / PyPI</text>
+<text x="903.0" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">staging then prod</text>
+<line x1="830.0" y1="120.0" x2="840.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="87.0" y1="172" x2="87.0" y2="192" stroke="var(--dg-red, #dc2626)" stroke-width="1.8" marker-end="url(#arred)"/>
+<rect x="59.45000000000002" y="175.55" width="295.09999999999997" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="207.0" y="186" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">any red step blocks the merge - no exceptions</text>
+<rect x="24.0" y="208" width="452" height="160" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="40.0" y="230" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">A minimal pyproject.toml</text>
+<text x="40.0" y="254" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">[project]</text>
+<text x="40.0" y="270" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">name = &#x27;myproject&#x27;</text>
+<text x="40.0" y="286" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">version = &#x27;1.0.0&#x27;</text>
+<text x="40.0" y="302" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">requires-python = &#x27;&gt;=3.11&#x27;</text>
+<text x="40.0" y="318" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">dependencies = [&#x27;httpx&gt;=0.27&#x27;, &#x27;pydantic&gt;=2&#x27;]</text>
+<text x="40.0" y="334" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">[project.optional-dependencies]</text>
+<text x="40.0" y="350" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">dev = [&#x27;pytest&#x27;, &#x27;ruff&#x27;, &#x27;mypy&#x27;]</text>
+<rect x="492.0" y="208" width="452" height="160" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="508.0" y="230" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">Why teams insist on this</text>
+<text x="508.0" y="254" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* &#x27;works on my machine&#x27; disappears - CI IS the machine</text>
+<text x="508.0" y="272" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* a broken change is caught in minutes, not in prod</text>
+<text x="508.0" y="290" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* reviewers read a diff with green checks, not hope</text>
+<text x="508.0" y="308" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* releases become boring and repeatable,</text>
+<text x="508.0" y="326" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  which is exactly what you want them to be</text>
+</svg>
+<figcaption>The CI pipeline: gates on every push, and the release job that only runs on a tag.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 400" width="990" height="400" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Environments and dependencies</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">One virtualenv per project - always</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">A virtualenv is a private site-packages folder. Without it, two projects needing different versions of the same library cannot coexist.</text>
+<rect x="22" y="66" width="300" height="240" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="172" y="92" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">WITHOUT venvs</text>
+<rect x="52" y="108" width="240" height="84" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="172" y="130" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">system Python</text>
+<text x="172" y="152" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">projectA needs requests 2.20</text>
+<text x="172" y="168" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">projectB needs requests 2.31</text>
+<text x="172" y="216" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">-&gt; only one can be installed</text>
+<text x="172" y="240" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* sudo pip install breaks the OS</text>
+<text x="172" y="257" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* upgrades silently break projects</text>
+<text x="172" y="274" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* nobody can reproduce the setup</text>
+<text x="52" y="292" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">This is the #1 beginner environment mistake.</text>
+<rect x="356" y="66" width="612" height="72" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="356" y="66" width="200" height="72" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="456" y="96" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">projectA / .venv</text>
+<text x="456" y="118" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">isolated site-packages</text>
+<rect x="576" y="86" width="176" height="32" rx="6" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="664" y="106" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">requests 2.20</text>
+<rect x="766" y="86" width="176" height="32" rx="6" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="854" y="106" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">flask 2.0</text>
+<rect x="356" y="150" width="612" height="72" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="356" y="150" width="200" height="72" rx="10" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="456" y="180" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">projectB / .venv</text>
+<text x="456" y="202" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">isolated site-packages</text>
+<rect x="576" y="170" width="176" height="32" rx="6" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="664" y="190" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">requests 2.31</text>
+<rect x="766" y="170" width="176" height="32" rx="6" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="854" y="190" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">fastapi 0.111</text>
+<rect x="356" y="234" width="612" height="72" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="356" y="234" width="200" height="72" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="456" y="264" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">course / .venv</text>
+<text x="456" y="286" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">isolated site-packages</text>
+<rect x="576" y="254" width="176" height="32" rx="6" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="664" y="274" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">pytest 9.1</text>
+<rect x="766" y="254" width="176" height="32" rx="6" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="854" y="274" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">markdown</text>
+<rect x="22" y="316" width="946" height="66" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="40" y="340" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">python -m venv .venv  -&gt;  source .venv/bin/activate  -&gt;  pip install -e &#x27;.[dev]&#x27;</text>
+<text x="40" y="360" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Commit the REQUIREMENTS (pyproject.toml / lockfile). Never commit the .venv folder itself.</text>
+</svg>
+<figcaption>Environments and dependencies: one venv per project, isolated site-packages, requirements pinned by a lockfile.</figcaption></figure>
+
+<h2 id="185-going-deeper">18.5 Going deeper</h2>
+<h3 id="1851-build-backends-who-actually-makes-the-wheel">18.5.1 Build backends: who actually makes the wheel</h3>
+<p><code>[build-system].build-backend</code> is a pluggable API (PEP 517/518): <strong>hatchling</strong>
+(modern default, simple), <strong>setuptools</strong> (legacy, most flexible for exotic
+layouts/C extensions), <strong>poetry-core</strong>, <strong>flit-core</strong> (minimal), <strong>pdm-backend</strong>,
+<strong>maturin</strong> (Rust extensions), <strong>scikit-build-core</strong> (CMake/C++). <code>python -m
+build</code> creates an isolated env, installs <code>requires</code>, calls the backend and
+writes <code>dist/</code>. You almost never need to know more than: keep the backend
+boring, keep the layout standard.</p>
+<h3 id="1852-layouts-src-vs-flat">18.5.2 Layouts: <code>src/</code> vs flat</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>src/</code> layout</th>
+<th>flat layout</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Import without installing</td>
+<td>impossible (good!)</td>
+<td>works from repo root (masks packaging bugs)</td>
+</tr>
+<tr>
+<td>Tests exercise</td>
+<td>the <em>installed</em> package</td>
+<td>possibly the local dir</td>
+</tr>
+<tr>
+<td>Tooling friction</td>
+<td>slightly more setup</td>
+<td>none</td>
+</tr>
+<tr>
+<td>Recommended</td>
+<td><strong>yes</strong>, for anything published</td>
+<td>fine for scripts/apps</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>src/</code> layout&rsquo;s whole point: it forces <code>pip install -e .</code> so your tests
+prove the package metadata (package discovery, entry points, data files) is
+correct — the classic &ldquo;works on my machine, <code>ModuleNotFoundError</code> on PyPI&rdquo; bug
+disappears.</p>
+<h3 id="1853-versions-pep-440-and-semver">18.5.3 Versions: PEP 440 and semver</h3>
+<p><code>MAJOR.MINOR.PATCH</code> (semver) mapped onto PEP 440 grammar:</p>
+<table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>1.4.2</code></td>
+<td>release</td>
+</tr>
+<tr>
+<td><code>1.5.0rc1</code>, <code>1.5.0b2</code>, <code>1.5.0a1</code></td>
+<td>release candidate / beta / alpha</td>
+</tr>
+<tr>
+<td><code>1.5.0.post1</code></td>
+<td>post-release (metadata/packaging fix)</td>
+</tr>
+<tr>
+<td><code>1.5.0.dev3</code></td>
+<td>development snapshot</td>
+</tr>
+<tr>
+<td><code>2024.9.1</code></td>
+<td>CalVer (allowed; used by e.g. certifi, black)</td>
+</tr>
+</tbody>
+</table>
+<p>Rules teams adopt: breaking API change → MAJOR; backwards-compatible feature →
+MINOR; fix → PATCH; never reuse a version on PyPI (immutable); <strong>yank</strong> (not
+delete) broken releases. Single source of truth: the <code>[project].version</code> field
+(or <code>dynamic = ["version"]</code> + backend hook reading VCS tags), read at runtime
+with <code>importlib.metadata.version(...)</code>.</p>
+<h3 id="1854-dependencies-ranges-extras-locks">18.5.4 Dependencies: ranges, extras, locks</h3>
+<ul>
+<li><strong>Libraries</strong> declare <em>ranges</em> (<code>httpx&gt;=0.27,&lt;1</code>) — you must not pin the
+  world for your consumers;</li>
+<li><strong>Applications</strong> pin <em>exactly</em> with a lockfile (<code>requirements.lock</code>,
+  <code>uv.lock</code>, <code>poetry.lock</code>) including hashes — reproducibility is the point;</li>
+<li><strong>extras</strong> (<code>[project.optional-dependencies]</code>) group optional deps:
+  <code>pip install 'acme-reports[postgres,dev]'</code>;</li>
+<li><strong>dependency groups</strong> (PEP 735, <code>[dependency-groups]</code>) are for dev-only
+  tooling that should not be publishable metadata;</li>
+<li>generate locks with <code>pip-compile</code> (pip-tools) or <code>uv lock</code>; regenerate on
+  dependency bumps, review the diff like code.</li>
+</ul>
+<h3 id="1855-publishing-without-leaking-tokens">18.5.5 Publishing without leaking tokens</h3>
+<p>Modern PyPI supports <strong>trusted publishing</strong> (OIDC): you configure the PyPI
+project to trust your GitHub repo/workflow, and CI gets a short-lived token —
+no long-lived secret to rotate or leak.</p>
+<div class="codehilite"><pre><span></span><code><span class="w">  </span><span class="nt">publish</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">startsWith(github.ref, 'refs/tags/v')</span>
+<span class="w">    </span><span class="nt">needs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">quality</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">matrix</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">permissions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> id-token</span><span class="p">:</span><span class="w"> </span><span class="nv">write</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w">        </span><span class="c1"># OIDC</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pipx run build</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pypa/gh-action-pypi-publish@release/v1</span>
+</code></pre></div>
+
+<p>For private packages: an internal index (Artifactory, devpi, CodeArtifact) plus
+<code>--index-url</code>, or a git+ssh dependency for internal-only libs.</p>
+<h3 id="1856-ci-pipeline-anatomy-and-keeping-it-fast">18.5.6 CI pipeline anatomy (and keeping it fast)</h3>
+<p>Stages: <strong>checkout → setup (cached) → install → lint/format → types → tests →
+coverage gate → build → (on tag) publish → deploy</strong>. Speed levers: cache pip/uv
+and the pre-commit environment; run lint/types in a job parallel to tests;
+shard the test suite (<code>pytest -n auto</code>, or split by directory); run the
+cross-version matrix only on <code>main</code>/PRs, not every push; reuse a built wheel as
+the deploy artifact instead of rebuilding.</p>
+<h3 id="1857-the-gates-worth-enforcing">18.5.7 The gates worth enforcing</h3>
+<table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Tool</th>
+<th>Fails when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>format</td>
+<td><code>ruff format --check</code></td>
+<td>files not formatted</td>
+</tr>
+<tr>
+<td>lint</td>
+<td><code>ruff check</code></td>
+<td>style/bug patterns, unsorted imports</td>
+</tr>
+<tr>
+<td>types</td>
+<td><code>mypy --strict src/</code></td>
+<td>annotation errors</td>
+</tr>
+<tr>
+<td>tests</td>
+<td><code>pytest</code></td>
+<td>behaviour regressions</td>
+</tr>
+<tr>
+<td>coverage floor</td>
+<td><code>--cov-fail-under=90</code></td>
+<td>untested new code</td>
+</tr>
+<tr>
+<td>security</td>
+<td><code>pip-audit</code>, <code>bandit</code>, Dependabot/Renovate</td>
+<td>vulnerable deps</td>
+</tr>
+<tr>
+<td>license</td>
+<td><code>pip-licenses --fail-on="GPL-3.0"</code></td>
+<td>license incompatibility</td>
+</tr>
+<tr>
+<td>packaging</td>
+<td><code>twine check dist/*</code>, <code>python -m build</code></td>
+<td>broken metadata/README</td>
+</tr>
+<tr>
+<td>perf budget</td>
+<td>pytest-benchmark vs baseline</td>
+<td>&gt;10 % regression</td>
+</tr>
+</tbody>
+</table>
+<p><code>pre-commit</code> runs a subset locally (format, lint, quick checks) so CI failures
+become rare rather than routine.</p>
+<h3 id="1858-shipping-applications-not-libraries">18.5.8 Shipping applications (not libraries)</h3>
+<p>Applications need a runtime environment, not a PyPI page: pin a lockfile, build
+a <strong>multi-stage Docker image</strong> (builder stage installs deps into a venv; final
+stage copies the venv + code onto a slim base), run as a non-root user, set
+<code>PYTHONUNBUFFERED=1</code>, pin the base image digest, scan the image (Trivy), and
+deploy the <em>same artifact</em> through dev → staging → prod with a rollback that is
+just &ldquo;deploy the previous tag&rdquo;.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">build</span>
+<span class="k">RUN</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>/opt/venv
+<span class="k">COPY</span><span class="w"> </span>pyproject.toml<span class="w"> </span>uv.lock<span class="w"> </span>./
+<span class="k">RUN</span><span class="w"> </span>/opt/venv/bin/pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>-r<span class="w"> </span>&lt;<span class="o">(</span>uv<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--no-dev<span class="o">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
+<span class="k">COPY</span><span class="w"> </span>--from<span class="o">=</span>build<span class="w"> </span>/opt/venv<span class="w"> </span>/opt/venv
+<span class="k">COPY</span><span class="w"> </span>src/<span class="w"> </span>/app/src/
+<span class="k">ENV</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">"/opt/venv/bin:</span><span class="nv">$PATH</span><span class="s2">"</span><span class="w"> </span><span class="nv">PYTHONUNBUFFERED</span><span class="o">=</span><span class="m">1</span>
+<span class="k">USER</span><span class="w"> </span><span class="s">10001</span>
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">"acme-report"</span><span class="p">,</span><span class="w"> </span><span class="s2">"serve"</span><span class="p">]</span>
+</code></pre></div>
+
+<h2 id="186-industry-level">18.6 Industry level</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 470" width="990" height="470" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>From commit to published release</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+    <marker id="arred" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-red, #dc2626)"/></marker>
+  </defs>
+<text x="495" y="30" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">A release is a pipeline, not a hero</text>
+<text x="495" y="50" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Conventional Commits make the version and the changelog derivable - CI does the rest</text>
+<rect x="24" y="84" width="176" height="56" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="112.0" y="109.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">commit</text>
+<text x="112.0" y="126.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">feat: / fix: / feat!:</text>
+<rect x="214" y="84" width="176" height="56" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="302.0" y="109.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">pull request</text>
+<text x="302.0" y="126.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">review + green CI</text>
+<rect x="404" y="84" width="176" height="56" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="492.0" y="109.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">gates</text>
+<text x="492.0" y="126.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">ruff, mypy, pytest, cov</text>
+<rect x="594" y="84" width="176" height="56" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="682.0" y="109.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">merge to main</text>
+<text x="682.0" y="126.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">squash, changelog entry</text>
+<rect x="784" y="84" width="176" height="56" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="872.0" y="109.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">tag v1.5.0</text>
+<text x="872.0" y="126.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">version bump by rule</text>
+<line x1="200" y1="112" x2="214" y2="112" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<line x1="390" y1="112" x2="404" y2="112" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<line x1="580" y1="112" x2="594" y2="112" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<line x1="770" y1="112" x2="784" y2="112" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<path d="M 492 140 L 492 176 L 302 176 L 302 140" stroke="var(--dg-red, #dc2626)" stroke-width="1.8" stroke-dasharray="5 4" fill="none" marker-end="url(#arred)" stroke-linecap="round"/>
+<rect x="301.65" y="162.025" width="190.7" height="15.75" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="397" y="172" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">any gate red -&gt; back to the PR</text>
+<rect x="24" y="224" width="176" height="56" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="112.0" y="242.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">build</text>
+<text x="112.0" y="259.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">python -m build</text>
+<text x="112.0" y="273.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">wheel + sdist</text>
+<rect x="214" y="224" width="176" height="56" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="302.0" y="242.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">publish</text>
+<text x="302.0" y="259.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">PyPI via OIDC</text>
+<text x="302.0" y="273.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">no long-lived token</text>
+<rect x="404" y="224" width="176" height="56" rx="8" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="492.0" y="242.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">release notes</text>
+<text x="492.0" y="259.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">GitHub Release</text>
+<text x="492.0" y="273.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">CHANGELOG.md</text>
+<rect x="594" y="224" width="176" height="56" rx="8" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="682.0" y="242.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">consumers</text>
+<text x="682.0" y="259.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">Renovate / Dependabot</text>
+<text x="682.0" y="273.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">bump + their CI</text>
+<rect x="784" y="224" width="176" height="56" rx="8" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="872.0" y="242.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">rollback</text>
+<text x="872.0" y="259.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">reinstall previous</text>
+<text x="872.0" y="273.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">pinned version</text>
+<line x1="200" y1="252" x2="214" y2="252" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<line x1="390" y1="252" x2="404" y2="252" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<line x1="580" y1="252" x2="594" y2="252" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<line x1="770" y1="252" x2="784" y2="252" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<path d="M 872 140 L 872 196 L 112 196 L 112 224" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" marker-end="url(#arslate)" stroke-linecap="round"/>
+<rect x="363.15500000000003" y="184.025" width="257.68999999999994" height="15.75" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="492" y="194" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">only on refs/tags/v*, after the test jobs</text>
+<rect x="24" y="306" width="452" height="140" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="40" y="328" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Version rule (semver on PEP 440)</text>
+<text x="40" y="352" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">feat!: or BREAKING CHANGE  -&gt;  MAJOR  (2.0.0)</text>
+<text x="40" y="369" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">feat:                      -&gt;  MINOR  (1.5.0)</text>
+<text x="40" y="386" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">fix: / docs: / chore:      -&gt;  PATCH  (1.4.3)</text>
+<text x="40" y="403" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">nothing user visible       -&gt;  no release</text>
+<rect x="514" y="306" width="452" height="140" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="530" y="328" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Non-negotiables</text>
+<text x="530" y="352" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.3" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* a published version is immutable - never re-upload, use .post1</text>
+<text x="530" y="368" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.3" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* yank broken releases, do not delete them</text>
+<text x="530" y="384" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.3" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* the release job needs: the test jobs, and least-privilege</text>
+<text x="530" y="400" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.3" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">  permissions (id-token: write) - nothing else</text>
+<text x="530" y="416" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.3" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* deprecate for one minor release before removing anything</text>
+</svg>
+<figcaption>The release flow: conventional commits feed the version rule, CI gates the merge, and only a tag can publish.</figcaption></figure>
+
+<h3 id="release-flow-that-scales-past-one-developer">Release flow that scales past one developer</h3>
+<ol>
+<li>PR → CI gates (lint/types/tests/coverage) green → review → squash-merge to
+   <code>main</code>;</li>
+<li>commits follow <strong>Conventional Commits</strong> (<code>feat:</code>, <code>fix:</code>, <code>feat!:</code>/
+   <code>BREAKING CHANGE:</code>) so the changelog and next version are derivable;</li>
+<li>release job (manual or automated: semantic-release/Release Drafter) bumps
+   the version, writes <code>CHANGELOG.md</code>, tags <code>v1.5.0</code>, builds and publishes the
+   wheel, creates the GitHub Release with notes;</li>
+<li>tag → publish job with OIDC; artifacts are retained and checksummed;</li>
+<li>downstream apps bump the dependency via Renovate/Dependabot PR → their CI
+   proves compatibility;</li>
+<li>rollback = reinstall the previous pinned version. No heroics.</li>
+</ol>
+<h3 id="things-seniors-check-in-a-packaging-pr">Things seniors check in a packaging PR</h3>
+<ul>
+<li>is <code>requires-python</code> honest, and does the CI matrix cover it?</li>
+<li>are dependency ranges neither pinned-to-death nor open-ended (<code>&gt;=</code> without
+  an upper bound invites breakage; too tight breaks consumers)?</li>
+<li>does the package include the data files it needs (<code>[tool.hatch.build]</code> /
+  <code>package-data</code>), and is nothing unintended included (<code>.env</code>, tests, caches)?</li>
+<li>is the version single-sourced (no three places to edit)?</li>
+<li>does the README render on PyPI (<code>twine check</code>)?</li>
+<li>is the release job protected by <code>if: startsWith(github.ref,'refs/tags/v')</code>
+  and <code>needs:</code> the test jobs?</li>
+<li>are secrets OIDC/short-lived, with least-privilege <code>permissions:</code>?</li>
+</ul>
+<h3 id="deprecation-policy-libraries-people-depend-on">Deprecation policy (libraries people depend on)</h3>
+<p>Announce in the changelog → warn with <code>DeprecationWarning</code> for at least one
+minor release → remove in the next major. Keep type hints and tests for the
+deprecated path until it is gone; never remove silently.</p>
+<h2 id="187-comparison-tables">18.7 Comparison tables</h2>
+<p><strong>Tool chooser:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Modern pick</th>
+<th>Legacy equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>metadata/build config</td>
+<td><code>pyproject.toml</code></td>
+<td><code>setup.py</code> + <code>setup.cfg</code></td>
+</tr>
+<tr>
+<td>build backend</td>
+<td>hatchling / setuptools</td>
+<td>distutils (removed)</td>
+</tr>
+<tr>
+<td>env creation</td>
+<td><code>uv venv</code>, <code>python -m venv</code></td>
+<td>virtualenv</td>
+</tr>
+<tr>
+<td>install/resolve</td>
+<td><code>uv</code>, <code>pip</code></td>
+<td>easy_install</td>
+</tr>
+<tr>
+<td>lockfile</td>
+<td><code>uv.lock</code>, <code>pip-compile</code></td>
+<td>hand-maintained requirements.txt</td>
+</tr>
+<tr>
+<td>lint + format</td>
+<td><code>ruff</code></td>
+<td>flake8 + isort + black</td>
+</tr>
+<tr>
+<td>types</td>
+<td><code>mypy</code> / <code>pyright</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>test runner</td>
+<td><code>pytest</code></td>
+<td>unittest</td>
+</tr>
+<tr>
+<td>publish</td>
+<td><code>python -m build</code> + OIDC action</td>
+<td><code>python setup.py sdist upload</code></td>
+</tr>
+<tr>
+<td>task runner</td>
+<td><code>nox</code> / <code>tox</code> / <code>Makefile</code></td>
+<td>shell scripts</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Wheel vs sdist:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>wheel <code>.whl</code></th>
+<th>sdist <code>.tar.gz</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>contents</td>
+<td>built, ready to unpack</td>
+<td>source tree</td>
+</tr>
+<tr>
+<td>install speed</td>
+<td>fast, no build step</td>
+<td>may compile</td>
+</tr>
+<tr>
+<td>code execution on install</td>
+<td>none</td>
+<td><code>setup.py</code> runs</td>
+</tr>
+<tr>
+<td>platform-specific</td>
+<td>yes (tags in filename)</td>
+<td>usually no</td>
+</tr>
+<tr>
+<td>publish both?</td>
+<td><strong>yes</strong></td>
+<td>yes (fallback)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="188-mistakes-gotchas">18.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">setup.py-only projects</p>
+<p>Still works, but <code>pyproject.toml</code> is the standard and the only thing new
+tooling reads first. Migrate; keep a <code>setup.py</code> shim only if a legacy build
+needs it.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Version defined in three places</p>
+<p><code>__init__.py</code>, <code>setup.py</code>, docs — they drift. Single-source it and read with
+<code>importlib.metadata.version</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Flat layout hiding a packaging bug</p>
+<p>Tests pass because the repo root is importable; the published package misses a
+submodule. <code>src/</code> layout + <code>pip install -e .</code> prevents this.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Pinning everything in a library</p>
+<p><code>dependencies = ["httpx==0.27.0"]</code> makes your library uninstallable next to
+anything else. Ranges for libraries, locks for applications.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Committing <code>.venv/</code> or <code>dist/</code></p>
+<p>Noise and stale artifacts. <code>.gitignore</code> them; let CI build.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Long-lived upload tokens</p>
+<p>A PyPI token in repo secrets is a supply-chain risk. Use trusted publishing
+(OIDC) or scoped, rotating tokens.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Reusing a version number</p>
+<p>PyPI is immutable per filename; a re-upload silently fails or is rejected.
+Bump, or <code>.post1</code> for metadata-only fixes.</p>
+</div>
+<h2 id="189-interview-questions">18.9 Interview questions</h2>
+<ol>
+<li><strong>What does <code>[build-system]</code> do?</strong> — declares the backend and its build
+   requirements (PEP 517/518) used by <code>python -m build</code>/pip.</li>
+<li><strong>Wheel vs sdist?</strong> — pre-built vs source; wheels install faster and don&rsquo;t
+   execute code.</li>
+<li><strong>Why <code>src/</code> layout?</strong> — forces installation, so tests validate real
+   packaging.</li>
+<li><strong>Extras vs dependency groups?</strong> — publishable optional features vs
+   dev-only tooling.</li>
+<li><strong>How do you make installs reproducible?</strong> — lockfile with hashes;
+   regenerate deliberately.</li>
+<li><strong>How do you publish securely from CI?</strong> — build on tag, OIDC trusted
+   publishing, least-privilege permissions, <code>twine check</code>.</li>
+<li><strong>Semver bump for a backwards-incompatible rename?</strong> — MAJOR (plus a
+   deprecation cycle first).</li>
+<li><strong>What gates belong in CI?</strong> — format, lint, types, tests, coverage floor,
+   dependency audit, packaging check, perf budget.</li>
+</ol>
+<h2 id="1810-practice-exercises">18.10 Practice exercises</h2>
+<p>This pack makes you write the <em>tooling</em> around packaging: read a real
+<code>pyproject.toml</code>, compute semver bumps from Conventional Commits, render a CI
+workflow, build an sdist-style manifest, and resolve a dependency graph.</p>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-18-a</span></div><p>Implement <code>parse_pyproject(text)</code> (with <code>tomllib</code>) returning
+<code>{"name", "version", "requires_python", "dependencies", "extras", "scripts"}</code>
+with <code>None</code>/<code>{}</code>/<code>[]</code> defaults; <code>bump(version, part)</code> for semver
+(major/minor/patch, <code>ValueError</code> on junk); <code>is_newer(a, b)</code> comparing dotted
+numeric versions.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/18_packaging/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-18-b</span></div><p>Implement <code>classify_commits(messages)</code> grouping Conventional Commits into
+<code>feat/fix/docs/refactor/chore/other/breaking</code>; <code>next_version(current,
+messages)</code> applying the semver rules (breaking → major, feat → minor, fix →
+patch, nothing → <code>None</code>); and <code>render_workflow(name, py_versions, steps)</code>
+emitting valid GitHub Actions YAML text with a matrix over <code>py_versions</code>.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/18_packaging/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-18-c</span></div><p>Implement <code>make_manifest(files, include, exclude)</code> (glob rules, deterministic
+sorted output, exclusions win); <code>resolve_install_order(packages)</code> — Kahn
+topological sort with alphabetical tie-break, raising <code>CyclicDependency</code>
+(cycle members in the message) or <code>UnknownDependency</code>; <code>check_pins(
+requirements, lock)</code> returning <code>{"ok", "mismatched", "missing", "unpinned"}</code>
+for lockfile drift; and <code>release_plan(current, messages)</code> combining
+classification, bump and changelog into one dict.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/18_packaging/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/18_packaging/solution.py)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_install_order</span><span class="p">(</span><span class="n">packages</span><span class="p">):</span>
+    <span class="n">indeg</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">packages</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">meta</span> <span class="ow">in</span> <span class="n">packages</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"requires"</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="k">if</span> <span class="n">dep</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">indeg</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">UnknownDependency</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+            <span class="n">indeg</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">ready</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">indeg</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">while</span> <span class="n">ready</span><span class="p">:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">ready</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">meta</span> <span class="ow">in</span> <span class="n">packages</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"requires"</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">indeg</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">indeg</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">ready</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">ready</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">packages</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">CyclicDependency</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">indeg</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">order</span>
+</code></pre></div></details>
+<h2 id="1811-cheatsheet">18.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Command / snippet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>create env</td>
+<td><code>python -m venv .venv</code> / <code>uv venv</code></td>
+</tr>
+<tr>
+<td>activate</td>
+<td><code>source .venv/bin/activate</code> (Win: <code>.venv\Scripts\activate</code>)</td>
+</tr>
+<tr>
+<td>install project editable</td>
+<td><code>pip install -e '.[dev]'</code></td>
+</tr>
+<tr>
+<td>build artifacts</td>
+<td><code>python -m build</code></td>
+</tr>
+<tr>
+<td>check artifacts</td>
+<td><code>twine check dist/*</code></td>
+</tr>
+<tr>
+<td>publish</td>
+<td><code>twine upload dist/*</code> (or OIDC action)</td>
+</tr>
+<tr>
+<td>lock deps</td>
+<td><code>uv lock</code> / <code>pip-compile pyproject.toml -o requirements.lock</code></td>
+</tr>
+<tr>
+<td>install from lock</td>
+<td><code>uv sync</code> / <code>pip install -r requirements.lock</code></td>
+</tr>
+<tr>
+<td>audit deps</td>
+<td><code>pip-audit</code>, <code>uv pip audit</code></td>
+</tr>
+<tr>
+<td>lint+format</td>
+<td><code>ruff check . &amp;&amp; ruff format .</code></td>
+</tr>
+<tr>
+<td>types</td>
+<td><code>mypy src/</code></td>
+</tr>
+<tr>
+<td>tests + coverage</td>
+<td><code>pytest --cov=src --cov-fail-under=90</code></td>
+</tr>
+<tr>
+<td>parallel tests</td>
+<td><code>pytest -n auto</code></td>
+</tr>
+<tr>
+<td>local gates</td>
+<td><code>pre-commit install</code> / <code>pre-commit run -a</code></td>
+</tr>
+<tr>
+<td>read own version</td>
+<td><code>importlib.metadata.version("pkg")</code></td>
+</tr>
+<tr>
+<td>add console script</td>
+<td><code>[project.scripts] name = "pkg.mod:fn"</code></td>
+</tr>
+<tr>
+<td>optional deps</td>
+<td><code>pip install 'pkg[postgres]'</code></td>
+</tr>
+<tr>
+<td>run on many Pythons</td>
+<td><code>tox</code> / <code>nox</code> / CI matrix</td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="17-performance.html"><span>&larr; previous</span><strong>Performance: profiling, caching and complexity-first optimisation</strong></a><a class="next" href="19-cheatsheets.html"><span>next &rarr;</span><strong>Cheatsheets: the whole course on a few screens</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#181-definition">18.1 Definition</a></li>
+<li><a href="#182-syntax">18.2 Syntax</a></li>
+<li><a href="#183-first-examples">18.3 First examples</a></li>
+<li><a href="#184-the-picture">18.4 The picture</a></li>
+<li><a href="#185-going-deeper">18.5 Going deeper</a><ul>
+<li><a href="#1851-build-backends-who-actually-makes-the-wheel">18.5.1 Build backends: who actually makes the wheel</a></li>
+<li><a href="#1852-layouts-src-vs-flat">18.5.2 Layouts: src/ vs flat</a></li>
+<li><a href="#1853-versions-pep-440-and-semver">18.5.3 Versions: PEP 440 and semver</a></li>
+<li><a href="#1854-dependencies-ranges-extras-locks">18.5.4 Dependencies: ranges, extras, locks</a></li>
+<li><a href="#1855-publishing-without-leaking-tokens">18.5.5 Publishing without leaking tokens</a></li>
+<li><a href="#1856-ci-pipeline-anatomy-and-keeping-it-fast">18.5.6 CI pipeline anatomy (and keeping it fast)</a></li>
+<li><a href="#1857-the-gates-worth-enforcing">18.5.7 The gates worth enforcing</a></li>
+<li><a href="#1858-shipping-applications-not-libraries">18.5.8 Shipping applications (not libraries)</a></li>
+</ul>
+</li>
+<li><a href="#186-industry-level">18.6 Industry level</a><ul>
+<li><a href="#release-flow-that-scales-past-one-developer">Release flow that scales past one developer</a></li>
+<li><a href="#things-seniors-check-in-a-packaging-pr">Things seniors check in a packaging PR</a></li>
+<li><a href="#deprecation-policy-libraries-people-depend-on">Deprecation policy (libraries people depend on)</a></li>
+</ul>
+</li>
+<li><a href="#187-comparison-tables">18.7 Comparison tables</a></li>
+<li><a href="#188-mistakes-gotchas">18.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#189-interview-questions">18.9 Interview questions</a></li>
+<li><a href="#1810-practice-exercises">18.10 Practice exercises</a></li>
+<li><a href="#1811-cheatsheet">18.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

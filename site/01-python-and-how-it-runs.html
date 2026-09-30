@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Python runs: source to bytecode to VM &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link active" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">25 min</span><span class="chip tag">interpreter</span><span class="chip tag">bytecode</span><span class="chip tag">environment</span><span class="chip tag">venv</span></div>
+      <h1 id="1-how-python-runs">1. How Python runs</h1>
+<blockquote>
+<p>&ldquo;Python is an interpreted language&rdquo; is the sentence everyone repeats and
+almost nobody can defend. By the end of this module you can.</p>
+</blockquote>
+<h2 id="11-definition">1.1 Definition</h2>
+<p><strong>Plain version.</strong> Python is a programming language plus a program (the
+<em>interpreter</em>) that runs code written in that language, line of intent at a
+time, without you compiling anything yourself.</p>
+<p><strong>Precise version.</strong> <em>Python</em> is a language specification. <em>CPython</em> is the
+reference implementation: a C program that <strong>compiles</strong> your source text into
+<strong>bytecode</strong> (a low-level instruction list for a virtual machine), caches it in
+<code>__pycache__/*.pyc</code>, and then <strong>interprets</strong> that bytecode on the <strong>Python
+Virtual Machine (PVM)</strong>. Other implementations exist (PyPy, which JIT-compiles
+bytecode to machine code; MicroPython for microcontrollers), which is exactly
+why &ldquo;the interpreter&rdquo; and &ldquo;the language&rdquo; must be kept apart.</p>
+<p>Three consequences you should carry everywhere:</p>
+<ul>
+<li>Python is <strong>compiled <em>and</em> interpreted</strong>. The compile step is automatic and
+  per-module; you simply never invoke it.</li>
+<li>The <code>.pyc</code> cache makes the <em>second</em> run of a module start faster. It never
+  makes the code itself run faster.</li>
+<li>Everything later in this course about the <strong>GIL</strong>, <strong>speed</strong>, and
+  <strong>concurrency</strong> is a property of the <em>PVM implementation</em>, not of the
+  language.</li>
+</ul>
+<h2 id="12-syntax">1.2 Syntax</h2>
+<p>The smallest program that proves the pipeline:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># hello.py</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Hello, industry."</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>python<span class="w"> </span>hello.py
+Hello,<span class="w"> </span>industry.
+</code></pre></div>
+
+<p>And the same pipeline made visible:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># compile source -&gt; bytecode yourself, then disassemble it</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dis</span>
+<span class="n">code</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="s2">"x = 1 + 2"</span><span class="p">,</span> <span class="s2">"&lt;demo&gt;"</span><span class="p">,</span> <span class="s2">"exec"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">code</span><span class="o">.</span><span class="n">co_consts</span><span class="p">)</span>          <span class="c1"># (3, None)  &lt;- 1+2 was folded at compile time!</span>
+<span class="n">dis</span><span class="o">.</span><span class="n">dis</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  1           0 RESUME                   0
+              2 LOAD_CONST               0 (3)
+              4 STORE_NAME               0 (x)
+              6 LOAD_CONST               1 (None)
+              8 RETURN_VALUE
+</code></pre></div>
+
+<p>Notice <code>LOAD_CONST 0 (3)</code>: the constant expression <code>1 + 2</code> was evaluated by
+the <strong>compiler</strong>, not at runtime. That is constant folding, and it is your
+first proof that a real compile step exists.</p>
+<h2 id="13-first-examples">1.3 First examples</h2>
+<p><strong>Example 1 — run a file.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># area.py</span>
+<span class="n">radius</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">area</span> <span class="o">=</span> <span class="mf">3.14159</span> <span class="o">*</span> <span class="n">radius</span> <span class="o">**</span> <span class="mi">2</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"A circle of radius </span><span class="si">{</span><span class="n">radius</span><span class="si">}</span><span class="s2"> has area </span><span class="si">{</span><span class="n">area</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>python<span class="w"> </span>area.py
+A<span class="w"> </span>circle<span class="w"> </span>of<span class="w"> </span>radius<span class="w"> </span><span class="m">5</span><span class="w"> </span>has<span class="w"> </span>area<span class="w"> </span><span class="m">78</span>.54
+</code></pre></div>
+
+<p><strong>Example 2 — the REPL (interactive interpreter).</strong></p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>python
+&gt;&gt;&gt;<span class="w"> </span><span class="m">6</span><span class="w"> </span>*<span class="w"> </span><span class="m">7</span>
+<span class="m">42</span>
+&gt;&gt;&gt;<span class="w"> </span>import<span class="w"> </span>math
+&gt;&gt;&gt;<span class="w"> </span>math.sqrt<span class="o">(</span><span class="m">144</span><span class="o">)</span>
+<span class="m">12</span>.0
+&gt;&gt;&gt;<span class="w"> </span>_<span class="w">                      </span><span class="c1"># underscore = last result</span>
+<span class="m">12</span>.0
+&gt;&gt;&gt;<span class="w"> </span>exit<span class="o">()</span>
+</code></pre></div>
+
+<p><strong>Example 3 — see the cache appear.</strong></p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>ls
+hello.py
+$<span class="w"> </span>python<span class="w"> </span>hello.py
+Hello,<span class="w"> </span>industry.
+$<span class="w"> </span>ls
+__pycache__<span class="w">  </span>hello.py
+$<span class="w"> </span>ls<span class="w"> </span>__pycache__
+hello.cpython-311.pyc<span class="w">      </span><span class="c1"># compiled bytecode, keyed to the Python version</span>
+</code></pre></div>
+
+<p>Delete <code>__pycache__</code> freely; Python rebuilds it. Committing it to Git is a
+review-blocking mistake.</p>
+<h2 id="14-the-picture">1.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 372" width="990" height="372" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>How Python runs your code</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+  </defs>
+<text x="495" y="30" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">From source file to running program</text>
+<text x="495" y="48" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Python is compiled to bytecode and then interpreted by a virtual machine</text>
+<rect x="26.0" y="68" width="154" height="82" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="103.0" y="99.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">main.py</text>
+<text x="103.0" y="116.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">your source code</text>
+<text x="103.0" y="130.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">plain text</text>
+<rect x="95.0" y="56" width="28" height="19" rx="9.5" fill="var(--dg-slate, #475569)"/>
+<text x="109.0" y="69.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">1</text>
+<rect x="222.0" y="68" width="154" height="82" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="299.0" y="99.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Parser</text>
+<text x="299.0" y="116.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">tokenises + parses</text>
+<text x="299.0" y="130.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">builds the AST</text>
+<line x1="180.0" y1="109.0" x2="222.0" y2="109.0" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="291.0" y="56" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="305.0" y="69.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">2</text>
+<rect x="418.0" y="68" width="154" height="82" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="495.0" y="99.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">AST</text>
+<text x="495.0" y="116.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">Abstract Syntax Tree</text>
+<text x="495.0" y="130.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">structure of the code</text>
+<line x1="376.0" y1="109.0" x2="418.0" y2="109.0" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="487.0" y="56" width="28" height="19" rx="9.5" fill="var(--dg-violet, #7c3aed)"/>
+<text x="501.0" y="69.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">3</text>
+<rect x="614.0" y="68" width="154" height="82" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="691.0" y="99.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Compiler</text>
+<text x="691.0" y="116.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">AST -&gt; bytecode</text>
+<text x="691.0" y="130.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">CPython&#x27;s compile()</text>
+<line x1="572.0" y1="109.0" x2="614.0" y2="109.0" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="683.0" y="56" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="697.0" y="69.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">4</text>
+<rect x="810.0" y="68" width="154" height="82" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="887.0" y="99.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">__pycache__/</text>
+<text x="887.0" y="116.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">main.cpython-311.pyc</text>
+<text x="887.0" y="130.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">cached bytecode</text>
+<line x1="768.0" y1="109.0" x2="810.0" y2="109.0" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="879.0" y="56" width="28" height="19" rx="9.5" fill="var(--dg-amber, #d97706)"/>
+<text x="893.0" y="69.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">5</text>
+<line x1="887.0" y1="150" x2="887.0" y2="190" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="885.5" y="164.5" width="95.0" height="15.0" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="933.0" y="174" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">written to disk</text>
+<rect x="810.0" y="194" width="154" height="82" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="887.0" y="225.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">PVM</text>
+<text x="887.0" y="242.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">Python Virtual Machine</text>
+<text x="887.0" y="256.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">runs opcodes in a loop</text>
+<line x1="810.0" y1="235.0" x2="768.0" y2="235.0" stroke="var(--dg-green, #059669)" stroke-width="1.8" marker-end="url(#argreen)"/>
+<rect x="614.0" y="194" width="154" height="82" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="691.0" y="225.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Output</text>
+<text x="691.0" y="242.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">your program runs</text>
+<text x="691.0" y="256.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">prints / returns</text>
+<rect x="26.0" y="190" width="526" height="90" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="42.0" y="214" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Three things worth remembering</text>
+<text x="42.0" y="234" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1.  Deleting __pycache__ is always safe - it is rebuilt.</text>
+<text x="42.0" y="250" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">2.  The .pyc cache speeds up START-UP, never execution.</text>
+<text x="42.0" y="266" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">3.  The GIL lives inside the PVM (see module 16).</text>
+<text x="495" y="362" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">CPython 3.11: about 25% faster than 3.10 thanks to an adaptive specialised interpreter</text>
+</svg>
+<figcaption>From source file to running program: parse, AST, compile to bytecode, cache to __pycache__, then execute on the PVM.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 306" width="990" height="306" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The everyday Python toolchain</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="30" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">The seven tools you will touch every day</text>
+<rect x="15.0" y="62" width="120" height="92" rx="8" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="75.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Editor / IDE</text>
+<text x="75.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">VS Code, PyCharm</text>
+<text x="75.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">or Neovim</text>
+<rect x="15.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="75.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">code .</text>
+<rect x="155.0" y="62" width="120" height="92" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="215.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Virtual env</text>
+<text x="215.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">isolated deps</text>
+<text x="215.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">per project</text>
+<line x1="135.0" y1="108.0" x2="155.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="155.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="215.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">python -m venv .venv</text>
+<rect x="295.0" y="62" width="120" height="92" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="355.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Interpreter</text>
+<text x="355.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">runs your code</text>
+<text x="355.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">3.11+ recommended</text>
+<line x1="275.0" y1="108.0" x2="295.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="295.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="355.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">python app.py</text>
+<rect x="435.0" y="62" width="120" height="92" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="495.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Tests</text>
+<text x="495.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">pytest</text>
+<text x="495.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">safety net</text>
+<line x1="415.0" y1="108.0" x2="435.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="435.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="495.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">pytest -q</text>
+<rect x="575.0" y="62" width="120" height="92" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="635.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Lint / Types</text>
+<text x="635.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">ruff, black</text>
+<text x="635.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">mypy</text>
+<line x1="555.0" y1="108.0" x2="575.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="575.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="635.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">ruff check .</text>
+<rect x="715.0" y="62" width="120" height="92" rx="8" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="775.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">Git</text>
+<text x="775.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">history</text>
+<text x="775.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">collaboration</text>
+<line x1="695.0" y1="108.0" x2="715.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="715.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="775.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">git commit -am &#x27;fix&#x27;</text>
+<rect x="855.0" y="62" width="120" height="92" rx="8" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="915.0" y="100.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">CI / CD</text>
+<text x="915.0" y="115.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">GitHub Actions</text>
+<text x="915.0" y="127.55" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">runs on push</text>
+<line x1="835.0" y1="108.0" x2="855.0" y2="108.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="855.0" y="166" width="120" height="24" rx="5" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="915.0" y="182" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="9" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">gh pr create</text>
+<rect x="15.0" y="206" width="960" height="54" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="33.0" y="228" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Industry reality: nobody &#x27;just runs python&#x27;.  Code is formatted, linted, type-checked,</text>
+<text x="33.0" y="245" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">tested and reviewed automatically before it reaches production.</text>
+</svg>
+<figcaption>The seven tools of a professional Python day: editor, virtualenv, interpreter, tests, linter/type-checker, git, CI.</figcaption></figure>
+
+<h2 id="15-going-deeper">1.5 Going deeper</h2>
+<h3 id="what-bytecode-actually-is">What bytecode actually is</h3>
+<p>Bytecode is a sequence of one-byte-plus-argument instructions for a
+<strong>stack machine</strong>: operands are pushed on a value stack, operators pop them
+and push results. <code>dis</code> shows it; <code>code.co_code</code> is the raw bytes.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">dis</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span> <span class="o">+</span> <span class="mi">1</span>
+
+<span class="n">dis</span><span class="o">.</span><span class="n">dis</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  3           0 RESUME                   0
+              2 LOAD_FAST                0 (a)
+              4 LOAD_FAST                1 (b)
+              6 BINARY_OP                5 (*)
+             10 LOAD_CONST               1 (1)
+             12 BINARY_OP                1 (+)
+             16 RETURN_VALUE
+</code></pre></div>
+
+<p><code>LOAD_FAST</code> (a local variable) is an array index; <code>LOAD_NAME</code>/<code>LOAD_GLOBAL</code>
+are dictionary lookups. This single fact explains a whole class of
+performance advice in module 17: <strong>locals are faster than globals.</strong></p>
+<h3 id="the-evaluation-loop-and-adaptive-specialisation-311">The evaluation loop and adaptive specialisation (3.11+)</h3>
+<p>CPython 3.11 replaced the old <code>switch</code>-based loop with a &ldquo;computed goto&rdquo;
+loop and added <strong>specialising adaptive interpretation</strong>: hot bytecode
+instructions rewrite themselves into type-specific variants
+(<code>BINARY_OP</code> → <code>BINARY_OP_ADD_INT</code>), avoiding dispatch and boxing overhead.
+This is why 3.11 was ~25 % faster than 3.10 with no code changes — and why
+&ldquo;Python is slow&rdquo; needs a date attached to it.</p>
+<h3 id="startup-vs-steady-state">Startup vs steady state</h3>
+<p>The interpreter must, before your first line runs: initialise the runtime,
+build <code>sys.path</code>, and import <code>site</code>, <code>os</code>, <code>io</code>, <code>encodings</code>… For a CLI tool
+this can dominate runtime. Two industry responses:</p>
+<ul>
+<li>keep the import graph small at the top level (import heavy modules lazily);</li>
+<li>for real deployment, freeze the app (PyInstaller, Nuitka) or run it under a
+  process manager that stays warm (a web server, not a script).</li>
+</ul>
+<h3 id="implementations-and-why-they-matter-to-you">Implementations, and why they matter to you</h3>
+<table>
+<thead>
+<tr>
+<th>Implementation</th>
+<th>Executes bytecode by</th>
+<th>Notable property</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPython</td>
+<td>interpreting in C</td>
+<td>the reference; the GIL; C-extension ecosystem</td>
+</tr>
+<tr>
+<td>PyPy</td>
+<td>JIT-compiling hot loops</td>
+<td>often 4–10× faster on long-running pure-Python code</td>
+</tr>
+<tr>
+<td>MicroPython</td>
+<td>interpreting, tiny runtime</td>
+<td>runs on microcontrollers with KBs of RAM</td>
+</tr>
+<tr>
+<td>GraalPy</td>
+<td>JIT on the GraalVM</td>
+<td>strong Java/Python interop</td>
+</tr>
+</tbody>
+</table>
+<p>Library authors must therefore avoid CPython-specific accidents (relying on
+refcounting for resource cleanup, C-extension-only APIs) — which is why
+context managers (<code>with</code>) exist and why module 10 insists on them.</p>
+<h2 id="16-industry-level">1.6 Industry level</h2>
+<h3 id="the-environment-is-part-of-the-language">The environment is part of the language</h3>
+<p>In industry, &ldquo;it works on my machine&rdquo; is a bug report about <em>your</em>
+environment, not a defence. The professional baseline:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. isolate: one virtualenv per project</span>
+python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate<span class="w">            </span><span class="c1"># Windows: .venv\Scripts\activate</span>
+
+<span class="c1"># 2. install the project itself in editable mode, with dev extras</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
+
+<span class="c1"># 3. pin what you ship and what you develop with, separately</span>
+pip<span class="w"> </span>freeze<span class="w"> </span>&gt;<span class="w"> </span>requirements.lock<span class="w">       </span><span class="c1"># or use uv / poetry / pip-tools</span>
+
+<span class="c1"># 4. never mix: .venv/ goes in .gitignore, requirements go in Git</span>
+</code></pre></div>
+
+<h3 id="version-discipline">Version discipline</h3>
+<p>Read the <code>requires-python</code> field of every package you depend on. Teams pin a
+minimum (e.g. <code>&gt;=3.11</code>) to use modern syntax (<code>match</code>, <code>X | None</code>, faster
+interpreter) and test against the newest released Python in CI so upgrades are
+never a surprise. Running a five-year-old interpreter in 2026 is a security
+incident waiting for a CVE.</p>
+<h3 id="toolchain-defaults-in-a-modern-repo">Toolchain defaults in a modern repo</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Job</th>
+<th>Typical invocation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ruff</code></td>
+<td>lint + format (Rust, instant)</td>
+<td><code>ruff check --fix . &amp;&amp; ruff format .</code></td>
+</tr>
+<tr>
+<td><code>mypy</code> / <code>pyright</code></td>
+<td>static type checking</td>
+<td><code>mypy src/</code> (module 14)</td>
+</tr>
+<tr>
+<td><code>pytest</code></td>
+<td>tests</td>
+<td><code>pytest -q --cov</code> (module 15)</td>
+</tr>
+<tr>
+<td><code>pre-commit</code></td>
+<td>run the above before each commit</td>
+<td><code>pre-commit run --all-files</code></td>
+</tr>
+<tr>
+<td>GitHub Actions</td>
+<td>run all of it on every push</td>
+<td><code>.github/workflows/ci.yml</code> (module 18)</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition industry">
+<p class="admonition-title">What a reviewer looks for in a first pull request</p>
+<p>A <code>.gitignore</code> containing <code>.venv/</code> and <code>__pycache__/</code>; a <code>pyproject.toml</code>
+declaring dependencies; tests that run with a single command; and no
+machine-specific paths. Code quality is reviewed <em>after</em> that baseline exists,
+because without it nobody can reproduce your run.</p>
+</div>
+<h2 id="17-comparison-tables">1.7 Comparison tables</h2>
+<p><strong><code>python file.py</code> vs <code>python -m module</code> vs REPL vs script shebang:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Command</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>File</td>
+<td><code>python app.py</code></td>
+<td>ad-hoc runs, learning</td>
+</tr>
+<tr>
+<td>Module</td>
+<td><code>python -m pytest</code>, <code>python -m myapp</code></td>
+<td>packages &amp; tools: puts <strong>cwd</strong> on <code>sys.path</code>, runs the installed entry point</td>
+</tr>
+<tr>
+<td>REPL</td>
+<td><code>python</code></td>
+<td>exploring, debugging, measuring</td>
+</tr>
+<tr>
+<td>Shebang</td>
+<td><code>./app.py</code> with <code>#!/usr/bin/env python3</code></td>
+<td>Unix scripts, cron jobs</td>
+</tr>
+<tr>
+<td>Frozen</td>
+<td><code>./dist/app</code> (PyInstaller)</td>
+<td>shipping to machines without Python</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Compile-time vs run-time work:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Happens at compile time</th>
+<th>Happens at run time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>syntax errors (<code>SyntaxError</code>)</td>
+<td>name errors (<code>NameError</code>)</td>
+</tr>
+<tr>
+<td>constant folding (<code>1+2</code> → <code>3</code>)</td>
+<td>function calls, loops</td>
+</tr>
+<tr>
+<td>building the code object</td>
+<td>importing modules the first time</td>
+</tr>
+<tr>
+<td>docstring &amp; <code>__debug__</code> handling</td>
+<td>attribute lookups, dispatch</td>
+</tr>
+</tbody>
+</table>
+<h2 id="18-mistakes-gotchas">1.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">Running <code>python script.py</code> from the wrong directory</p>
+<p>Relative paths in code are relative to the <strong>current working directory</strong>, not
+to the script&rsquo;s folder. Use <code>pathlib.Path(__file__).parent</code> for files that
+ship with your code (module 10).</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Two Pythons on one machine</p>
+<p><code>python</code> vs <code>python3</code> vs a Conda env vs the system interpreter is the single
+most common cause of &ldquo;ModuleNotFoundError but I installed it!&rdquo;. Always check
+<code>which python</code> and <code>python -c "import sys; print(sys.executable)"</code> inside the
+active environment.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Installing with <code>sudo pip</code></p>
+<p>It writes into the OS-managed interpreter and can break OS tooling. Modern
+distros block it (PEP 668, &ldquo;externally-managed-environment&rdquo;) precisely because
+of this. Use a virtualenv, always.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Bytecode is not a security boundary</p>
+<p><code>.pyc</code> files decompile trivially (<code>uncompyle6</code>, <code>pycdc</code>). Never ship secrets
+or &ldquo;protection&rdquo; as bytecode.</p>
+</div>
+<h2 id="19-interview-questions">1.9 Interview questions</h2>
+<ol>
+<li><strong>Is Python compiled or interpreted?</strong> — Both: source is compiled to
+   bytecode per module (cached in <code>__pycache__</code>), then interpreted by the PVM.</li>
+<li><strong>What does deleting <code>__pycache__</code> do?</strong> — Nothing functional; the cache
+   is rebuilt. It speeds up start-up only.</li>
+<li><strong>What is a <code>.pyc</code> file?</strong> — Marshalled code objects (bytecode + metadata)
+   for one module, tagged with the interpreter version and source mtime/hash.</li>
+<li><strong>Why does <code>1 + 2</code> not appear in <code>dis</code> output?</strong> — Constant folding at
+   compile time.</li>
+<li><strong>Name two implementations other than CPython and one difference each.</strong> —
+   PyPy (JIT, much faster long-running pure Python), MicroPython (fits KBs of
+   RAM, subset of the stdlib).</li>
+<li><strong>What is the difference between <code>python app.py</code> and <code>python -m app</code>?</strong> —
+   <code>-m</code> searches <code>sys.path</code> and runs the module as <code>__main__</code> with the cwd on
+   the path; it is the correct way to run package entry points.</li>
+</ol>
+<h2 id="110-practice-exercises">1.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-01-a</span></div><p>Create the file described by <code>tasks.first_program()</code>&rsquo;s docstring and make the
+three assertions in the test pack pass: report your interpreter version, the
+absolute path of the running interpreter, and whether a virtualenv is active.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/01_environment/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-01-b</span></div><p>Implement <code>tasks.inspect_bytecode(source)</code> returning the tuple of constants
+and the list of opcode names for a source string, and
+<code>tasks.is_constant_folded(source)</code> deciding whether an arithmetic expression
+was folded at compile time.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/01_environment/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-01-c</span></div><p>Implement <code>tasks.make_project_skeleton(root)</code> which lays out a
+<code>src</code>-layout project (package dir, <code>__init__.py</code>, <code>py.typed</code>, <code>tests/</code>,
+<code>pyproject.toml</code>, <code>.gitignore</code> with <code>.venv/</code> and <code>__pycache__/</code>) and
+<code>tasks.validate_project(root)</code> that returns a list of the problems it finds
+(empty list = healthy). This is the skeleton every later module assumes.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/01_environment/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># See exercises/01_environment/solution.py for the full reference.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">compileall</span><span class="o">,</span><span class="w"> </span><span class="nn">dis</span><span class="o">,</span><span class="w"> </span><span class="nn">io</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">contextlib</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">inspect_bytecode</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="s2">"&lt;exercise&gt;"</span><span class="p">,</span> <span class="s2">"exec"</span><span class="p">)</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stdout</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()):</span>
+        <span class="k">for</span> <span class="n">instr</span> <span class="ow">in</span> <span class="n">dis</span><span class="o">.</span><span class="n">get_instructions</span><span class="p">(</span><span class="n">code</span><span class="p">):</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">instr</span><span class="o">.</span><span class="n">opname</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">code</span><span class="o">.</span><span class="n">co_consts</span><span class="p">),</span> <span class="n">names</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">is_constant_folded</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">consts</span><span class="p">,</span> <span class="n">ops</span> <span class="o">=</span> <span class="n">inspect_bytecode</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+    <span class="c1"># folded: no arithmetic opcode survives, only LOAD_CONST-style work</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">"BINARY_OP"</span><span class="p">,</span> <span class="s2">"BINARY_ADD"</span><span class="p">))</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">)</span>
+</code></pre></div></details>
+<h2 id="111-cheatsheet">1.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Command / fact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Run a file</td>
+<td><code>python file.py</code></td>
+</tr>
+<tr>
+<td>Run a module</td>
+<td><code>python -m pkg.mod</code></td>
+</tr>
+<tr>
+<td>REPL</td>
+<td><code>python</code>, exit with <code>exit()</code> or Ctrl-D</td>
+</tr>
+<tr>
+<td>Where am I running from?</td>
+<td><code>python -c "import sys; print(sys.executable)"</code></td>
+</tr>
+<tr>
+<td>Make a virtualenv</td>
+<td><code>python -m venv .venv</code> then <code>source .venv/bin/activate</code></td>
+</tr>
+<tr>
+<td>Install editable + dev deps</td>
+<td><code>pip install -e ".[dev]"</code></td>
+</tr>
+<tr>
+<td>See bytecode</td>
+<td><code>python -m dis file.py</code> or <code>dis.dis(fn)</code></td>
+</tr>
+<tr>
+<td>See the cache</td>
+<td><code>ls __pycache__</code></td>
+</tr>
+<tr>
+<td>Version in code</td>
+<td><code>sys.version_info</code> (a named tuple — compare with <code>(3, 11)</code>)</td>
+</tr>
+<tr>
+<td>Compile check only</td>
+<td><code>python -m py_compile file.py</code></td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="index.html"><span>&larr; previous</span><strong>Course home & how to use these notes</strong></a><a class="next" href="02-variables-types-memory.html"><span>next &rarr;</span><strong>Variables, types & the memory model</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#11-definition">1.1 Definition</a></li>
+<li><a href="#12-syntax">1.2 Syntax</a></li>
+<li><a href="#13-first-examples">1.3 First examples</a></li>
+<li><a href="#14-the-picture">1.4 The picture</a></li>
+<li><a href="#15-going-deeper">1.5 Going deeper</a><ul>
+<li><a href="#what-bytecode-actually-is">What bytecode actually is</a></li>
+<li><a href="#the-evaluation-loop-and-adaptive-specialisation-311">The evaluation loop and adaptive specialisation (3.11+)</a></li>
+<li><a href="#startup-vs-steady-state">Startup vs steady state</a></li>
+<li><a href="#implementations-and-why-they-matter-to-you">Implementations, and why they matter to you</a></li>
+</ul>
+</li>
+<li><a href="#16-industry-level">1.6 Industry level</a><ul>
+<li><a href="#the-environment-is-part-of-the-language">The environment is part of the language</a></li>
+<li><a href="#version-discipline">Version discipline</a></li>
+<li><a href="#toolchain-defaults-in-a-modern-repo">Toolchain defaults in a modern repo</a></li>
+</ul>
+</li>
+<li><a href="#17-comparison-tables">1.7 Comparison tables</a></li>
+<li><a href="#18-mistakes-gotchas">1.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#19-interview-questions">1.9 Interview questions</a></li>
+<li><a href="#110-practice-exercises">1.10 Practice exercises</a></li>
+<li><a href="#111-cheatsheet">1.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

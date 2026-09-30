@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 512" width="760" height="512" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>if / elif / else</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+  </defs>
+<text x="380" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Branching: if / elif / else</text>
+<rect x="290" y="52" width="180" height="36" rx="18" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="380.0" y="74.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">start</text>
+<line x1="380" y1="88" x2="380" y2="112" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<path d="M 380.0,112 L 460,154.0 L 380.0,196 L 300,154.0" stroke="var(--dg-blue, #2563eb)" stroke-width="1.8" fill="var(--dg-bluebg, #dbeafe)" stroke-linecap="round"/>
+<text x="380.0" y="158.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">condition 1?</text>
+<line x1="380" y1="196" x2="380" y2="220" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="378.05" y="199.55" width="39.9" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="398" y="210" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">False</text>
+<line x1="460" y1="154" x2="600" y2="154" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<rect x="513.24" y="133.55" width="33.519999999999996" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="530" y="144" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">True</text>
+<rect x="600" y="126" width="140" height="56" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="670.0" y="151.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">block A</text>
+<text x="670.0" y="168.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">runs, then skips rest</text>
+<path d="M 380.0,220 L 460,262.0 L 380.0,304 L 300,262.0" stroke="var(--dg-blue, #2563eb)" stroke-width="1.8" fill="var(--dg-bluebg, #dbeafe)" stroke-linecap="round"/>
+<text x="380.0" y="266.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">condition 2?</text>
+<line x1="460" y1="262" x2="600" y2="262" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<rect x="513.24" y="241.55" width="33.519999999999996" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="530" y="252" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">True</text>
+<rect x="600" y="234" width="140" height="56" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="670.0" y="259.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">block B</text>
+<text x="670.0" y="276.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">elif branch</text>
+<line x1="380" y1="304" x2="380" y2="330" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="378.05" y="311.55" width="39.9" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="398" y="322" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">False</text>
+<rect x="600" y="330" width="140" height="56" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="670.0" y="355.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">block C</text>
+<text x="670.0" y="372.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">else - the fallback</text>
+<path d="M 380,330 L 600,330 L 600,358" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" marker-end="url(#arslate)" stroke-linecap="round"/>
+<path d="M 740,154 L 752,154 L 752,448 L 470,448" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+<path d="M 740,262 L 752,262" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+<path d="M 740,358 L 752,358" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+<line x1="470" y1="448" x2="380" y2="448" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="290" y="430" width="180" height="36" rx="18" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="380.0" y="452.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">continue after</text>
+<rect x="30" y="336" width="300" height="128" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="46" y="358" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">How Python sees it</text>
+<text x="46" y="380" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">elif is not a keyword - the parser</text>
+<text x="46" y="397" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">reads it as `else: if ...`.</text>
+<text x="46" y="414" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Exactly ONE branch runs, or none</text>
+<text x="46" y="431" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">if there is no else at all.</text>
+</svg>

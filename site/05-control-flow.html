@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control flow: branching, looping, and match &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link active" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">28 min</span><span class="chip tag">if</span><span class="chip tag">loops</span><span class="chip tag">match</span><span class="chip tag">patterns</span><span class="chip tag">idioms</span></div>
+      <h1 id="5-control-flow">5. Control flow</h1>
+<blockquote>
+<p>Good control flow is invisible: the reader never has to hold state in their
+head. This module is about writing branches and loops that read top to
+bottom like prose.</p>
+</blockquote>
+<h2 id="51-definition">5.1 Definition</h2>
+<p><strong>Plain version.</strong> Control flow is how a program chooses which statements run
+and how often.</p>
+<p><strong>Precise version.</strong> Python offers <em>selection</em> (<code>if/elif/else</code>, conditional
+expressions, <code>match</code>), <em>iteration</em> (<code>for</code>, <code>while</code>, plus the comprehensions of
+module 12), and <em>interruption</em> (<code>break</code>, <code>continue</code>, <code>return</code>, <code>raise</code>).
+Blocks are delimited by <strong>indentation</strong> (4 spaces, enforced by the parser),
+there is <strong>no block scope</strong> (a loop variable survives the loop), and every
+construct is an expression or a suite of statements — never both at once.</p>
+<h2 id="52-syntax">5.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># selection -------------------------------------------------------------</span>
+<span class="k">if</span> <span class="n">score</span> <span class="o">&gt;=</span> <span class="mi">90</span><span class="p">:</span>
+    <span class="n">grade</span> <span class="o">=</span> <span class="s2">"A"</span>
+<span class="k">elif</span> <span class="n">score</span> <span class="o">&gt;=</span> <span class="mi">80</span><span class="p">:</span>            <span class="c1"># elif = "else: if", only ONE branch runs</span>
+    <span class="n">grade</span> <span class="o">=</span> <span class="s2">"B"</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">grade</span> <span class="o">=</span> <span class="s2">"C"</span>
+
+<span class="n">label</span> <span class="o">=</span> <span class="s2">"pass"</span> <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;=</span> <span class="mi">40</span> <span class="k">else</span> <span class="s2">"fail"</span>      <span class="c1"># conditional expression</span>
+
+<span class="c1"># iteration ---------------------------------------------------------------</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">collection</span><span class="p">:</span>      <span class="c1"># any iterable; item is rebound each pass</span>
+    <span class="o">...</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>   <span class="c1"># index + value</span>
+    <span class="o">...</span>
+<span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="o">...</span>
+<span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>      <span class="c1"># strict: length mismatch -&gt; ValueError</span>
+    <span class="o">...</span>
+<span class="k">while</span> <span class="n">condition</span><span class="p">:</span>
+    <span class="o">...</span>
+
+<span class="c1"># interruption -------------------------------------------------------------</span>
+<span class="k">break</span>        <span class="c1"># leave the loop NOW (skips the else clause!)</span>
+<span class="k">continue</span>     <span class="c1"># skip to the next iteration</span>
+<span class="k">pass</span>         <span class="c1"># do nothing (placeholder to keep syntax valid)</span>
+
+<span class="c1"># the loop else ------------------------------------------------------------</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">wanted</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">break</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="o">...</span>          <span class="c1"># runs ONLY if the loop finished without break</span>
+</code></pre></div>
+
+<h2 id="53-first-examples">5.3 First examples</h2>
+<p><strong>Example 1 — guard clauses instead of nesting.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">user</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>                 <span class="c1"># bail out early</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">user</span><span class="o">.</span><span class="n">profile</span>             <span class="c1"># the happy path stays at the left margin</span>
+</code></pre></div>
+
+<p><strong>Example 2 — <code>for…else</code> search.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">users</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"ada"</span><span class="p">,</span> <span class="s2">"admin"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"grace"</span><span class="p">,</span> <span class="s2">"admin"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}]</span>
+<span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">u</span><span class="p">[</span><span class="s2">"admin"</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"first admin:"</span><span class="p">,</span> <span class="n">u</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]);</span> <span class="k">break</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"no admin found"</span><span class="p">)</span>         <span class="c1"># never printed here</span>
+</code></pre></div>
+
+<p><strong>Example 3 — <code>match</code> on structure.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="n">point</span><span class="p">):</span>
+    <span class="k">match</span> <span class="n">point</span><span class="p">:</span>
+        <span class="k">case</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">"origin"</span>
+        <span class="k">case</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"on x-axis at </span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">case</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">y</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"diagonal"</span>
+        <span class="k">case</span> <span class="p">{</span><span class="s2">"x"</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">"y"</span><span class="p">:</span> <span class="n">y</span><span class="p">}:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"dict point </span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">y</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"something else"</span>
+</code></pre></div>
+
+<h2 id="54-the-picture">5.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 512" width="760" height="512" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>if / elif / else</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+  </defs>
+<text x="380" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Branching: if / elif / else</text>
+<rect x="290" y="52" width="180" height="36" rx="18" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="380.0" y="74.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">start</text>
+<line x1="380" y1="88" x2="380" y2="112" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<path d="M 380.0,112 L 460,154.0 L 380.0,196 L 300,154.0" stroke="var(--dg-blue, #2563eb)" stroke-width="1.8" fill="var(--dg-bluebg, #dbeafe)" stroke-linecap="round"/>
+<text x="380.0" y="158.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">condition 1?</text>
+<line x1="380" y1="196" x2="380" y2="220" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="378.05" y="199.55" width="39.9" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="398" y="210" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">False</text>
+<line x1="460" y1="154" x2="600" y2="154" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<rect x="513.24" y="133.55" width="33.519999999999996" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="530" y="144" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">True</text>
+<rect x="600" y="126" width="140" height="56" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="670.0" y="151.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">block A</text>
+<text x="670.0" y="168.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">runs, then skips rest</text>
+<path d="M 380.0,220 L 460,262.0 L 380.0,304 L 300,262.0" stroke="var(--dg-blue, #2563eb)" stroke-width="1.8" fill="var(--dg-bluebg, #dbeafe)" stroke-linecap="round"/>
+<text x="380.0" y="266.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">condition 2?</text>
+<line x1="460" y1="262" x2="600" y2="262" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<rect x="513.24" y="241.55" width="33.519999999999996" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="530" y="252" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">True</text>
+<rect x="600" y="234" width="140" height="56" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="670.0" y="259.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">block B</text>
+<text x="670.0" y="276.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">elif branch</text>
+<line x1="380" y1="304" x2="380" y2="330" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="378.05" y="311.55" width="39.9" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="398" y="322" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">False</text>
+<rect x="600" y="330" width="140" height="56" rx="8" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="670.0" y="355.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">block C</text>
+<text x="670.0" y="372.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">else - the fallback</text>
+<path d="M 380,330 L 600,330 L 600,358" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" marker-end="url(#arslate)" stroke-linecap="round"/>
+<path d="M 740,154 L 752,154 L 752,448 L 470,448" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+<path d="M 740,262 L 752,262" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+<path d="M 740,358 L 752,358" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+<line x1="470" y1="448" x2="380" y2="448" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="290" y="430" width="180" height="36" rx="18" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="380.0" y="452.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">continue after</text>
+<rect x="30" y="336" width="300" height="128" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="46" y="358" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">How Python sees it</text>
+<text x="46" y="380" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">elif is not a keyword - the parser</text>
+<text x="46" y="397" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">reads it as `else: if ...`.</text>
+<text x="46" y="414" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Exactly ONE branch runs, or none</text>
+<text x="46" y="431" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">if there is no else at all.</text>
+</svg>
+<figcaption>if/elif/else as a flowchart: exactly one branch runs, or none without an else.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 486" width="990" height="486" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>for / while ... else</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+    <marker id="arred" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-red, #dc2626)"/></marker>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Loops, break, and the rarely-known `else` clause</text>
+<rect x="70" y="46" width="150" height="34" rx="17" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="145.0" y="67.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">start</text>
+<line x1="145" y1="80" x2="145" y2="104" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="55" y="104" width="180" height="52" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="145.0" y="127.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">for / while</text>
+<text x="145.0" y="144.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">loop header</text>
+<line x1="145" y1="156" x2="145" y2="186" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<path d="M 145.0,186 L 215,229.0 L 145.0,272 L 75,229.0" stroke="var(--dg-blue, #2563eb)" stroke-width="1.8" fill="var(--dg-bluebg, #dbeafe)" stroke-linecap="round"/>
+<text x="145.0" y="233.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">more items?</text>
+<line x1="215" y1="229" x2="310" y2="229" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<rect x="248.43" y="208.55" width="27.139999999999997" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="262" y="219" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">yes</text>
+<rect x="310" y="200" width="190" height="58" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="405.0" y="226.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">loop body</text>
+<text x="405.0" y="243.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">your statements</text>
+<line x1="405" y1="258" x2="405" y2="298" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<path d="M 405.0,298 L 485,339.0 L 405.0,380 L 325,339.0" stroke="var(--dg-amber, #d97706)" stroke-width="1.8" fill="var(--dg-amberbg, #fef3c7)" stroke-linecap="round"/>
+<text x="405.0" y="343.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">break hit?</text>
+<path d="M 325,339 L 272,339 L 272,130 L 235,130" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" marker-end="url(#arslate)" stroke-linecap="round"/>
+<rect x="281.62" y="289.55" width="20.759999999999998" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="292" y="300" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">no</text>
+<path d="M 485,339 L 770,339 L 770,366" stroke="var(--dg-red, #dc2626)" stroke-width="2" fill="none" marker-end="url(#arred)" stroke-linecap="round"/>
+<rect x="471.59000000000003" y="318.55" width="256.82" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="600" y="329" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">yes -&gt; jump straight out, SKIPPING else</text>
+<line x1="145" y1="272" x2="145" y2="356" stroke="var(--dg-violet, #7c3aed)" stroke-width="2" marker-end="url(#arviolet)"/>
+<rect x="117.29" y="305.55" width="65.41999999999999" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="150" y="316" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">exhausted</text>
+<rect x="45" y="356" width="200" height="62" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="145.0" y="384.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">else: block</text>
+<text x="145.0" y="401.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">ONLY if no break happened</text>
+<path d="M 245,387 L 770,387 L 770,387" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" marker-end="url(#arslate)" stroke-linecap="round"/>
+<rect x="690" y="366" width="160" height="42" rx="21" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="770.0" y="391.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">after the loop</text>
+<rect x="560" y="62" width="408" height="200" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="576" y="86" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">The search idiom this enables</text>
+<text x="576" y="110" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">for user in users:</text>
+<text x="576" y="128" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    if user.is_admin:</text>
+<text x="576" y="146" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(user)</text>
+<text x="576" y="164" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        break</text>
+<text x="576" y="182" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">else:</text>
+<text x="576" y="200" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    print(&#x27;no admin found&#x27;)</text>
+<text x="576" y="240" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="italic" fill="var(--dg-slate, #475569)">No flag variable needed - the else IS the &#x27;not found&#x27; branch.</text>
+<text x="495" y="468" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">`while ... else` behaves identically: else runs when the condition becomes false, not on break.</text>
+</svg>
+<figcaption>for/while with break and the else clause: else runs only when the loop is exhausted without break.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 478" width="990" height="478" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>match / structural pattern matching</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">match: structural pattern matching (3.10+)</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Not a switch statement - it DESTRUCTURES values against patterns.</text>
+<rect x="31.0" y="70" width="300" height="92" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="31.0" y="70" width="5" height="92" rx="2" fill="var(--dg-blue, #2563eb)"/>
+<text x="49.0" y="92" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">Literal</text>
+<text x="49.0" y="118" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">case 404:</text>
+<text x="49.0" y="142" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">matches an exact value</text>
+<rect x="345.0" y="70" width="300" height="92" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="345.0" y="70" width="5" height="92" rx="2" fill="var(--dg-blue, #2563eb)"/>
+<text x="363.0" y="92" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">Capture</text>
+<text x="363.0" y="118" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">case name:</text>
+<text x="363.0" y="142" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">binds anything to a name</text>
+<rect x="659.0" y="70" width="300" height="92" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<rect x="659.0" y="70" width="5" height="92" rx="2" fill="var(--dg-slate, #475569)"/>
+<text x="677.0" y="92" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Wildcard</text>
+<text x="677.0" y="118" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">case _:</text>
+<text x="677.0" y="142" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">matches everything, binds nothing</text>
+<rect x="31.0" y="176" width="300" height="92" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="31.0" y="176" width="5" height="92" rx="2" fill="var(--dg-green, #059669)"/>
+<text x="49.0" y="198" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">Sequence</text>
+<text x="49.0" y="224" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">case [x, y]:</text>
+<text x="49.0" y="248" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">list/tuple of that shape</text>
+<rect x="345.0" y="176" width="300" height="92" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="345.0" y="176" width="5" height="92" rx="2" fill="var(--dg-green, #059669)"/>
+<text x="363.0" y="198" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">Sequence *</text>
+<text x="363.0" y="224" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">case [first, *rest]:</text>
+<text x="363.0" y="248" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">captures the tail</text>
+<rect x="659.0" y="176" width="300" height="92" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="659.0" y="176" width="5" height="92" rx="2" fill="var(--dg-amber, #d97706)"/>
+<text x="677.0" y="198" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Mapping</text>
+<text x="677.0" y="224" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">case {&#x27;id&#x27;: i}:</text>
+<text x="677.0" y="248" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">dict having that key</text>
+<rect x="31.0" y="282" width="300" height="92" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="31.0" y="282" width="5" height="92" rx="2" fill="var(--dg-violet, #7c3aed)"/>
+<text x="49.0" y="304" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">Class</text>
+<text x="49.0" y="330" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">case Point(x=0, y=y):</text>
+<text x="49.0" y="354" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">instance + attribute test</text>
+<rect x="345.0" y="282" width="300" height="92" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<rect x="345.0" y="282" width="5" height="92" rx="2" fill="var(--dg-cyan, #0891b2)"/>
+<text x="363.0" y="304" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">OR</text>
+<text x="363.0" y="330" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">case &#x27;a&#x27; | &#x27;b&#x27;:</text>
+<text x="363.0" y="354" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">either pattern</text>
+<rect x="659.0" y="282" width="300" height="92" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<rect x="659.0" y="282" width="5" height="92" rx="2" fill="var(--dg-red, #dc2626)"/>
+<text x="677.0" y="304" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">Guard</text>
+<text x="677.0" y="330" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">case n if n &gt; 0:</text>
+<text x="677.0" y="354" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">pattern + boolean condition</text>
+<rect x="31.0" y="394" width="928" height="62" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="47.0" y="418" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Careful: `case Point(x=0)` matches only keyword-style fields declared in __match_args__.</text>
+<text x="47.0" y="436" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">A bare `case x:` shadows everything below it - always put the wildcard/capture case LAST.</text>
+</svg>
+<figcaption>The nine kinds of match pattern with a minimal example of each.</figcaption></figure>
+
+<h2 id="55-going-deeper">5.5 Going deeper</h2>
+<h3 id="551-for-is-sugar-over-the-iterator-protocol">5.5.1 <code>for</code> is sugar over the iterator protocol</h3>
+<p><code>for item in seq:</code> compiles to <code>it = iter(seq)</code> then repeated <code>next(it)</code> until
+<code>StopIteration</code> (module 12 draws the whole protocol). Consequences you can
+rely on:</p>
+<ul>
+<li>anything iterable works: lists, dicts (keys), files (lines), generators,
+  ranges, custom objects;</li>
+<li>the loop consumes iterators <strong>once</strong> — a generator is empty the second time;</li>
+<li>modifying a list while iterating it is undefined-ish behaviour; iterate a
+  copy (<code>for x in lst[:]</code>) or build a new list.</li>
+</ul>
+<h3 id="552-no-block-scope-loop-variables-leak">5.5.2 No block scope: loop variables leak</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="k">pass</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>          <span class="c1"># 2  !  the name survives</span>
+</code></pre></div>
+
+<p>Unlike C/Java, <code>i</code> lives on in the enclosing function scope. Harmless in tiny
+scripts; a real bug source when a later loop reuses the name assuming it is
+fresh. Comprehensions, in contrast, <strong>do</strong> have their own scope (their loop
+variable does not leak) — one more reason to prefer them.</p>
+<h3 id="553-the-exact-semantics-of-else">5.5.3 The exact semantics of <code>else</code></h3>
+<ul>
+<li>runs when the loop condition becomes false (<code>while</code>) or the iterable is
+  exhausted (<code>for</code>);</li>
+<li>does <strong>not</strong> run if <code>break</code> executed;</li>
+<li><strong>does</strong> run if the body always <code>continue</code>s (continue is not an exit);</li>
+<li>runs even for a loop that never executed its body (empty iterable) — which
+  is usually what you want (&ldquo;not found&rdquo; includes &ldquo;nothing to search&rdquo;).</li>
+</ul>
+<p><code>break</code> inside <code>try…finally</code> still runs <code>finally</code> before leaving (module 11).</p>
+<h3 id="554-match-is-pattern-matching-not-a-switch">5.5.4 <code>match</code> is pattern matching, not a switch</h3>
+<p>Key differences from C-style <code>switch</code>:</p>
+<ul>
+<li>patterns <strong>destructure</strong>: <code>case [first, *rest]</code> binds names;</li>
+<li>a bare name is a <strong>capture</strong>, not a comparison. To compare against an
+  existing value use a dotted name (<code>case Color.RED:</code>) or a guard
+  (<code>case x if x == target:</code>);</li>
+<li><code>_</code> is a wildcard that binds nothing;</li>
+<li>sequence patterns never match <code>str</code>/<code>bytes</code> (deliberate: prevents
+  character-by-character surprises);</li>
+<li>class patterns use <code>__match_args__</code> for positional fields:
+  <code>case Point(x=0, y=y):</code>;</li>
+<li>the first matching case wins; put irrefutable captures (<code>case x:</code>) last or
+  they swallow everything;</li>
+<li>guards (<code>if …</code>) run after the pattern matches.</li>
+</ul>
+<p>Under the hood, <code>match</code> compiles to efficient opcode-level checks
+(<code>MATCH_SEQUENCE</code>, <code>MATCH_MAPPING</code>, <code>MATCH_CLASS</code>) — faster than an equivalent
+<code>if/elif</code> chain of <code>isinstance</code> tests.</p>
+<h3 id="555-loop-idioms-that-replace-loops-entirely">5.5.5 Loop idioms that replace loops entirely</h3>
+<p>Most &ldquo;loop then accumulate&rdquo; code is a builtin:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">any</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">)</span>          <span class="c1"># exists?      short-circuits</span>
+<span class="nb">all</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">)</span>          <span class="c1"># every one?   short-circuits</span>
+<span class="nb">sum</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">score</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">)</span>       <span class="c1"># total</span>
+<span class="nb">max</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="c1"># winner by a criterion</span>
+<span class="nb">sorted</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">attrgetter</span><span class="p">(</span><span class="s2">"name"</span><span class="p">))</span>
+<span class="nb">next</span><span class="p">((</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span> <span class="k">if</span> <span class="n">p</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span> <span class="n">default</span><span class="p">)</span>   <span class="c1"># first match or default</span>
+</code></pre></div>
+
+<p>These are C-speed, short-circuiting, and say <em>what</em> you want rather than <em>how</em>.
+Reserve an explicit <code>for</code> for cases with real state or side effects.</p>
+<h3 id="556-while-loops-one-exit-is-enough">5.5.6 <code>while</code> loops: one exit is enough</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">line</span> <span class="o">=</span> <span class="n">fh</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+        <span class="k">break</span>
+    <span class="n">handle</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+</code></pre></div>
+
+<p>is acceptable and common; but</p>
+<div class="codehilite"><pre><span></span><code><span class="k">while</span> <span class="p">(</span><span class="n">line</span> <span class="o">:=</span> <span class="n">fh</span><span class="o">.</span><span class="n">readline</span><span class="p">()):</span>
+    <span class="n">handle</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+</code></pre></div>
+
+<p>is the walrus&rsquo;s raison d&rsquo;être: one exit, no duplicated condition. Reviewers
+object to <code>while True</code> bodies containing several <code>break</code>s in different
+directions — that is a state machine pretending to be a loop; make it a
+<code>match</code> on an explicit state instead.</p>
+<h2 id="56-industry-level">5.6 Industry level</h2>
+<h3 id="flatten-the-pyramid">Flatten the pyramid</h3>
+<p>Deep nesting is a readability tax paid by every future reader. Three tools:</p>
+<ol>
+<li><strong>guard clauses</strong> (return/raise early for the abnormal cases);</li>
+<li><strong>extract functions</strong> so each branch gets a name;</li>
+<li><strong>dispatch tables</strong> when branches are keyed by a value:</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="n">HANDLERS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"create"</span><span class="p">:</span> <span class="n">handle_create</span><span class="p">,</span>
+    <span class="s2">"update"</span><span class="p">:</span> <span class="n">handle_update</span><span class="p">,</span>
+    <span class="s2">"delete"</span><span class="p">:</span> <span class="n">handle_delete</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">dispatch</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+    <span class="n">handler</span> <span class="o">=</span> <span class="n">HANDLERS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">handler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">UnsupportedEvent</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">handler</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</code></pre></div>
+
+<p>A dict of callables is O(1), testable per-branch, and extensible without
+touching the dispatcher — the Open/Closed principle in six lines. Use <code>match</code>
+when the <em>shape</em> of the data differs per branch; use a dispatch table when
+only the <em>key</em> differs.</p>
+<h3 id="state-machines-deserve-explicit-states">State machines deserve explicit states</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">auto</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderState</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">DRAFT</span> <span class="o">=</span> <span class="n">auto</span><span class="p">();</span> <span class="n">SUBMITTED</span> <span class="o">=</span> <span class="n">auto</span><span class="p">();</span> <span class="n">PAID</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+    <span class="n">SHIPPED</span> <span class="o">=</span> <span class="n">auto</span><span class="p">();</span> <span class="n">DELIVERED</span> <span class="o">=</span> <span class="n">auto</span><span class="p">();</span> <span class="n">CANCELLED</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+
+<span class="n">TRANSITIONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">OrderState</span><span class="o">.</span><span class="n">DRAFT</span><span class="p">:</span>     <span class="p">{</span><span class="n">OrderState</span><span class="o">.</span><span class="n">SUBMITTED</span><span class="p">,</span> <span class="n">OrderState</span><span class="o">.</span><span class="n">CANCELLED</span><span class="p">},</span>
+    <span class="n">OrderState</span><span class="o">.</span><span class="n">SUBMITTED</span><span class="p">:</span> <span class="p">{</span><span class="n">OrderState</span><span class="o">.</span><span class="n">PAID</span><span class="p">,</span> <span class="n">OrderState</span><span class="o">.</span><span class="n">CANCELLED</span><span class="p">},</span>
+    <span class="n">OrderState</span><span class="o">.</span><span class="n">PAID</span><span class="p">:</span>      <span class="p">{</span><span class="n">OrderState</span><span class="o">.</span><span class="n">SHIPPED</span><span class="p">},</span>
+    <span class="n">OrderState</span><span class="o">.</span><span class="n">SHIPPED</span><span class="p">:</span>   <span class="p">{</span><span class="n">OrderState</span><span class="o">.</span><span class="n">DELIVERED</span><span class="p">},</span>
+    <span class="n">OrderState</span><span class="o">.</span><span class="n">DELIVERED</span><span class="p">:</span> <span class="nb">set</span><span class="p">(),</span>
+    <span class="n">OrderState</span><span class="o">.</span><span class="n">CANCELLED</span><span class="p">:</span> <span class="nb">set</span><span class="p">(),</span>
+<span class="p">}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">advance</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">OrderState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">TRANSITIONS</span><span class="p">[</span><span class="n">order</span><span class="o">.</span><span class="n">state</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidTransition</span><span class="p">(</span><span class="n">order</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+    <span class="n">order</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">target</span>
+</code></pre></div>
+
+<p>Illegal states become unrepresentable-by-accident: the table <em>is</em> the
+business rule, and tests can iterate the whole table.</p>
+<h3 id="iteration-hygiene-teams-lint-for">Iteration hygiene teams lint for</h3>
+<table>
+<thead>
+<tr>
+<th>Anti-pattern</th>
+<th>Reviewed replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>for i in range(len(xs))</code></td>
+<td><code>for x in xs</code> / <code>enumerate(xs)</code></td>
+</tr>
+<tr>
+<td><code>for k in d: v = d[k]</code></td>
+<td><code>for k, v in d.items()</code></td>
+</tr>
+<tr>
+<td><code>zip(a, b)</code> on unequal data</td>
+<td><code>zip(a, b, strict=True)</code></td>
+</tr>
+<tr>
+<td>flag variable + post-loop <code>if flag</code></td>
+<td><code>for…else</code> or <code>any(...)</code></td>
+</tr>
+<tr>
+<td>index bookkeeping with <code>while i &lt; n</code></td>
+<td>iterate, or <code>itertools</code> (module 12)</td>
+</tr>
+<tr>
+<td>nested 4-deep conditionals</td>
+<td>guard clauses / extracted predicates</td>
+</tr>
+</tbody>
+</table>
+<h2 id="57-comparison-tables">5.7 Comparison tables</h2>
+<p><strong>Choosing the branch construct:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2 outcomes on one boolean</td>
+<td><code>if/else</code> or conditional expression</td>
+</tr>
+<tr>
+<td>several disjoint value ranges</td>
+<td><code>if/elif</code> chain</td>
+</tr>
+<tr>
+<td>many branches keyed by one value</td>
+<td>dict dispatch or <code>match</code> on literals</td>
+</tr>
+<tr>
+<td>branches on data <em>shape</em></td>
+<td><code>match</code> with destructuring</td>
+</tr>
+<tr>
+<td>validation preconditions</td>
+<td>guard clauses (early return/raise)</td>
+</tr>
+<tr>
+<td>polymorphic behaviour per type</td>
+<td>methods / <code>Protocol</code>, not type checks</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Loop control keywords:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Keyword</th>
+<th>Effect</th>
+<th>Runs loop <code>else</code>?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>break</code></td>
+<td>exit loop immediately</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>continue</code></td>
+<td>next iteration now</td>
+<td>yes (if loop later exhausts)</td>
+</tr>
+<tr>
+<td><code>pass</code></td>
+<td>nothing</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>return</code></td>
+<td>exit the function</td>
+<td><code>finally</code> yes, <code>else</code> never reached</td>
+</tr>
+<tr>
+<td><code>raise</code></td>
+<td>propagate exception</td>
+<td><code>finally</code> yes</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>match</code> pattern cheat-table:</strong> see the figure in §5.4; the nine kinds are
+literal, capture, wildcard, sequence, star-sequence, mapping, class, OR,
+guard.</p>
+<h2 id="58-mistakes-gotchas">5.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>zip</code> silently truncates</p>
+<p><code>zip([1,2,3], [4,5])</code> yields two pairs and hides the bug. Use
+<code>strict=True</code> (3.10+) so length mismatches raise immediately.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Mutating the list you iterate</p>
+<p><code>for x in lst: lst.remove(x)</code> skips elements. Iterate a copy or rebuild with a
+comprehension.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>else</code> after <code>while True</code></p>
+<p><code>while True:</code> never exhausts, so its <code>else</code> only runs via… nothing — <code>break</code>
+skips it. An <code>else</code> on <code>while True</code> is dead code; reviewers flag it.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">A capture pattern that swallows everything</p>
+<p><code>case x:</code> matches ANY subject and binds it. Always place it (and <code>_</code>) last,
+and use dotted constants (<code>case Status.OK:</code>) when you meant comparison.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Comparing with <code>==</code> inside <code>if</code> against None/True</p>
+<p>Use <code>is None</code> / <code>is True</code>-style identity for singletons (module 02/03).</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Recursion is not idiomatic iteration</p>
+<p>Python&rsquo;s recursion limit (~1000 frames) and lack of tail-call optimisation
+mean deep recursion crashes. Convert to a loop or an explicit stack.</p>
+</div>
+<h2 id="59-interview-questions">5.9 Interview questions</h2>
+<ol>
+<li><strong>What does <code>for…else</code> do?</strong> — the <code>else</code> suite runs when the loop ends
+   without <code>break</code>; ideal for search-with-fallback.</li>
+<li><strong><code>break</code> vs <code>continue</code> vs <code>pass</code>?</strong> — exit / skip to next / do nothing.</li>
+<li><strong>Does the loop variable leak?</strong> — yes, <code>for</code> has no block scope;
+   comprehensions do.</li>
+<li><strong>How is <code>match</code> different from <code>switch</code>?</strong> — patterns destructure and bind;
+   names capture rather than compare; guards; first match wins.</li>
+<li><strong>Why <code>zip(..., strict=True)</code>?</strong> — fail fast on length mismatch instead of
+   silently dropping tail items.</li>
+<li><strong>Replace a flag variable with what?</strong> — <code>for…else</code>, <code>any/all</code>, or an early
+   return.</li>
+<li><strong>What runs first: <code>else</code> or <code>finally</code> when a loop breaks inside try?</strong> —
+   <code>finally</code> runs on the way out; the loop&rsquo;s <code>else</code> is skipped by <code>break</code>.</li>
+</ol>
+<h2 id="510-practice-exercises">5.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-05-a</span></div><p>Implement <code>fizzbuzz(n)</code> returning the list of labels for 1..n;
+<code>classify(values)</code> mapping each number to <code>"negative" | "zero" | "small" |
+"large"</code> (small &lt; 10); and <code>sum_evens(matrix)</code> summing only even entries of a
+2-D list using <code>continue</code>.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/05_control_flow/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-05-b</span></div><p>Implement <code>first_admin(users)</code> using <code>for…else</code> (returns the first admin dict
+or <code>None</code>, without any flag variable), <code>run_length_encode(seq)</code> returning
+<code>[(item, count), …]</code>, and <code>parse_sections(lines)</code> grouping lines under
+<code>[header]</code> lines into a dict (lines before any header go under <code>""</code>).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/05_control_flow/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-05-c</span></div><p>Implement the <code>OrderState</code> machine from §5.6 with <code>advance(order, target)</code>
+raising <code>InvalidTransition</code> for illegal moves, plus
+<code>shortest_path(start, target)</code> computing a legal transition sequence (or
+<code>None</code>) via breadth-first search over the table — proving the table is a real
+graph, not decoration. Then implement <code>chunk_while(predicate, iterable)</code>
+splitting an iterable into runs while the predicate holds between neighbours.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/05_control_flow/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/05_control_flow/solution.py)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">deque</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">first_admin</span><span class="p">(</span><span class="n">users</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">user</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>          <span class="c1"># loop exhausted: no admin</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">shortest_path</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="n">target</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">start</span><span class="p">]</span>
+    <span class="n">seen</span><span class="p">,</span> <span class="n">queue</span> <span class="o">=</span> <span class="p">{</span><span class="n">start</span><span class="p">},</span> <span class="n">deque</span><span class="p">([(</span><span class="n">start</span><span class="p">,</span> <span class="p">[</span><span class="n">start</span><span class="p">])])</span>
+    <span class="k">while</span> <span class="n">queue</span><span class="p">:</span>
+        <span class="n">state</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">nxt</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">TRANSITIONS</span><span class="p">[</span><span class="n">state</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">nxt</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">nxt</span><span class="p">)</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="p">[</span><span class="n">nxt</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">nxt</span> <span class="ow">is</span> <span class="n">target</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">new</span>
+            <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">nxt</span><span class="p">,</span> <span class="n">new</span><span class="p">))</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div></details>
+<h2 id="511-cheatsheet">5.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Idiom</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Branch on boolean</td>
+<td><code>if cond:</code></td>
+</tr>
+<tr>
+<td>Multi-way value</td>
+<td><code>if/elif/else</code> or dict dispatch</td>
+</tr>
+<tr>
+<td>Branch on shape</td>
+<td><code>match … case …</code></td>
+</tr>
+<tr>
+<td>Inline choice</td>
+<td><code>a if cond else b</code></td>
+</tr>
+<tr>
+<td>Index + value</td>
+<td><code>enumerate(xs, start=1)</code></td>
+</tr>
+<tr>
+<td>Parallel iterate</td>
+<td><code>zip(a, b, strict=True)</code></td>
+</tr>
+<tr>
+<td>Dict iterate</td>
+<td><code>d.items()</code></td>
+</tr>
+<tr>
+<td>Search with fallback</td>
+<td><code>for…else</code> or <code>next((…), default)</code></td>
+</tr>
+<tr>
+<td>Exists / all</td>
+<td><code>any(…)</code>, <code>all(…)</code></td>
+</tr>
+<tr>
+<td>Early bail</td>
+<td>guard clause <code>if bad: return/raise</code></td>
+</tr>
+<tr>
+<td>Skip one pass</td>
+<td><code>continue</code></td>
+</tr>
+<tr>
+<td>Stop loop</td>
+<td><code>break</code></td>
+</tr>
+<tr>
+<td>Placeholder body</td>
+<td><code>pass</code> (or <code>...</code>)</td>
+</tr>
+<tr>
+<td>Infinite read loop</td>
+<td><code>while (line := fh.readline()):</code></td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="04-strings-text.html"><span>&larr; previous</span><strong>Strings & text: Unicode, slicing, formatting, performance</strong></a><a class="next" href="06-data-structures.html"><span>next &rarr;</span><strong>Data structures: list, tuple, dict, set and friends</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#51-definition">5.1 Definition</a></li>
+<li><a href="#52-syntax">5.2 Syntax</a></li>
+<li><a href="#53-first-examples">5.3 First examples</a></li>
+<li><a href="#54-the-picture">5.4 The picture</a></li>
+<li><a href="#55-going-deeper">5.5 Going deeper</a><ul>
+<li><a href="#551-for-is-sugar-over-the-iterator-protocol">5.5.1 for is sugar over the iterator protocol</a></li>
+<li><a href="#552-no-block-scope-loop-variables-leak">5.5.2 No block scope: loop variables leak</a></li>
+<li><a href="#553-the-exact-semantics-of-else">5.5.3 The exact semantics of else</a></li>
+<li><a href="#554-match-is-pattern-matching-not-a-switch">5.5.4 match is pattern matching, not a switch</a></li>
+<li><a href="#555-loop-idioms-that-replace-loops-entirely">5.5.5 Loop idioms that replace loops entirely</a></li>
+<li><a href="#556-while-loops-one-exit-is-enough">5.5.6 while loops: one exit is enough</a></li>
+</ul>
+</li>
+<li><a href="#56-industry-level">5.6 Industry level</a><ul>
+<li><a href="#flatten-the-pyramid">Flatten the pyramid</a></li>
+<li><a href="#state-machines-deserve-explicit-states">State machines deserve explicit states</a></li>
+<li><a href="#iteration-hygiene-teams-lint-for">Iteration hygiene teams lint for</a></li>
+</ul>
+</li>
+<li><a href="#57-comparison-tables">5.7 Comparison tables</a></li>
+<li><a href="#58-mistakes-gotchas">5.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#59-interview-questions">5.9 Interview questions</a></li>
+<li><a href="#510-practice-exercises">5.10 Practice exercises</a></li>
+<li><a href="#511-cheatsheet">5.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operators &amp; expressions: what the symbols really do &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link active" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">28 min</span><span class="chip tag">operators</span><span class="chip tag">dunder</span><span class="chip tag">truthiness</span><span class="chip tag">bitwise</span><span class="chip tag">precedence</span></div>
+      <h1 id="3-operators-expressions">3. Operators &amp; expressions</h1>
+<blockquote>
+<p>An operator is not a symbol; it is a function call in disguise. Once you see
+the dispatch table, &ldquo;magic&rdquo; methods stop being magic.</p>
+</blockquote>
+<h2 id="31-definition">3.1 Definition</h2>
+<p><strong>Plain version.</strong> Operators are the built-in symbols (<code>+</code>, <code>and</code>, <code>in</code>, …)
+that combine values into expressions.</p>
+<p><strong>Precise version.</strong> Every operator compiles to bytecode that calls a
+<strong>special (dunder) method</strong> on the left operand — <code>a + b</code> becomes
+<code>a.__add__(b)</code>, falling back to <code>b.__radd__(a)</code> if that returns
+<code>NotImplemented</code>. Comparison, membership and identity operators are handled by
+the VM directly or via <code>__eq__</code>/<code>__lt__</code>/<code>__contains__</code>/<code>__bool__</code>. So
+<em>defining an operator for your own type</em> means defining the right dunder, and
+<em>reading someone else&rsquo;s type</em> means checking which dunders it implements.</p>
+<h2 id="32-syntax">3.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># arithmetic</span>
+<span class="mi">7</span> <span class="o">+</span> <span class="mi">2</span>      <span class="mi">7</span> <span class="o">-</span> <span class="mi">2</span>      <span class="mi">7</span> <span class="o">*</span> <span class="mi">2</span>      <span class="mi">7</span> <span class="o">/</span> <span class="mi">2</span>      <span class="c1"># 9 5 14 3.5   (/ is always float)</span>
+<span class="mi">7</span> <span class="o">//</span> <span class="mi">2</span>     <span class="mi">7</span> <span class="o">%</span> <span class="mi">2</span>      <span class="mi">7</span> <span class="o">**</span> <span class="mi">2</span>                 <span class="c1"># 3 1 49       (floor, modulo, power)</span>
+<span class="nb">divmod</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>                                <span class="c1"># (3, 1)</span>
+
+<span class="c1"># comparison (chainable!)</span>
+<span class="mi">1</span> <span class="o">&lt;</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">10</span>            <span class="c1"># x evaluated ONCE; same as 1 &lt; x and x &lt; 10 but faster</span>
+<span class="n">a</span> <span class="o">==</span> <span class="n">b</span>   <span class="n">a</span> <span class="o">!=</span> <span class="n">b</span>   <span class="n">a</span> <span class="o">&gt;=</span> <span class="n">b</span>
+
+<span class="c1"># logical (short-circuit, return an OPERAND not a bool)</span>
+<span class="n">a</span> <span class="ow">and</span> <span class="n">b</span>               <span class="c1"># a if a is falsy else b</span>
+<span class="n">a</span> <span class="ow">or</span> <span class="n">b</span>                <span class="c1"># a if a is truthy else b</span>
+<span class="ow">not</span> <span class="n">a</span>                 <span class="c1"># the only one guaranteed to return a bool</span>
+
+<span class="c1"># identity / membership</span>
+<span class="n">a</span> <span class="ow">is</span> <span class="n">b</span>    <span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">b</span>            <span class="c1"># same object?</span>
+<span class="n">x</span> <span class="ow">in</span> <span class="n">s</span>    <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span>            <span class="c1"># s.__contains__(x)</span>
+
+<span class="c1"># bitwise</span>
+<span class="n">n</span> <span class="o">&amp;</span> <span class="n">m</span>     <span class="n">n</span> <span class="o">|</span> <span class="n">m</span>     <span class="n">n</span> <span class="o">^</span> <span class="n">m</span>     <span class="o">~</span><span class="n">n</span>      <span class="n">n</span> <span class="o">&lt;&lt;</span> <span class="n">k</span>    <span class="n">n</span> <span class="o">&gt;&gt;</span> <span class="n">k</span>
+
+<span class="c1"># assignment forms</span>
+<span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>     <span class="n">x</span> <span class="o">+=</span> <span class="mi">1</span>    <span class="n">x</span> <span class="o">-=</span> <span class="mi">1</span>    <span class="n">x</span> <span class="o">*=</span> <span class="mi">1</span>   <span class="n">x</span> <span class="o">//=</span> <span class="mi">2</span>   <span class="n">x</span> <span class="o">%=</span> <span class="mi">3</span>   <span class="n">x</span> <span class="o">**=</span> <span class="mi">2</span>   <span class="n">x</span> <span class="o">|=</span> <span class="n">flag</span>
+
+<span class="c1"># conditional expression (the "ternary")</span>
+<span class="n">label</span> <span class="o">=</span> <span class="s2">"adult"</span> <span class="k">if</span> <span class="n">age</span> <span class="o">&gt;=</span> <span class="mi">18</span> <span class="k">else</span> <span class="s2">"minor"</span>
+
+<span class="c1"># walrus (3.8+): assign INSIDE an expression</span>
+<span class="k">while</span> <span class="p">(</span><span class="n">line</span> <span class="o">:=</span> <span class="n">fh</span><span class="o">.</span><span class="n">readline</span><span class="p">()):</span>
+    <span class="o">...</span>
+</code></pre></div>
+
+<h2 id="33-first-examples">3.3 First examples</h2>
+<p><strong>Example 1 — floor division and modulo, including negatives.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="mi">7</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">7</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span>      <span class="c1"># 3 1</span>
+<span class="nb">print</span><span class="p">(</span><span class="o">-</span><span class="mi">7</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span>    <span class="c1"># -4 1   floor rounds DOWN; sign follows the DIVISOR</span>
+<span class="nb">print</span><span class="p">(</span><span class="mi">7</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>              <span class="c1"># 3.5</span>
+</code></pre></div>
+
+<p><strong>Example 2 — short-circuiting protects you.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">user</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">user</span> <span class="ow">and</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>     <span class="c1"># None  (never touches .name -&gt; no crash)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"theme"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"light"</span><span class="p">)</span>   <span class="c1"># 'light'</span>
+</code></pre></div>
+
+<p><strong>Example 3 — membership and chaining.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="mi">88</span><span class="p">,</span> <span class="mi">92</span><span class="p">,</span> <span class="mi">75</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="mi">92</span> <span class="ow">in</span> <span class="n">scores</span><span class="p">)</span>             <span class="c1"># True</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="mi">60</span> <span class="o">&lt;=</span> <span class="n">s</span> <span class="o">&lt;=</span> <span class="mi">100</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">scores</span><span class="p">))</span>   <span class="c1"># True, chained comparisons</span>
+</code></pre></div>
+
+<h2 id="34-the-picture">3.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 571" width="990" height="571" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Operator precedence</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Operator precedence - strongest at the top</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Python evaluates the highest-precedence operator first. Ties go left-to-right (except ** and assignment).</text>
+<rect x="40" y="66" width="14" height="405" rx="7" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<rect x="40" y="66" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="70" width="28" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="72.0" y="83.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">1</text>
+<text x="118" y="84" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">( )  [ ]  .  ( )call</text>
+<text x="406" y="84" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">grouping, subscript, attribute, call</text>
+<text x="746" y="84" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">f(x).y[0]</text>
+<rect x="40" y="93" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="97" width="28" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="72.0" y="110.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">2</text>
+<text x="118" y="111" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">**</text>
+<text x="406" y="111" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">exponent (right associative!)</text>
+<text x="746" y="111" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">2 ** 3 ** 2 == 512</text>
+<rect x="40" y="120" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="124" width="28" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="72.0" y="137.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">3</text>
+<text x="118" y="138" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">+x   -x   ~x</text>
+<text x="406" y="138" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">unary plus / minus / bitwise not</text>
+<text x="746" y="138" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">-2 ** 2 == -4</text>
+<rect x="40" y="147" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="151" width="28" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="72.0" y="164.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">4</text>
+<text x="118" y="165" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">*   @   /   //   %</text>
+<text x="406" y="165" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">multiply, matmul, divide, floor-div, mod</text>
+<text x="746" y="165" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">7 // 2 == 3   7 % 2 == 1</text>
+<rect x="40" y="174" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="178" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="72.0" y="191.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">5</text>
+<text x="118" y="192" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">+   -</text>
+<text x="406" y="192" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">addition, subtraction</text>
+<text x="746" y="192" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">1 + 2 - 3</text>
+<rect x="40" y="201" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="205" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="72.0" y="218.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">6</text>
+<text x="118" y="219" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">&lt;&lt;   &gt;&gt;</text>
+<text x="406" y="219" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">bit shifts</text>
+<text x="746" y="219" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">1 &lt;&lt; 4 == 16</text>
+<rect x="40" y="228" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="232" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="72.0" y="245.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">7</text>
+<text x="118" y="246" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">&amp;</text>
+<text x="406" y="246" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">bitwise AND</text>
+<text x="746" y="246" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">0b1100 &amp; 0b1010</text>
+<rect x="40" y="255" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="259" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="72.0" y="272.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">8</text>
+<text x="118" y="273" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">^</text>
+<text x="406" y="273" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">bitwise XOR</text>
+<text x="746" y="273" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">5 ^ 3 == 6</text>
+<rect x="40" y="282" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="286" width="28" height="19" rx="9.5" fill="var(--dg-amber, #d97706)"/>
+<text x="72.0" y="299.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">9</text>
+<text x="118" y="300" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">|</text>
+<text x="406" y="300" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">bitwise OR</text>
+<text x="746" y="300" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">0b1100 | 0b1010</text>
+<rect x="40" y="309" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="313" width="28" height="19" rx="9.5" fill="var(--dg-amber, #d97706)"/>
+<text x="72.0" y="326.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">10</text>
+<text x="118" y="327" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">==  !=  &lt;  &gt;  &lt;=  &gt;=  is  in</text>
+<text x="406" y="327" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">comparisons (chainable!)</text>
+<text x="746" y="327" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">1 &lt; x &lt; 10</text>
+<rect x="40" y="336" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="340" width="28" height="19" rx="9.5" fill="var(--dg-amber, #d97706)"/>
+<text x="72.0" y="353.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">11</text>
+<text x="118" y="354" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">not</text>
+<text x="406" y="354" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">boolean NOT</text>
+<text x="746" y="354" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">not done</text>
+<rect x="40" y="363" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="367" width="28" height="19" rx="9.5" fill="var(--dg-amber, #d97706)"/>
+<text x="72.0" y="380.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">12</text>
+<text x="118" y="381" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">and</text>
+<text x="406" y="381" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">boolean AND (short-circuits)</text>
+<text x="746" y="381" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">a and a.b</text>
+<rect x="40" y="390" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="394" width="28" height="19" rx="9.5" fill="var(--dg-red, #dc2626)"/>
+<text x="72.0" y="407.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">13</text>
+<text x="118" y="408" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">or</text>
+<text x="406" y="408" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">boolean OR (short-circuits)</text>
+<text x="746" y="408" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">name or &#x27;anon&#x27;</text>
+<rect x="40" y="417" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="421" width="28" height="19" rx="9.5" fill="var(--dg-red, #dc2626)"/>
+<text x="72.0" y="434.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">14</text>
+<text x="118" y="435" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">:=</text>
+<text x="406" y="435" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">walrus - assign inside expression</text>
+<text x="746" y="435" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">while (n := f.readline()):</text>
+<rect x="40" y="444" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="448" width="28" height="19" rx="9.5" fill="var(--dg-red, #dc2626)"/>
+<text x="72.0" y="461.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">15</text>
+<text x="118" y="462" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">=   +=   -=   *=  ...</text>
+<text x="406" y="462" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">assignment (lowest, right to left)</text>
+<text x="746" y="462" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">total += price</text>
+<rect x="40" y="66" width="910" height="405" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<rect x="31.900000000000002" y="50.5" width="60.199999999999996" height="15.0" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="62" y="60" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">STRONGEST</text>
+<rect x="905.7" y="471.5" width="48.599999999999994" height="15.0" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="930" y="481" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">WEAKEST</text>
+<rect x="40" y="497" width="910" height="50" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="58" y="528" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Professional advice: never memorise this table. If you have to think about precedence, add parentheses - readability beats cleverness.</text>
+</svg>
+<figcaption>Operator precedence ladder: strongest at the top (grouping, exponent) down to assignment, with a worked example per rung.</figcaption></figure>
+
+<h2 id="35-going-deeper">3.5 Going deeper</h2>
+<h3 id="351-the-dispatch-table">3.5.1 The dispatch table</h3>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Method on left operand</th>
+<th>Reflected fallback</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>+ - * / // % **</code></td>
+<td><code>__add__ __sub__ __mul__ __truediv__ __floordiv__ __mod__ __pow__</code></td>
+<td><code>__radd__ …</code></td>
+</tr>
+<tr>
+<td><code>@</code></td>
+<td><code>__matmul__</code></td>
+<td><code>__rmatmul__</code></td>
+</tr>
+<tr>
+<td><code>+= -= …</code></td>
+<td><code>__iadd__ __isub__ …</code> (falls back to <code>__add__</code>)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>-x  +x  ~x</code></td>
+<td><code>__neg__ __pos__ __invert__</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>== !=</code></td>
+<td><code>__eq__ __ne__</code></td>
+<td>swapped automatically</td>
+</tr>
+<tr>
+<td><code>&lt; &lt;= &gt; &gt;=</code></td>
+<td><code>__lt__ __le__ __gt__ __ge__</code></td>
+<td>swapped (<code>&lt;</code> ↔ <code>&gt;</code>)</td>
+</tr>
+<tr>
+<td><code>len(x)</code> / truthiness</td>
+<td><code>__len__</code> / <code>__bool__</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>x in s</code></td>
+<td><code>s.__contains__(x)</code></td>
+<td>falls back to iteration</td>
+</tr>
+<tr>
+<td><code>abs(x)</code> <code>int(x)</code> <code>str(x)</code></td>
+<td><code>__abs__ __int__ __str__</code></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><code>NotImplemented</code> (not <code>None</code>!) is the signal &ldquo;I don&rsquo;t know how; ask the other
+side&rdquo;. Returning a wrong type or raising from <code>__eq__</code> breaks <code>==</code> everywhere,
+including inside <code>sorted</code>, <code>in</code>, and <code>dict</code> lookups.</p>
+<h3 id="352-truthiness-what-counts-as-false">3.5.2 Truthiness: what counts as false</h3>
+<p>Exactly these are falsy: <code>False</code>, <code>None</code>, <code>0</code> (any numeric zero), <code>""</code>, <code>b""</code>,
+<code>()</code>, <code>[]</code>, <code>{}</code>, <code>set()</code>, <code>range(0)</code>, and any object whose <code>__bool__</code> returns
+<code>False</code> or whose <code>__len__</code> returns <code>0</code>. Everything else is truthy — including
+<code>"0"</code>, <code>"False"</code>, <code>[0]</code> and <code>float('nan')</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">bool</span><span class="p">(</span><span class="s2">"0"</span><span class="p">),</span> <span class="nb">bool</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">))</span>     <span class="c1"># (True, True, True)</span>
+</code></pre></div>
+
+<p>Custom classes are truthy by default; define <code>__bool__</code> (or <code>__len__</code>) to give
+them honest emptiness semantics — e.g. a <code>ResultSet</code> should be falsy when it
+holds no rows.</p>
+<h3 id="353-and-or-return-operands-not-booleans">3.5.3 <code>and</code> / <code>or</code> return operands, not booleans</h3>
+<p>This is a feature (cheap defaults, None-guards) and a trap (surprising return
+types):</p>
+<div class="codehilite"><pre><span></span><code><span class="mi">0</span> <span class="ow">or</span> <span class="s2">"fallback"</span>        <span class="c1"># 'fallback'</span>
+<span class="s2">""</span> <span class="ow">or</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">[]</span> <span class="ow">or</span> <span class="s2">"x"</span>   <span class="c1"># 'x'        first truthy wins, else the LAST value</span>
+<span class="mi">3</span> <span class="ow">and</span> <span class="mi">4</span>                <span class="c1"># 4</span>
+<span class="kc">None</span> <span class="ow">and</span> <span class="mi">1</span>             <span class="c1"># None</span>
+</code></pre></div>
+
+<p>The modern, explicit alternative for defaults is <code>value if value is not None
+else default</code>, or <code>dict.get(k, default)</code>. Reserve <code>or</code> for genuinely
+&ldquo;first truthy&rdquo; logic.</p>
+<h3 id="354-bitwise-operators-as-real-engineering-tools">3.5.4 Bitwise operators as real engineering tools</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">READ</span><span class="p">,</span> <span class="n">WRITE</span><span class="p">,</span> <span class="n">EXEC</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span>     <span class="c1"># 1, 2, 4</span>
+<span class="n">perms</span> <span class="o">=</span> <span class="n">READ</span> <span class="o">|</span> <span class="n">WRITE</span>                            <span class="c1"># combine: 3</span>
+<span class="n">perms</span> <span class="o">&amp;</span> <span class="n">WRITE</span>                                   <span class="c1"># test: 2 (truthy)</span>
+<span class="n">perms</span> <span class="o">^</span> <span class="n">READ</span>                                    <span class="c1"># toggle READ off: 2</span>
+<span class="n">perms</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">WRITE</span>                                  <span class="c1"># clear WRITE: 1</span>
+<span class="nb">bin</span><span class="p">(</span><span class="n">perms</span><span class="p">),</span> <span class="n">perms</span><span class="o">.</span><span class="n">bit_length</span><span class="p">()</span>                  <span class="c1"># '0b11', 2</span>
+</code></pre></div>
+
+<p>In production code prefer <code>enum.IntFlag</code> over raw ints — same bitwise power,
+readable names, <code>repr</code> support:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntFlag</span><span class="p">,</span> <span class="n">auto</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Perm</span><span class="p">(</span><span class="n">IntFlag</span><span class="p">):</span>
+    <span class="n">READ</span> <span class="o">=</span> <span class="n">auto</span><span class="p">();</span> <span class="n">WRITE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">();</span> <span class="n">EXEC</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">Perm</span><span class="o">.</span><span class="n">READ</span> <span class="o">|</span> <span class="n">Perm</span><span class="o">.</span><span class="n">WRITE</span>
+<span class="n">Perm</span><span class="o">.</span><span class="n">WRITE</span> <span class="ow">in</span> <span class="n">p</span>            <span class="c1"># True</span>
+</code></pre></div>
+
+<p>Shifts are also the fastest powers of two (<code>n &lt;&lt; k == n * 2**k</code>), and <code>&amp;</code>/<code>|</code>
+implement set algebra on bitmasks — the representation behind file
+permissions, feature flags and packed protocols.</p>
+<h3 id="355-the-walrus-honestly">3.5.5 The walrus, honestly</h3>
+<p>PEP 572 exists for one shape of problem: <em>use a computed value in a condition
+and then again in the body</em>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">m</span> <span class="o">:=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(\d+)-(\d+)"</span><span class="p">,</span> <span class="n">text</span><span class="p">)):</span>      <span class="c1"># bind AND test</span>
+    <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">if</span> <span class="p">(</span><span class="n">y</span> <span class="o">:=</span> <span class="n">slow</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>   <span class="c1"># compute once</span>
+</code></pre></div>
+
+<p>It shines in <code>while</code> read-loops and comprehension filters. It hurts readability
+when nested or used where a plain assignment would do. Style guides (and
+reviewers) accept it in those two shapes and reject it elsewhere.</p>
+<h3 id="356-augmented-assignment-in-place-when-possible">3.5.6 Augmented assignment: in-place when possible</h3>
+<p><code>x += y</code> tries <code>__iadd__</code>; lists implement it (mutate in place and return
+self), ints don&rsquo;t (rebind to a new object). This difference produces the most
+famous Python gotcha:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>          <span class="c1"># 'tuple' object does not support item assignment</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>              <span class="c1"># (1, [2, 3])  &lt;- the list WAS mutated, THEN it raised</span>
+</code></pre></div>
+
+<p>The bytecode does <code>BINARY_OP</code> then <code>STORE_SUBSCR</code>; the store fails, but the
+in-place mutation already happened. Lesson: never mutate through an immutable
+container.</p>
+<h2 id="36-industry-level">3.6 Industry level</h2>
+<h3 id="exact-arithmetic-where-it-matters">Exact arithmetic where it matters</h3>
+<p>Binary floats cannot represent most decimals. Money and scientific code pay
+for this in production incidents:</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">0.1</span> <span class="o">+</span> <span class="mf">0.2</span>                     <span class="c1"># 0.30000000000000004</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span>
+<span class="n">Decimal</span><span class="p">(</span><span class="s2">"0.1"</span><span class="p">)</span> <span class="o">+</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"0.2"</span><span class="p">)</span>      <span class="c1"># Decimal('0.3')</span>
+</code></pre></div>
+
+<p>Rules teams enforce: money → <code>Decimal</code> or integer minor units; compare floats
+→ <code>math.isclose</code>; accumulate floats → <code>math.fsum</code>; scientific → <code>numpy</code> with
+explicit dtypes.</p>
+<h3 id="the-operator-module-for-functional-code">The <code>operator</code> module for functional code</h3>
+<p>When you need &ldquo;the operator as a value&rdquo; (sort keys, reductions, pipelines),
+<code>operator</code> beats lambdas in speed and clarity:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">operator</span><span class="o">,</span><span class="w"> </span><span class="nn">functools</span>
+<span class="n">rows</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="s2">"age"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">))</span>
+<span class="n">total</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">,</span> <span class="n">amounts</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>     <span class="c1"># == sum(amounts)</span>
+<span class="n">names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">attrgetter</span><span class="p">(</span><span class="s2">"full_name"</span><span class="p">),</span> <span class="n">users</span><span class="p">))</span>
+</code></pre></div>
+
+<h3 id="comparison-discipline">Comparison discipline</h3>
+<p>Implement <code>__eq__</code> plus <code>__lt__</code> and decorate with
+<code>functools.total_ordering</code> to get the rest; always return <code>NotImplemented</code>
+for unknown types; make equality consistent with <code>__hash__</code> (equal objects,
+equal hashes) or explicitly set <code>__hash__ = None</code> for unhashable mutables —
+which is exactly what <code>list</code> does.</p>
+<h3 id="readability-over-golf">Readability over golf</h3>
+<p><code>x = a if c else b</code> beats nested ternaries; chained comparisons beat
+<code>and</code>-joined ones; <code>in</code> beats <code>== or == or ==</code>. Reviewers reject clever
+one-liners that need a comment — the comment is proof the expression failed.</p>
+<h2 id="37-comparison-tables">3.7 Comparison tables</h2>
+<p><strong>Truthiness quick reference:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Truthy?</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code>, <code>0.0</code>, <code>0j</code>, <code>Decimal("0")</code></td>
+<td>falsy</td>
+<td>numeric zero</td>
+</tr>
+<tr>
+<td><code>""</code>, <code>b""</code>, <code>()</code>, <code>[]</code>, <code>{}</code>, <code>set()</code></td>
+<td>falsy</td>
+<td>empty containers</td>
+</tr>
+<tr>
+<td><code>None</code>, <code>False</code></td>
+<td>falsy</td>
+<td></td>
+</tr>
+<tr>
+<td><code>"0"</code>, <code>"False"</code>, <code>" "</code></td>
+<td><strong>truthy</strong></td>
+<td>non-empty strings</td>
+</tr>
+<tr>
+<td><code>[0]</code>, <code>{"a": None}</code></td>
+<td><strong>truthy</strong></td>
+<td>non-empty containers</td>
+</tr>
+<tr>
+<td><code>float("nan")</code></td>
+<td><strong>truthy</strong></td>
+<td>nan is not zero</td>
+</tr>
+<tr>
+<td>custom object</td>
+<td>truthy</td>
+<td>unless <code>__bool__</code>/<code>__len__</code> says otherwise</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Floor division / modulo by sign:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Result</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>7 // 2</code></td>
+<td><code>3</code></td>
+<td>floor toward −∞</td>
+</tr>
+<tr>
+<td><code>-7 // 2</code></td>
+<td><code>-4</code></td>
+<td>floor, not truncate</td>
+</tr>
+<tr>
+<td><code>7 // -2</code></td>
+<td><code>-4</code></td>
+<td>floor</td>
+</tr>
+<tr>
+<td><code>7 % 3</code></td>
+<td><code>1</code></td>
+<td>sign of divisor</td>
+</tr>
+<tr>
+<td><code>-7 % 3</code></td>
+<td><code>2</code></td>
+<td>sign of divisor (+)</td>
+</tr>
+<tr>
+<td><code>7 % -3</code></td>
+<td><code>-2</code></td>
+<td>sign of divisor (−)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Operator → &ldquo;what actually runs&rdquo;:</strong></p>
+<table>
+<thead>
+<tr>
+<th>You write</th>
+<th>Python runs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>a + b</code></td>
+<td><code>type(a).__add__(a, b)</code> else <code>type(b).__radd__(b, a)</code></td>
+</tr>
+<tr>
+<td><code>a += b</code></td>
+<td><code>a = type(a).__iadd__(a, b)</code> if present else <code>a = a + b</code></td>
+</tr>
+<tr>
+<td><code>a == b</code></td>
+<td><code>__eq__</code>, default = identity</td>
+</tr>
+<tr>
+<td><code>a &lt; b</code></td>
+<td><code>__lt__</code></td>
+</tr>
+<tr>
+<td><code>x in s</code></td>
+<td><code>type(s).__contains__(s, x)</code> else iterate &amp; <code>==</code></td>
+</tr>
+<tr>
+<td><code>bool(a)</code></td>
+<td><code>__bool__</code> else <code>__len__ != 0</code> else <code>True</code></td>
+</tr>
+<tr>
+<td><code>if a:</code></td>
+<td>same as <code>bool(a)</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="38-mistakes-gotchas">3.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>not a == b</code></p>
+<p>Parses as <code>not (a == b)</code> — usually what you meant — but <code>not a == b</code> reads
+badly; write <code>a != b</code>. And never write <code>x == False</code>; write <code>not x</code> or
+<code>x is False</code> only when you truly need identity.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Float equality</p>
+<p>Never <code>==</code> two floats computed differently. <code>math.isclose(a, b, rel_tol=1e-9)</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>//</code> with negatives surprises C/Java programmers</p>
+<p>Python floors; C truncates. <code>-7 // 2</code> is <code>-4</code>, not <code>-3</code>. Ported code breaks
+here.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Chained assignment of mutables</p>
+<p><code>a = b = []</code> shares one list. Use separate statements for containers.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>and</code>/<code>or</code> return operands</p>
+<p><code>len(x) and "yes"</code> yields <code>0</code> for empty <code>x</code>, not <code>False</code>. If callers expect a
+bool, wrap in <code>bool(...)</code>.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Augmented assignment through a tuple</p>
+<p><code>t[1] += [3]</code> mutates AND raises. Use <code>t[1] = t[1] + [3]</code>… which also raises
+(tuple immutable) — the correct move is to not store mutable state in tuples.</p>
+</div>
+<h2 id="39-interview-questions">3.9 Interview questions</h2>
+<ol>
+<li><strong>What does <code>a + b</code> compile to?</strong> — <code>BINARY_OP</code> calling <code>__add__</code> with
+   <code>__radd__</code> fallback on <code>NotImplemented</code>.</li>
+<li><strong>Difference between <code>/</code> and <code>//</code>?</strong> — true division (always float) vs
+   floor division (rounds toward −∞, type follows operands).</li>
+<li><strong>What does <code>and</code> return?</strong> — the first falsy operand, else the last
+   operand. Short-circuits.</li>
+<li><strong>Why is <code>1 &lt; x &lt; 10</code> better than <code>x &gt; 1 and x &lt; 10</code>?</strong> — one evaluation of
+   <code>x</code>, single expression, compiles to an efficient chain.</li>
+<li><strong>What is the walrus operator for?</strong> — binding a name inside an expression
+   where a statement isn&rsquo;t allowed (<code>while</code>, <code>if</code>, comprehensions).</li>
+<li><strong>Is <code>==</code> the same as <code>is</code>?</strong> — No: value vs identity. <code>is</code> is for <code>None</code>
+   and singletons.</li>
+<li><strong>How would you make your class support <code>+</code> and <code>+=</code> differently?</strong> —
+   <code>__add__</code> returning a new instance; <code>__iadd__</code> mutating and returning
+   <code>self</code>.</li>
+</ol>
+<h2 id="310-practice-exercises">3.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-03-a</span></div><p>Implement <code>describe_division(a, b)</code> returning <code>{"true": …, "floor": …,
+"mod": …, "divmod": (…)}</code>; <code>grade(score)</code> mapping a score to <code>"A"…"F"</code> using
+chained comparisons; and <code>bit_summary(n)</code> returning <code>{"binary": "0b…",
+"bit_length": …, "is_even": …, "halved": …}</code> using shifts and masks.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/03_operators/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-03-b</span></div><p>Implement <code>first_truthy(*values)</code> (exact <code>or</code> semantics: last value if all
+falsy), <code>clip(value, lo, hi)</code> without <code>if</code> statements (use <code>min</code>/<code>max</code>),
+<code>apply_op(name, a, b)</code> dispatching <code>+ - * / // % **</code> through the <code>operator</code>
+module with a whitelist that raises <code>ValueError</code> for anything else, and
+<code>encode_permissions(names)</code> / <code>has_permission(flags, name)</code> using bit masks.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/03_operators/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-03-c</span></div><p>Implement a <code>Money</code> value class (integer minor units + currency) supporting
+<code>+</code>, <code>-</code>, <code>==</code>, <code>&lt;</code>, <code>abs()</code>, <code>str()</code> (&ldquo;€12.34&rdquo;), unary <code>-</code>, and raising
+<code>ValueError</code> on currency mismatch; support reflected addition with <code>int</code>
+(zero-amount semantics) and refuse float operands with a clear <code>TypeError</code>.
+Then implement <code>sort_transactions(txns)</code> ordering by currency then amount using
+<code>operator.attrgetter</code>.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/03_operators/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Core of the reference answer (full: exercises/03_operators/solution.py)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">operator</span>
+
+<span class="n">_OPS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"+"</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">sub</span><span class="p">,</span> <span class="s2">"*"</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">mul</span><span class="p">,</span>
+        <span class="s2">"/"</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">truediv</span><span class="p">,</span> <span class="s2">"//"</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">floordiv</span><span class="p">,</span>
+        <span class="s2">"%"</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">mod</span><span class="p">,</span> <span class="s2">"**"</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">pow</span><span class="p">}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_op</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fn</span> <span class="o">=</span> <span class="n">_OPS</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unsupported operator: </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Money</span><span class="p">:</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"minor"</span><span class="p">,</span> <span class="s2">"currency"</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minor</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">currency</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">minor</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"Money amounts must be integer minor units"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">minor</span><span class="p">),</span> <span class="n">currency</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Money</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">currency</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"currency mismatch: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">currency</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">other</span><span class="o">.</span><span class="n">currency</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">other</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>           <span class="c1"># reflected-friendly zero semantics</span>
+            <span class="n">other</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span><span class="p">)</span>
+        <span class="n">o</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">o</span> <span class="ow">is</span> <span class="bp">NotImplemented</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minor</span> <span class="o">+</span> <span class="n">o</span><span class="o">.</span><span class="n">minor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span><span class="p">)</span>
+    <span class="fm">__radd__</span> <span class="o">=</span> <span class="fm">__add__</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="n">o</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">o</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">NotImplemented</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">minor</span> <span class="o">==</span> <span class="n">o</span><span class="o">.</span><span class="n">minor</span>
+</code></pre></div></details>
+<h2 id="311-cheatsheet">3.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Integer quotient / remainder</td>
+<td><code>a // b</code>, <code>a % b</code>, or <code>divmod(a, b)</code></td>
+</tr>
+<tr>
+<td>Power, modular power</td>
+<td><code>a ** b</code>, <code>pow(a, b, m)</code></td>
+</tr>
+<tr>
+<td>Range test</td>
+<td><code>lo &lt;= x &lt; hi</code></td>
+</tr>
+<tr>
+<td>Default value</td>
+<td><code>x or default</code> (truthy) / <code>x if x is not None else default</code></td>
+</tr>
+<tr>
+<td>Guard attribute access</td>
+<td><code>obj and obj.attr</code> / <code>getattr(obj, "attr", None)</code></td>
+</tr>
+<tr>
+<td>Membership</td>
+<td><code>x in coll</code>, <code>x not in coll</code></td>
+</tr>
+<tr>
+<td>Identity</td>
+<td><code>x is None</code>, <code>x is not None</code></td>
+</tr>
+<tr>
+<td>Bit flags</td>
+<td><code>enum.IntFlag</code> with <code>auto()</code>; raw: <code>1 &lt;&lt; k</code>, <code>a \| b</code>, <code>a &amp; b</code>, <code>a ^ b</code>, <code>~b &amp; a</code></td>
+</tr>
+<tr>
+<td>Compare floats</td>
+<td><code>math.isclose(a, b)</code></td>
+</tr>
+<tr>
+<td>Money</td>
+<td><code>decimal.Decimal</code> or integer minor units</td>
+</tr>
+<tr>
+<td>Sort by fields</td>
+<td><code>key=operator.itemgetter("a", "b")</code></td>
+</tr>
+<tr>
+<td>Assign in expression</td>
+<td><code>(n := expr)</code></td>
+</tr>
+<tr>
+<td>Ternary</td>
+<td><code>a if cond else b</code></td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="02-variables-types-memory.html"><span>&larr; previous</span><strong>Variables, types & the memory model</strong></a><a class="next" href="04-strings-text.html"><span>next &rarr;</span><strong>Strings & text: Unicode, slicing, formatting, performance</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#31-definition">3.1 Definition</a></li>
+<li><a href="#32-syntax">3.2 Syntax</a></li>
+<li><a href="#33-first-examples">3.3 First examples</a></li>
+<li><a href="#34-the-picture">3.4 The picture</a></li>
+<li><a href="#35-going-deeper">3.5 Going deeper</a><ul>
+<li><a href="#351-the-dispatch-table">3.5.1 The dispatch table</a></li>
+<li><a href="#352-truthiness-what-counts-as-false">3.5.2 Truthiness: what counts as false</a></li>
+<li><a href="#353-and-or-return-operands-not-booleans">3.5.3 and / or return operands, not booleans</a></li>
+<li><a href="#354-bitwise-operators-as-real-engineering-tools">3.5.4 Bitwise operators as real engineering tools</a></li>
+<li><a href="#355-the-walrus-honestly">3.5.5 The walrus, honestly</a></li>
+<li><a href="#356-augmented-assignment-in-place-when-possible">3.5.6 Augmented assignment: in-place when possible</a></li>
+</ul>
+</li>
+<li><a href="#36-industry-level">3.6 Industry level</a><ul>
+<li><a href="#exact-arithmetic-where-it-matters">Exact arithmetic where it matters</a></li>
+<li><a href="#the-operator-module-for-functional-code">The operator module for functional code</a></li>
+<li><a href="#comparison-discipline">Comparison discipline</a></li>
+<li><a href="#readability-over-golf">Readability over golf</a></li>
+</ul>
+</li>
+<li><a href="#37-comparison-tables">3.7 Comparison tables</a></li>
+<li><a href="#38-mistakes-gotchas">3.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#39-interview-questions">3.9 Interview questions</a></li>
+<li><a href="#310-practice-exercises">3.10 Practice exercises</a></li>
+<li><a href="#311-cheatsheet">3.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

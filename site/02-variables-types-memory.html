@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Variables, types &amp; the memory model &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link active" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">30 min</span><span class="chip tag">memory</span><span class="chip tag">objects</span><span class="chip tag">mutability</span><span class="chip tag">identity</span><span class="chip tag">gc</span></div>
+      <h1 id="2-variables-types-the-memory-model">2. Variables, types &amp; the memory model</h1>
+<blockquote>
+<p>In C you own boxes. In Python you own name tags. Every confusing bug you
+will ever have with &ldquo;the list changed by itself&rdquo; is this module.</p>
+</blockquote>
+<h2 id="21-definition">2.1 Definition</h2>
+<p><strong>Plain version.</strong> A variable in Python is a <em>name</em> attached to an <em>object</em>
+that lives in memory. Assignment sticks the name on an object; it never copies
+the object and never reserves a typed box.</p>
+<p><strong>Precise version.</strong> An assignment statement <code>name = expression</code> evaluates the
+expression to an object, then <strong>binds</strong> <code>name</code> to that object in the current
+namespace (a mapping of names → objects). The object carries its own type
+(<code>type(obj)</code>), value and identity (<code>id(obj)</code>). Python is therefore
+<strong>dynamically typed</strong> (types belong to objects, not names) and <strong>strongly
+typed</strong> (conversions must be explicit; <code>1 + "1"</code> is an error, not a coercion).</p>
+<p>Everything — numbers, strings, functions, classes, modules — is an object, and
+every object has at least: a <strong>reference count</strong>, a <strong>pointer to its type</strong>,
+and its <strong>value</strong>.</p>
+<h2 id="22-syntax">2.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># binding -------------------------------------------------------------</span>
+<span class="n">count</span> <span class="o">=</span> <span class="mi">10</span>                    <span class="c1"># bind name 'count' to an int object</span>
+<span class="n">price</span><span class="p">,</span> <span class="n">qty</span> <span class="o">=</span> <span class="mf">9.99</span><span class="p">,</span> <span class="mi">3</span>          <span class="c1"># tuple unpacking: two bindings at once</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">b</span> <span class="o">=</span> <span class="p">[]</span>                    <span class="c1"># CHAINED: both names -&gt; the SAME list</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span>                   <span class="c1"># swap without a temp variable</span>
+
+<span class="c1"># rebinding &amp; mutating ------------------------------------------------</span>
+<span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>             <span class="c1"># new int object; name moves to it</span>
+<span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>                    <span class="c1"># same thing for ints (immutable)</span>
+<span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>                   <span class="c1"># NO rebinding: the SAME list grows</span>
+
+<span class="c1"># augmented &amp; annotated ----------------------------------------------</span>
+<span class="n">total</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>                <span class="c1"># annotation: a hint for tools, not a constraint</span>
+<span class="k">del</span> <span class="n">count</span>                     <span class="c1"># unbind the name (object may then be freed)</span>
+
+<span class="c1"># inspecting ----------------------------------------------------------</span>
+<span class="nb">type</span><span class="p">(</span><span class="n">price</span><span class="p">)</span>                   <span class="c1"># &lt;class 'float'&gt;</span>
+<span class="nb">id</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>                         <span class="c1"># memory address / identity of the object</span>
+<span class="nb">isinstance</span><span class="p">(</span><span class="n">price</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>      <span class="c1"># True (respects inheritance)</span>
+</code></pre></div>
+
+<h2 id="23-first-examples">2.3 First examples</h2>
+<p><strong>Example 1 — rebinding vs mutating.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">a</span>            <span class="c1"># b points at the SAME list</span>
+<span class="n">b</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>         <span class="c1"># [1, 2, 3, 4]   &lt;- a changed! one object, two names</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span> <span class="ow">is</span> <span class="n">b</span><span class="p">)</span>    <span class="c1"># True</span>
+</code></pre></div>
+
+<p><strong>Example 2 — types travel with objects.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">v</span> <span class="o">=</span> <span class="mi">10</span>           <span class="c1"># v -&gt; int</span>
+<span class="n">v</span> <span class="o">=</span> <span class="s2">"ten"</span>        <span class="c1"># v -&gt; str   (the int is discarded, name rebound)</span>
+<span class="n">v</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>       <span class="c1"># v -&gt; list</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>   <span class="c1"># &lt;class 'list'&gt;</span>
+</code></pre></div>
+
+<p><strong>Example 3 — identity vs equality.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">];</span> <span class="n">q</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">p</span> <span class="o">==</span> <span class="n">q</span><span class="p">)</span>    <span class="c1"># True  : same *value*</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">p</span> <span class="ow">is</span> <span class="n">q</span><span class="p">)</span>    <span class="c1"># False : two distinct objects</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="n">p</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">r</span> <span class="ow">is</span> <span class="n">p</span><span class="p">)</span>    <span class="c1"># True  : same object</span>
+</code></pre></div>
+
+<h2 id="24-the-picture">2.4 The picture</h2>
+<p><figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 486" width="990" height="486" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Names point at objects</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arblue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-blue, #2563eb)"/></marker>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Variables are name tags, not boxes</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Assignment binds a name to an object. Two names can bind to the SAME object.</text>
+<rect x="22" y="64" width="468" height="336" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="22" y="64" width="468" height="30" rx="10" fill="var(--dg-blue, #2563eb)"/>
+<rect x="22" y="82" width="468" height="12" rx="0" fill="var(--dg-blue, #2563eb)"/>
+<text x="256.0" y="84" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">A.  MUTATING the shared object</text>
+<text x="256.0" y="112" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">b = a ; b.append(4)</text>
+<rect x="56" y="160" width="66" height="44" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="89" y="189" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">a</text>
+<rect x="56" y="252" width="66" height="44" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="89" y="281" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">b</text>
+<rect x="232" y="178" width="232" height="96" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="348" y="198" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">list   id=0x7f3a21   refcount=2</text>
+<rect x="248" y="212" width="46" height="40" rx="6" fill="var(--dg-bluebg, #dbeafe)"/>
+<text x="271.0" y="237.04" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="14" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">1</text>
+<rect x="302" y="212" width="46" height="40" rx="6" fill="var(--dg-bluebg, #dbeafe)"/>
+<text x="325.0" y="237.04" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="14" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">2</text>
+<rect x="356" y="212" width="46" height="40" rx="6" fill="var(--dg-bluebg, #dbeafe)"/>
+<text x="379.0" y="237.04" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="14" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">3</text>
+<rect x="410" y="212" width="46" height="40" rx="6" fill="var(--dg-bluebg, #dbeafe)"/>
+<text x="433.0" y="237.04" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="14" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">4</text>
+<line x1="122" y1="182" x2="232" y2="214" stroke="var(--dg-blue, #2563eb)" stroke-width="1.8" marker-end="url(#arblue)"/>
+<line x1="122" y1="274" x2="232" y2="242" stroke="var(--dg-blue, #2563eb)" stroke-width="1.8" marker-end="url(#arblue)"/>
+<rect x="56" y="300" width="408" height="84" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="72" y="322" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">a is b            -&gt; True   (one object, two names)</text>
+<text x="72" y="340" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">print(a)          -&gt; [1, 2, 3, 4]   a CHANGED too</text>
+<text x="72" y="358" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">This is the #1 source of &#x27;impossible&#x27; beginner bugs.</text>
+<rect x="500" y="64" width="468" height="336" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="500" y="64" width="468" height="30" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="500" y="82" width="468" height="12" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="734.0" y="84" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">B.  REBINDING to a new object</text>
+<text x="734.0" y="112" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">b = a ; b = b + [4]</text>
+<rect x="534" y="160" width="66" height="44" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="567" y="189" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">a</text>
+<rect x="534" y="252" width="66" height="44" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="567" y="281" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">b</text>
+<rect x="716" y="150" width="206" height="60" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="819" y="170" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">list  id=0x7f3a21</text>
+<rect x="732" y="178" width="46" height="24" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="755.0" y="194.32" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">1</text>
+<rect x="784" y="178" width="46" height="24" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="807.0" y="194.32" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">2</text>
+<rect x="836" y="178" width="46" height="24" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="859.0" y="194.32" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">3</text>
+<rect x="716" y="254" width="236" height="60" rx="10" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="834" y="274" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">list  id=0x9c11b8  NEW</text>
+<rect x="732" y="282" width="46" height="24" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="755.0" y="298.32" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">1</text>
+<rect x="784" y="282" width="46" height="24" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="807.0" y="298.32" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">2</text>
+<rect x="836" y="282" width="46" height="24" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="859.0" y="298.32" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">3</text>
+<rect x="888" y="282" width="46" height="24" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="911.0" y="298.32" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">4</text>
+<line x1="600" y1="182" x2="716" y2="180" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.8" marker-end="url(#arviolet)"/>
+<line x1="600" y1="274" x2="716" y2="284" stroke="var(--dg-green, #059669)" stroke-width="1.8" marker-end="url(#argreen)"/>
+<rect x="534" y="330" width="418" height="54" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="550" y="350" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">a is b  -&gt; False      print(a) -&gt; [1, 2, 3]  unchanged</text>
+<text x="550" y="368" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">b + [4] builds a brand-new list and rebinds b to it.</text>
+<text x="495" y="424" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Rule:  `=` never copies an object.  It binds a name.  Use copy.copy() / copy.deepcopy() to duplicate.</text>
+</svg>
+<figcaption>Mutating a shared object vs rebinding to a new one: b = a then b.append(4) changes both names; b = b + [4] leaves a untouched.</figcaption></figure></p>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 452" width="990" height="452" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Mutable vs immutable</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="30" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Two families of objects</text>
+<rect x="22" y="56" width="468" height="244" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="22" y="56" width="468" height="30" rx="10" fill="var(--dg-violet, #7c3aed)"/>
+<rect x="22" y="74" width="468" height="12" rx="0" fill="var(--dg-violet, #7c3aed)"/>
+<text x="256" y="76" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">IMMUTABLE  -  value can never change</text>
+<rect x="44" y="104" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="113.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">int</text>
+<rect x="192" y="104" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="261.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">float</text>
+<rect x="340" y="104" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="409.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">complex</text>
+<rect x="44" y="144" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="113.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">bool</text>
+<rect x="192" y="144" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="261.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">str</text>
+<rect x="340" y="144" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="409.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">tuple</text>
+<rect x="44" y="184" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="113.0" y="203.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">frozenset</text>
+<rect x="192" y="184" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="261.0" y="203.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">bytes</text>
+<rect x="340" y="184" width="138" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)"/>
+<text x="409.0" y="203.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-violet, #7c3aed)">None</text>
+<text x="44" y="232" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">x = 10 ; x += 1     # a NEW int object is created</text>
+<text x="44" y="249" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">s = &#x27;hi&#x27; ; s += &#x27;!&#x27; # a NEW str object is created</text>
+<text x="44" y="284" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">hashable -&gt; can be dict keys / set members</text>
+<rect x="500" y="56" width="468" height="244" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="500" y="56" width="468" height="30" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="500" y="74" width="468" height="12" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="734" y="76" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">MUTABLE  -  value can change in place</text>
+<rect x="522" y="104" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="591.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">list</text>
+<rect x="670" y="104" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="739.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">dict</text>
+<rect x="818" y="104" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="887.0" y="123.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">set</text>
+<rect x="522" y="144" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="591.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">bytearray</text>
+<rect x="670" y="144" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="739.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">MyClass()</text>
+<rect x="818" y="144" width="138" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)"/>
+<text x="887.0" y="163.68" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">deque</text>
+<text x="522" y="232" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">a = [1,2] ; a.append(3)  # SAME object, grown</text>
+<text x="522" y="249" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">d = {}    ; d[&#x27;k&#x27;] = 1     # SAME object, new entry</text>
+<text x="522" y="284" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">unhashable -&gt; TypeError if used as a dict key</text>
+<rect x="22" y="322" width="306" height="82" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="36" y="344" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">Why it matters #1</text>
+<text x="36" y="366" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Only immutable objects can be dictionary key</text>
+<text x="36" y="382" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">s or live inside a set.</text>
+<rect x="342" y="322" width="306" height="82" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="356" y="344" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">Why it matters #2</text>
+<text x="356" y="366" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Immutable objects are safe to share across t</text>
+<text x="356" y="382" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">hreads - no locks needed.</text>
+<rect x="662" y="322" width="306" height="82" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="676" y="344" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Why it matters #3</text>
+<text x="676" y="366" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">A tuple of mutable items is NOT truly immuta</text>
+<text x="676" y="382" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">ble: (1, [2]) can change.</text>
+<text x="495" y="436" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Mental model: immutable = a value you read; mutable = a container you edit.</text>
+</svg>
+<figcaption>The two families of objects: immutable (int, str, tuple, frozenset...) vs mutable (list, dict, set...), and why the difference decides hashability and thread-safety.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 352" width="990" height="352" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Reference counting and garbage collection</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">How Python frees memory</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Every object stores a reference count. When it hits zero the memory is reclaimed instantly.</text>
+<rect x="32.0" y="68" width="218" height="190" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<rect x="32.0" y="68" width="218" height="26" rx="10" fill="var(--dg-slate, #475569)"/>
+<rect x="32.0" y="84" width="218" height="10" rx="8" fill="var(--dg-slate, #475569)"/>
+<text x="141.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">stage 1</text>
+<text x="141.0" y="114" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">a = [1,2,3]</text>
+<rect x="66.0" y="132" width="150" height="58" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="141.0" y="154" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">[1, 2, 3]</text>
+<text x="141.0" y="171" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">ob_refcnt = 1</text>
+<text x="141.0" y="214" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">one owner</text>
+<text x="141.0" y="236" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">alive</text>
+<rect x="268.0" y="68" width="218" height="190" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<rect x="268.0" y="68" width="218" height="26" rx="10" fill="var(--dg-slate, #475569)"/>
+<rect x="268.0" y="84" width="218" height="10" rx="8" fill="var(--dg-slate, #475569)"/>
+<text x="377.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">stage 2</text>
+<text x="377.0" y="114" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">b = a</text>
+<rect x="302.0" y="132" width="150" height="58" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="377.0" y="154" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">[1, 2, 3]</text>
+<text x="377.0" y="171" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">ob_refcnt = 2</text>
+<text x="377.0" y="214" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">two owners</text>
+<text x="377.0" y="236" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">alive</text>
+<line x1="250.0" y1="163" x2="268.0" y2="163" stroke="var(--dg-slate, #475569)" stroke-width="1.6" marker-end="url(#arslate)"/>
+<rect x="504.0" y="68" width="218" height="190" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<rect x="504.0" y="68" width="218" height="26" rx="10" fill="var(--dg-slate, #475569)"/>
+<rect x="504.0" y="84" width="218" height="10" rx="8" fill="var(--dg-slate, #475569)"/>
+<text x="613.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">stage 3</text>
+<text x="613.0" y="114" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">del a</text>
+<rect x="538.0" y="132" width="150" height="58" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="613.0" y="154" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">[1, 2, 3]</text>
+<text x="613.0" y="171" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">ob_refcnt = 1</text>
+<text x="613.0" y="214" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-slate, #475569)">one owner left</text>
+<text x="613.0" y="236" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">alive</text>
+<line x1="486.0" y1="163" x2="504.0" y2="163" stroke="var(--dg-slate, #475569)" stroke-width="1.6" marker-end="url(#arslate)"/>
+<rect x="740.0" y="68" width="218" height="190" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<rect x="740.0" y="68" width="218" height="26" rx="10" fill="var(--dg-red, #dc2626)"/>
+<rect x="740.0" y="84" width="218" height="10" rx="8" fill="var(--dg-red, #dc2626)"/>
+<text x="849.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">stage 4</text>
+<text x="849.0" y="114" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">del b</text>
+<rect x="774.0" y="132" width="150" height="58" rx="8" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="849.0" y="154" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">[1, 2, 3]</text>
+<text x="849.0" y="171" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-muted, #64748b)">ob_refcnt = 0</text>
+<text x="849.0" y="214" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">refcount 0 -&gt; freed</text>
+<text x="849.0" y="236" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">memory reclaimed</text>
+<line x1="722.0" y1="163" x2="740.0" y2="163" stroke="var(--dg-slate, #475569)" stroke-width="1.6" marker-end="url(#arslate)"/>
+<rect x="32.0" y="276" width="926" height="62" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="48.0" y="298" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Reference counting alone cannot collect CYCLES (a.ref = b; b.ref = a), so CPython also runs a</text>
+<text x="48.0" y="316" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">generational cyclic collector - gc.collect().  Weak references (weakref) break cycles on purpose.</text>
+</svg>
+<figcaption>Reference counting: an object is freed the moment its reference count reaches zero; a generational collector handles reference cycles.</figcaption></figure>
+
+<h2 id="25-going-deeper">2.5 Going deeper</h2>
+<h3 id="251-what-an-object-looks-like-in-memory">2.5.1 What an object looks like in memory</h3>
+<p>Every CPython object starts with the same header:</p>
+<div class="codehilite"><pre><span></span><code>+----------------+----------------+-------------------+
+| ob_refcnt      | ob_type  -----&gt;| the type object   |
+| (reference ct) |                | (int, list, ...)  |
++----------------+----------------+-------------------+
+| ... the value payload (type-specific) ...          |
++----------------------------------------------------+
+</code></pre></div>
+
+<p><code>sys.getsizeof</code> reports the header + payload, <strong>not</strong> what the object points
+at:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">([])</span>            <span class="c1"># 56   (header + empty pointer array)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>     <span class="c1"># 88   (56 + 3 * 8-byte pointers on 64-bit)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">([[],</span> <span class="p">[],</span> <span class="p">[]])</span>  <span class="c1"># 88   (!) the inner lists are NOT counted</span>
+</code></pre></div>
+
+<p>That last line is the whole story: a list stores <strong>pointers</strong>, so its size
+ignores the pointees (see module 06 for the layout diagram).</p>
+<h3 id="252-immutability-hashability-and-the-dict-key-contract">2.5.2 Immutability, hashability, and the dict-key contract</h3>
+<p>An object is <strong>hashable</strong> if it has a stable <code>hash()</code> and equality that agrees
+with it. Only immutable built-ins are hashable, which is why they — and only
+they — can be dictionary keys or set members:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">d</span><span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">"ok"</span>      <span class="c1"># tuple: immutable -&gt; hashable -&gt; fine</span>
+<span class="n">d</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">"boom"</span>    <span class="c1"># TypeError: unhashable type: 'list'</span>
+</code></pre></div>
+
+<p>The subtle trap: <em>a tuple is only as immutable as its contents</em>.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>        <span class="c1"># legal! the tuple didn't change, its list did</span>
+<span class="nb">hash</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>               <span class="c1"># TypeError now - it was never safely hashable</span>
+</code></pre></div>
+
+<h3 id="253-vs-is-and-the-caches-that-fool-everyone">2.5.3 <code>==</code> vs <code>is</code>, and the caches that fool everyone</h3>
+<ul>
+<li><code>==</code> calls <code>__eq__</code> → compares <strong>values</strong>.</li>
+<li><code>is</code> compares <strong>identity</strong> (same object) → pointer equality.</li>
+</ul>
+<p>CPython keeps two optimisations that make <code>is</code> <em>look</em> like value equality:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># in the REPL, each line is a separate compile unit:</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">256</span><span class="p">;</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">256</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">a</span> <span class="ow">is</span> <span class="n">b</span>
+<span class="kc">True</span>            <span class="c1"># small-int cache: -5..256 are pre-created singletons</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">c</span> <span class="o">=</span> <span class="mi">257</span><span class="p">;</span> <span class="n">d</span> <span class="o">=</span> <span class="mi">257</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">c</span> <span class="ow">is</span> <span class="n">d</span>
+<span class="kc">False</span>           <span class="c1"># outside the cache: two objects</span>
+</code></pre></div>
+
+<p>…but inside one script the compiler shares constants, so the same lines can
+print <code>True</code>. And short string literals are <strong>interned</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">s1</span> <span class="o">=</span> <span class="s2">"hi"</span><span class="p">;</span> <span class="n">s2</span> <span class="o">=</span> <span class="s2">"hi"</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">s1</span> <span class="ow">is</span> <span class="n">s2</span>
+<span class="kc">True</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">s3</span> <span class="o">=</span> <span class="s2">"hi there"</span><span class="p">;</span> <span class="n">s4</span> <span class="o">=</span> <span class="s2">"hi there"</span>     <span class="c1"># space breaks the identifier rule</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">s3</span> <span class="ow">is</span> <span class="n">s4</span>
+<span class="kc">False</span>
+</code></pre></div>
+
+<p><strong>Rule:</strong> <code>is</code> is for <code>None</code> (and singletons you created). For values use <code>==</code>.
+Linters flag <code>x == None</code> and <code>x is not None</code>-style mistakes for this reason.</p>
+<h3 id="254-copying-shallow-vs-deep">2.5.4 Copying: shallow vs deep</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="n">orig</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">]]</span>
+<span class="n">shallow</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>          <span class="c1"># or orig[:] or orig.copy()</span>
+<span class="n">deep</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>
+
+<span class="n">shallow</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">99</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>                   <span class="c1"># [[1, 2, 99], [3]]  &lt;- shallow shares innards</span>
+<span class="n">deep</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>                   <span class="c1"># unchanged: deepcopy duplicated everything</span>
+</code></pre></div>
+
+<p>Shallow copy duplicates the <em>pointer array</em>; deep copy walks the object graph
+(and memoises it, so shared sub-objects stay shared, and cycles don&rsquo;t loop
+forever).</p>
+<h3 id="255-memory-reclamation-refcounting-generations">2.5.5 Memory reclamation: refcounting + generations</h3>
+<p>Primary mechanism: <strong>reference counting</strong> (see figure). When <code>ob_refcnt</code> hits
+0 the memory is freed <em>immediately</em> — deterministic, unlike Java&rsquo;s GC.
+Weakness: <strong>cycles</strong> (<code>a.next = b; b.prev = a</code>) never reach 0, so a
+<strong>generational cyclic collector</strong> periodically scans container objects
+(generations 0→1→2, young ones collected most often). You can inspect and
+force it:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gc</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">getrefcount</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>         <span class="c1"># counts +1 for the argument itself</span>
+<span class="n">gc</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>                <span class="c1"># per-generation collection counts</span>
+<span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>                  <span class="c1"># force a full collection (rarely needed)</span>
+</code></pre></div>
+
+<p>Practical consequence: do <strong>not</strong> rely on refcounting for correctness (other
+implementations lack it). That is precisely what <code>with</code> statements and
+<code>contextlib.closing</code> are for (module 10).</p>
+<h3 id="256-__slots__-trading-flexibility-for-memory">2.5.6 <code>__slots__</code>: trading flexibility for memory</h3>
+<p>Instances keep attributes in a per-object <code>__dict__</code> (~100+ bytes each). For
+millions of small objects that hurts:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Point</span><span class="p">:</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"x"</span><span class="p">,</span> <span class="s2">"y"</span><span class="p">)</span>     <span class="c1"># no __dict__; fixed attribute set</span>
+</code></pre></div>
+
+<p>Saves memory and speeds attribute access, but blocks dynamic attributes and
+complicates multiple inheritance. Use it for data-heavy value types, not for
+ordinary application classes.</p>
+<h2 id="26-industry-level">2.6 Industry level</h2>
+<h3 id="immutable-by-default-mutable-by-necessity">Immutable by default, mutable by necessity</h3>
+<p>Professional codebases bias hard toward immutability:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Money</span><span class="p">:</span>
+    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span>            <span class="c1"># minor units, never float for money</span>
+    <span class="n">currency</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">"Money"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Money"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">currency</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"currency mismatch"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Why teams do this: frozen value objects are hashable (usable as dict keys and
+in sets), safe to share across threads without locks, impossible to corrupt
+from a distant call site, and compare by value for free.</p>
+<h3 id="identity-types-vs-value-types">Identity types vs value types</h3>
+<p>Domain modelling splits objects into <strong>entities</strong> (identity matters: two
+<code>User</code> rows with the same fields are still different users — compare by <code>id</code>)
+and <strong>value objects</strong> (only the value matters: <code>Money</code>, <code>DateRange</code>,
+<code>EmailAddress</code> — compare by <code>==</code>, make them frozen). Mixing the two up is a
+classic source of &ldquo;why did my cache hit the wrong user?&rdquo; bugs.</p>
+<h3 id="sentinel-design">Sentinel design</h3>
+<p><code>None</code> is the universal &ldquo;absent&rdquo; singleton, and <code>is None</code> is the idiomatic
+test. But when <code>None</code> is a <em>valid</em> value, use a unique sentinel:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">_MISSING</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">_MISSING</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">store</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="n">_MISSING</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">default</span>
+    <span class="k">return</span> <span class="n">store</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+</code></pre></div>
+
+<h3 id="naming-conventions-teams-enforce">Naming conventions teams enforce</h3>
+<table>
+<thead>
+<tr>
+<th>Convention</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>snake_case</code></td>
+<td>variables, functions</td>
+<td><code>user_count</code></td>
+</tr>
+<tr>
+<td><code>UPPER_SNAKE</code></td>
+<td>module-level constants</td>
+<td><code>MAX_RETRIES = 3</code></td>
+</tr>
+<tr>
+<td><code>_leading</code></td>
+<td>&ldquo;private by convention&rdquo;</td>
+<td><code>_cache</code></td>
+</tr>
+<tr>
+<td><code>trailing_</code></td>
+<td>avoids keyword clash</td>
+<td><code>class_</code>, <code>id_</code></td>
+</tr>
+<tr>
+<td><code>__dunder__</code></td>
+<td>language protocol — never invent your own</td>
+<td><code>__init__</code></td>
+</tr>
+</tbody>
+</table>
+<p>Constants are a <em>convention</em>, not enforcement: <code>MAX_RETRIES = 4</code> elsewhere still
+works. Linters (<code>ruff</code> rule N81x) catch style drift in CI.</p>
+<h2 id="27-comparison-tables">2.7 Comparison tables</h2>
+<p><strong>The built-in types at a glance:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Literal</th>
+<th>Mutable</th>
+<th>Hashable</th>
+<th>Typical use</th>
+<th><code>getsizeof</code> (empty)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>int</code></td>
+<td><code>42</code></td>
+<td>–</td>
+<td>+</td>
+<td>counts, ids</td>
+<td>28</td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td><code>4.2</code></td>
+<td>–</td>
+<td>+</td>
+<td>measurements</td>
+<td>24</td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>True</code></td>
+<td>–</td>
+<td>+</td>
+<td>flags</td>
+<td>28</td>
+</tr>
+<tr>
+<td><code>str</code></td>
+<td><code>"hi"</code></td>
+<td>–</td>
+<td>+</td>
+<td>text</td>
+<td>49</td>
+</tr>
+<tr>
+<td><code>bytes</code></td>
+<td><code>b"hi"</code></td>
+<td>–</td>
+<td>+</td>
+<td>binary blobs</td>
+<td>33</td>
+</tr>
+<tr>
+<td><code>tuple</code></td>
+<td><code>(1, 2)</code></td>
+<td>–</td>
+<td>if contents</td>
+<td>records, keys</td>
+<td>40</td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td><code>[1, 2]</code></td>
+<td>+</td>
+<td>–</td>
+<td>ordered working set</td>
+<td>56</td>
+</tr>
+<tr>
+<td><code>dict</code></td>
+<td><code>{"a": 1}</code></td>
+<td>+</td>
+<td>–</td>
+<td>mappings, indexes</td>
+<td>64</td>
+</tr>
+<tr>
+<td><code>set</code></td>
+<td><code>{1, 2}</code></td>
+<td>+</td>
+<td>–</td>
+<td>membership, dedupe</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>frozenset</code></td>
+<td><code>frozenset()</code></td>
+<td>–</td>
+<td>+</td>
+<td>immutable membership</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>None</code></td>
+<td><code>None</code></td>
+<td>–</td>
+<td>+</td>
+<td>absence</td>
+<td>16</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>==</code> vs <code>is</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Result</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[1] == [1]</code></td>
+<td><code>True</code></td>
+<td>value equality via <code>__eq__</code></td>
+</tr>
+<tr>
+<td><code>[1] is [1]</code></td>
+<td><code>False</code></td>
+<td>two objects</td>
+</tr>
+<tr>
+<td><code>None is None</code></td>
+<td><code>True</code></td>
+<td>one singleton forever</td>
+</tr>
+<tr>
+<td><code>256 is 256</code></td>
+<td><code>True</code></td>
+<td>small-int cache</td>
+</tr>
+<tr>
+<td><code>257 is 257</code> (REPL)</td>
+<td><code>False</code></td>
+<td>outside the cache</td>
+</tr>
+<tr>
+<td><code>"a" * 2 is "aa"</code></td>
+<td>implementation detail</td>
+<td>interning — never rely on it</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Copy strategies:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Copies</th>
+<th>Shares</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>b = a</code></td>
+<td>nothing</td>
+<td>everything</td>
+<td>free</td>
+</tr>
+<tr>
+<td><code>b = a[:]</code> / <code>list(a)</code> / <code>a.copy()</code></td>
+<td>outer container</td>
+<td>inner objects</td>
+<td>O(n) pointers</td>
+</tr>
+<tr>
+<td><code>copy.copy(a)</code></td>
+<td>outer container</td>
+<td>inner objects</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td><code>copy.deepcopy(a)</code></td>
+<td>whole graph</td>
+<td>nothing (memo keeps true sharing)</td>
+<td>O(size of graph)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="28-mistakes-gotchas">2.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">The mutable default argument</p>
+<p><code>def add(item, bag=[])</code> creates ONE list shared by every call. Use
+<code>bag=None</code> then <code>bag = bag or []</code> (or <code>if bag is None:</code>). See module 07 for
+why.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>del x</code> does not delete the object</p>
+<p>It unbinds the name. The object dies only when its last reference goes.
+<code>del a[0]</code> removes an item from a list; <code>del a</code> removes the name <code>a</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Float equality</p>
+<p><code>0.1 + 0.2 == 0.3</code> is <code>False</code>. Compare with <code>math.isclose(a, b)</code> or use
+<code>decimal.Decimal</code> / integer minor units for money.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Chained assignment with mutables</p>
+<p><code>a = b = []</code> gives both names the SAME list. Fine for immutables
+(<code>a = b = 0</code>), a landmine for containers.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Don&rsquo;t compare types with <code>type(x) == SomeType</code></p>
+<p>It ignores inheritance. <code>isinstance(x, SomeType)</code> is the correct,
+subclass-respecting test — and <code>isinstance(x, (A, B))</code> accepts a tuple.</p>
+</div>
+<h2 id="29-interview-questions">2.9 Interview questions</h2>
+<ol>
+<li><strong>Are Python variables passed by value or by reference?</strong> — Neither: <em>by
+   object reference</em> (call-by-sharing). Rebinding a parameter doesn&rsquo;t affect
+   the caller; mutating a shared mutable does.</li>
+<li><strong>What does <code>id()</code> return and when can it change meaning?</strong> — the object&rsquo;s
+   identity (its address in CPython). After an object dies, its address can be
+   reused, so comparing ids of dead objects is meaningless.</li>
+<li><strong>Why can a tuple be a dict key but a list cannot?</strong> — hashability requires
+   an immutable value; lists mutate and would break the hash table.</li>
+<li><strong>Is <code>(1, [2])</code> hashable?</strong> — No: hashing it raises <code>TypeError</code> because an
+   element is unhashable.</li>
+<li><strong>Explain shallow vs deep copy.</strong> — Outer container vs entire object graph;
+   <code>deepcopy</code> memoises to preserve sharing and survive cycles.</li>
+<li><strong>How is memory freed?</strong> — refcounting for the common case, plus a
+   generational cycle collector; <code>weakref</code> avoids adding a reference.</li>
+<li><strong>What is <code>__slots__</code> for?</strong> — replacing per-instance <code>__dict__</code> with a
+   fixed descriptor layout: less memory, faster access, no dynamic attributes.</li>
+</ol>
+<h2 id="210-practice-exercises">2.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-02-a</span></div><p>Implement <code>alias_report(a, b)</code> (returns <code>{"same_object": bool,
+"equal": bool, "refcount_a": int}</code>), <code>swap(a, b)</code> returning <code>(b, a)</code> without a
+temporary variable, and <code>safe_append(item, bag=None)</code> that never shares a
+default list between calls.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/02_memory/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-02-b</span></div><p>Implement <code>copy_matrix(m)</code> producing a shallow-but-row-independent copy of a
+2-D list (mutating one row of the copy must not touch the original),
+<code>deep_equal(a, b)</code> comparing nested lists/dicts by value without using <code>==</code>
+on the containers directly, and <code>find_shared(original, copies)</code> returning the
+indexes of copies that share <em>any</em> inner object with the original.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/02_memory/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-02-c</span></div><p>Build <code>MemoryLedger</code>: a tiny object registry using <code>weakref</code> so it never keeps
+objects alive. Methods: <code>track(obj) -&gt; str</code> (token), <code>alive(token) -&gt; bool</code>,
+<code>count() -&gt; int</code>. Then implement <code>freeze(mapping)</code> returning a hashable,
+deeply-immutable view of a nested dict/list structure suitable for use as a
+dict key.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/02_memory/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Key ideas (full reference: exercises/02_memory/solution.py)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span><span class="o">,</span><span class="w"> </span><span class="nn">weakref</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">copy_matrix</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">row</span><span class="p">[:]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">m</span><span class="p">]</span>          <span class="c1"># each row copied, matrix new</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">safe_append</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">bag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">bag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bag</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">bag</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bag</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MemoryLedger</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">track</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"obj-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="si">}</span><span class="s2">"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>   <span class="c1"># does NOT keep obj alive</span>
+        <span class="k">return</span> <span class="n">token</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">alive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">)()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alive</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">)</span>
+</code></pre></div></details>
+<h2 id="211-cheatsheet">2.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bind a name</td>
+<td><code>x = value</code></td>
+</tr>
+<tr>
+<td>Two names, one object</td>
+<td><code>a = b = obj</code> (careful with mutables)</td>
+</tr>
+<tr>
+<td>Swap</td>
+<td><code>a, b = b, a</code></td>
+</tr>
+<tr>
+<td>Type of object</td>
+<td><code>type(x)</code>, prefer <code>isinstance(x, T)</code></td>
+</tr>
+<tr>
+<td>Identity</td>
+<td><code>x is y</code>, <code>id(x)</code></td>
+</tr>
+<tr>
+<td>Value equality</td>
+<td><code>x == y</code></td>
+</tr>
+<tr>
+<td>Size in bytes</td>
+<td><code>sys.getsizeof(x)</code> (top level only)</td>
+</tr>
+<tr>
+<td>Refcount</td>
+<td><code>sys.getrefcount(x)</code> (includes the arg)</td>
+</tr>
+<tr>
+<td>Copy</td>
+<td><code>x[:]</code> shallow · <code>copy.deepcopy(x)</code> full</td>
+</tr>
+<tr>
+<td>Absent</td>
+<td><code>None</code>, test with <code>is None</code></td>
+</tr>
+<tr>
+<td>Make immutable</td>
+<td><code>tuple(...)</code>, <code>frozenset(...)</code>, <code>bytes(...)</code>, <code>@dataclass(frozen=True)</code></td>
+</tr>
+<tr>
+<td>Force collection</td>
+<td><code>gc.collect()</code> (almost never needed)</td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="01-python-and-how-it-runs.html"><span>&larr; previous</span><strong>How Python runs: source to bytecode to VM</strong></a><a class="next" href="03-operators-expressions.html"><span>next &rarr;</span><strong>Operators & expressions: what the symbols really do</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#21-definition">2.1 Definition</a></li>
+<li><a href="#22-syntax">2.2 Syntax</a></li>
+<li><a href="#23-first-examples">2.3 First examples</a></li>
+<li><a href="#24-the-picture">2.4 The picture</a></li>
+<li><a href="#25-going-deeper">2.5 Going deeper</a><ul>
+<li><a href="#251-what-an-object-looks-like-in-memory">2.5.1 What an object looks like in memory</a></li>
+<li><a href="#252-immutability-hashability-and-the-dict-key-contract">2.5.2 Immutability, hashability, and the dict-key contract</a></li>
+<li><a href="#253-vs-is-and-the-caches-that-fool-everyone">2.5.3 == vs is, and the caches that fool everyone</a></li>
+<li><a href="#254-copying-shallow-vs-deep">2.5.4 Copying: shallow vs deep</a></li>
+<li><a href="#255-memory-reclamation-refcounting-generations">2.5.5 Memory reclamation: refcounting + generations</a></li>
+<li><a href="#256-__slots__-trading-flexibility-for-memory">2.5.6 __slots__: trading flexibility for memory</a></li>
+</ul>
+</li>
+<li><a href="#26-industry-level">2.6 Industry level</a><ul>
+<li><a href="#immutable-by-default-mutable-by-necessity">Immutable by default, mutable by necessity</a></li>
+<li><a href="#identity-types-vs-value-types">Identity types vs value types</a></li>
+<li><a href="#sentinel-design">Sentinel design</a></li>
+<li><a href="#naming-conventions-teams-enforce">Naming conventions teams enforce</a></li>
+</ul>
+</li>
+<li><a href="#27-comparison-tables">2.7 Comparison tables</a></li>
+<li><a href="#28-mistakes-gotchas">2.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#29-interview-questions">2.9 Interview questions</a></li>
+<li><a href="#210-practice-exercises">2.10 Practice exercises</a></li>
+<li><a href="#211-cheatsheet">2.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

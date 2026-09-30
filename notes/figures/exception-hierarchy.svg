@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 500" width="990" height="500" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The exception hierarchy</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Exception hierarchy - catch specific, not broad</text>
+<rect x="390" y="58" width="210" height="40" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="495.0" y="80.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">BaseException</text>
+<rect x="60" y="136" width="190" height="40" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="155.0" y="158.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">SystemExit</text>
+<rect x="270" y="136" width="190" height="40" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="365.0" y="158.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">KeyboardInterrupt</text>
+<rect x="480" y="136" width="190" height="40" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="575.0" y="158.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">GeneratorExit</text>
+<rect x="700" y="136" width="210" height="44" rx="10" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="805.0" y="155.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">Exception</text>
+<text x="805.0" y="172.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">catch THIS family</text>
+<line x1="495" y1="98" x2="155" y2="136" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="495" y1="98" x2="365" y2="136" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="495" y1="98" x2="575" y2="136" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="495" y1="98" x2="805" y2="136" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="40" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="104.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">ArithmeticError</text>
+<line x1="805" y1="180" x2="104" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="218" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="282.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">LookupError</text>
+<line x1="805" y1="180" x2="282" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="396" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="460.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">OSError</text>
+<line x1="805" y1="180" x2="460" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="574" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="638.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">ValueError</text>
+<line x1="805" y1="180" x2="638" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="706" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="770.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">TypeError</text>
+<line x1="805" y1="180" x2="770" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="828" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="892.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">AttributeError</text>
+<line x1="805" y1="180" x2="892" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="40" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="96.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">ZeroDivisionError</text>
+<line x1="104" y1="258" x2="96" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="156" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="212.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">OverflowError</text>
+<line x1="104" y1="258" x2="212" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="218" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="274.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">IndexError</text>
+<line x1="282" y1="258" x2="274" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="334" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="390.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">KeyError</text>
+<line x1="282" y1="258" x2="390" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="338" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="394.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">FileNotFoundError</text>
+<line x1="460" y1="258" x2="394" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="454" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="510.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">PermissionError</text>
+<line x1="460" y1="258" x2="510" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="338" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="394.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">ConnectionError</text>
+<line x1="460" y1="258" x2="394" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="454" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="510.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">TimeoutError</text>
+<line x1="460" y1="258" x2="510" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="40" y="356" width="450" height="128" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="56" y="380" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">GOOD</text>
+<text x="56" y="402" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">try:</text>
+<text x="56" y="419" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    data = json.loads(raw)</text>
+<text x="56" y="436" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">except json.JSONDecodeError as exc:</text>
+<text x="56" y="453" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    logger.warning(&#x27;bad payload&#x27;, exc_info=exc)</text>
+<rect x="510" y="356" width="440" height="128" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="526" y="380" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">AVOID</text>
+<text x="526" y="402" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">try:</text>
+<text x="526" y="419" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    data = json.loads(raw)</text>
+<text x="526" y="436" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">except:            # catches SystemExit too!</text>
+<text x="526" y="453" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    pass             # the silent bug factory</text>
+</svg>

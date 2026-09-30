@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 571" width="990" height="571" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Operator precedence</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Operator precedence - strongest at the top</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Python evaluates the highest-precedence operator first. Ties go left-to-right (except ** and assignment).</text>
+<rect x="40" y="66" width="14" height="405" rx="7" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<rect x="40" y="66" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="70" width="28" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="72.0" y="83.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">1</text>
+<text x="118" y="84" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">( )  [ ]  .  ( )call</text>
+<text x="406" y="84" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">grouping, subscript, attribute, call</text>
+<text x="746" y="84" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">f(x).y[0]</text>
+<rect x="40" y="93" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="97" width="28" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="72.0" y="110.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">2</text>
+<text x="118" y="111" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">**</text>
+<text x="406" y="111" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">exponent (right associative!)</text>
+<text x="746" y="111" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">2 ** 3 ** 2 == 512</text>
+<rect x="40" y="120" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="124" width="28" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="72.0" y="137.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">3</text>
+<text x="118" y="138" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">+x   -x   ~x</text>
+<text x="406" y="138" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">unary plus / minus / bitwise not</text>
+<text x="746" y="138" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">-2 ** 2 == -4</text>
+<rect x="40" y="147" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="151" width="28" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="72.0" y="164.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">4</text>
+<text x="118" y="165" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">*   @   /   //   %</text>
+<text x="406" y="165" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">multiply, matmul, divide, floor-div, mod</text>
+<text x="746" y="165" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">7 // 2 == 3   7 % 2 == 1</text>
+<rect x="40" y="174" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="178" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="72.0" y="191.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">5</text>
+<text x="118" y="192" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">+   -</text>
+<text x="406" y="192" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">addition, subtraction</text>
+<text x="746" y="192" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">1 + 2 - 3</text>
+<rect x="40" y="201" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="205" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="72.0" y="218.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">6</text>
+<text x="118" y="219" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">&lt;&lt;   &gt;&gt;</text>
+<text x="406" y="219" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">bit shifts</text>
+<text x="746" y="219" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">1 &lt;&lt; 4 == 16</text>
+<rect x="40" y="228" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="232" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="72.0" y="245.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">7</text>
+<text x="118" y="246" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">&amp;</text>
+<text x="406" y="246" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">bitwise AND</text>
+<text x="746" y="246" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">0b1100 &amp; 0b1010</text>
+<rect x="40" y="255" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="259" width="28" height="19" rx="9.5" fill="var(--dg-blue, #2563eb)"/>
+<text x="72.0" y="272.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">8</text>
+<text x="118" y="273" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">^</text>
+<text x="406" y="273" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">bitwise XOR</text>
+<text x="746" y="273" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">5 ^ 3 == 6</text>
+<rect x="40" y="282" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="286" width="28" height="19" rx="9.5" fill="var(--dg-amber, #d97706)"/>
+<text x="72.0" y="299.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">9</text>
+<text x="118" y="300" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">|</text>
+<text x="406" y="300" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">bitwise OR</text>
+<text x="746" y="300" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">0b1100 | 0b1010</text>
+<rect x="40" y="309" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="313" width="28" height="19" rx="9.5" fill="var(--dg-amber, #d97706)"/>
+<text x="72.0" y="326.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">10</text>
+<text x="118" y="327" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">==  !=  &lt;  &gt;  &lt;=  &gt;=  is  in</text>
+<text x="406" y="327" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">comparisons (chainable!)</text>
+<text x="746" y="327" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">1 &lt; x &lt; 10</text>
+<rect x="40" y="336" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="340" width="28" height="19" rx="9.5" fill="var(--dg-amber, #d97706)"/>
+<text x="72.0" y="353.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">11</text>
+<text x="118" y="354" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">not</text>
+<text x="406" y="354" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">boolean NOT</text>
+<text x="746" y="354" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">not done</text>
+<rect x="40" y="363" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="367" width="28" height="19" rx="9.5" fill="var(--dg-amber, #d97706)"/>
+<text x="72.0" y="380.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">12</text>
+<text x="118" y="381" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">and</text>
+<text x="406" y="381" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">boolean AND (short-circuits)</text>
+<text x="746" y="381" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">a and a.b</text>
+<rect x="40" y="390" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="394" width="28" height="19" rx="9.5" fill="var(--dg-red, #dc2626)"/>
+<text x="72.0" y="407.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">13</text>
+<text x="118" y="408" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">or</text>
+<text x="406" y="408" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">boolean OR (short-circuits)</text>
+<text x="746" y="408" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">name or &#x27;anon&#x27;</text>
+<rect x="40" y="417" width="910" height="27" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<rect x="58" y="421" width="28" height="19" rx="9.5" fill="var(--dg-red, #dc2626)"/>
+<text x="72.0" y="434.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">14</text>
+<text x="118" y="435" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">:=</text>
+<text x="406" y="435" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">walrus - assign inside expression</text>
+<text x="746" y="435" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">while (n := f.readline()):</text>
+<rect x="40" y="444" width="910" height="27" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<rect x="58" y="448" width="28" height="19" rx="9.5" fill="var(--dg-red, #dc2626)"/>
+<text x="72.0" y="461.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">15</text>
+<text x="118" y="462" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">=   +=   -=   *=  ...</text>
+<text x="406" y="462" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">assignment (lowest, right to left)</text>
+<text x="746" y="462" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">total += price</text>
+<rect x="40" y="66" width="910" height="405" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<rect x="31.900000000000002" y="50.5" width="60.199999999999996" height="15.0" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="62" y="60" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">STRONGEST</text>
+<rect x="905.7" y="471.5" width="48.599999999999994" height="15.0" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="930" y="481" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">WEAKEST</text>
+<rect x="40" y="497" width="910" height="50" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="58" y="528" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Professional advice: never memorise this table. If you have to think about precedence, add parentheses - readability beats cleverness.</text>
+</svg>

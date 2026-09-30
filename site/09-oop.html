@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Object-oriented Python: classes, protocols, dataclasses &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link active" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">38 min</span><span class="chip tag">classes</span><span class="chip tag">inheritance</span><span class="chip tag">MRO</span><span class="chip tag">dunder</span><span class="chip tag">dataclass</span><span class="chip tag">descriptors</span></div>
+      <h1 id="9-object-oriented-python">9. Object-oriented Python</h1>
+<blockquote>
+<p>Python&rsquo;s OOP is not Java&rsquo;s OOP. It is a <em>protocol</em> system: an object is
+defined by the special methods it answers to, not by its ancestry. Master
+the protocols and &ldquo;duck typing&rdquo; becomes a design tool instead of a gamble.</p>
+</blockquote>
+<h2 id="91-definition">9.1 Definition</h2>
+<p><strong>Plain version.</strong> A class bundles data (attributes) and behaviour (methods);
+objects are instances of classes.</p>
+<p><strong>Precise version.</strong> A class is an object (an instance of <code>type</code>) that acts as
+a factory and a namespace. An instance holds per-object state in its
+<code>__dict__</code>; behaviour and shared state live on the class and are found by the
+<strong>attribute lookup chain</strong>: instance → class → base classes in <strong>MRO</strong> order →
+<code>object</code>. Methods are functions that become <strong>bound</strong> when accessed through an
+instance (the descriptor protocol), which is where <code>self</code> comes from: it is
+simply the first argument, passed automatically.</p>
+<h2 id="92-syntax">9.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Account</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A bank account with an audit trail."""</span>        <span class="c1"># docstring</span>
+
+    <span class="n">BANK</span> <span class="o">=</span> <span class="s2">"PyBank"</span>            <span class="c1"># class attribute: shared by all instances</span>
+    <span class="n">_interest</span> <span class="o">=</span> <span class="mf">0.04</span>           <span class="c1"># single underscore = "private by convention"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">balance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">owner</span>     <span class="c1"># instance attribute (per object)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">=</span> <span class="n">balance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">deposit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>        <span class="c1"># instance method</span>
+        <span class="k">if</span> <span class="n">amount</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"amount must be positive"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">+=</span> <span class="n">amount</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">"deposit"</span><span class="p">,</span> <span class="n">amount</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>                      <span class="c1"># computed attribute</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Account"</span><span class="p">:</span>     <span class="c1"># alternative constructor</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"owner"</span><span class="p">],</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"balance"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_valid_iban</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>           <span class="c1"># no self, no cls</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">22</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>                       <span class="c1"># for developers</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Account(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="si">!r}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">balance</span><span class="si">!r}</span><span class="s2">)"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>                        <span class="c1"># for humans</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">balance</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Savings</span><span class="p">(</span><span class="n">Account</span><span class="p">):</span>                              <span class="c1"># inheritance</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">0.02</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="p">)</span>             <span class="c1"># cooperative call</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">rate</span>
+</code></pre></div>
+
+<h2 id="93-first-examples">9.3 First examples</h2>
+<p><strong>Example 1 — state and behaviour together.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">a</span> <span class="o">=</span> <span class="n">Account</span><span class="p">(</span><span class="s2">"ada"</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">)</span>
+<span class="n">a</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>                <span class="c1"># ada: 150.00</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>          <span class="c1"># Account('ada', 150.0)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">history</span><span class="p">)</span>        <span class="c1"># (('deposit', 50),)</span>
+</code></pre></div>
+
+<p><strong>Example 2 — inheritance and <code>super()</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">s</span> <span class="o">=</span> <span class="n">Savings</span><span class="p">(</span><span class="s2">"grace"</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>                     <span class="c1"># inherited behaviour</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">BANK</span><span class="p">)</span>             <span class="c1"># 0.05 PyBank</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">Savings</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">)</span>            <span class="c1"># (Savings, Account, object)</span>
+</code></pre></div>
+
+<p><strong>Example 3 — protocols make it &ldquo;just work&rdquo;.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Deck</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cards</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cards</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cards</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cards</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cards</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span> <span class="k">return</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cards</span>
+
+<span class="n">d</span> <span class="o">=</span> <span class="n">Deck</span><span class="p">([</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"K"</span><span class="p">,</span> <span class="s2">"Q"</span><span class="p">])</span>
+<span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="s2">"K"</span> <span class="ow">in</span> <span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>   <span class="c1"># all work: len, in, index, iteration</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span><span class="p">;</span> <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="c1"># ...and shuffle, because of __getitem__/__setitem__</span>
+</code></pre></div>
+
+<h2 id="94-the-picture">9.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 430" width="990" height="430" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Instance, class, and base class</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+    <marker id="arblue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-blue, #2563eb)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Three objects, two dictionaries</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Attribute lookup: instance __dict__  -&gt;  class __dict__  -&gt;  base classes  -&gt;  AttributeError</text>
+<rect x="40" y="74" width="280" height="150" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="180" y="96" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">instance</text>
+<text x="180" y="118" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">emp = Employee(&#x27;ada&#x27;, 90000)</text>
+<rect x="56" y="132" width="248" height="76" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="180" y="152" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">__dict__</text>
+<text x="180" y="172" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">{&#x27;name&#x27;: &#x27;ada&#x27;,</text>
+<text x="180" y="189" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)"> &#x27;salary&#x27;: 90000}</text>
+<rect x="355" y="74" width="280" height="220" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="495" y="96" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">class</text>
+<text x="495" y="118" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">Employee.__dict__</text>
+<rect x="371" y="132" width="248" height="146" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="495" y="154" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">__init__  (function)</text>
+<text x="495" y="173" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">raise_salary  (function)</text>
+<text x="495" y="192" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">department = &#x27;Eng&#x27;</text>
+<text x="495" y="211" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">TAX = 0.30</text>
+<text x="495" y="230" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">__doc__</text>
+<text x="495" y="249" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">__module__</text>
+<rect x="670" y="74" width="280" height="150" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="810" y="96" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">base class</text>
+<text x="810" y="118" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">object.__dict__</text>
+<rect x="686" y="132" width="248" height="76" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="810" y="156" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">__str__  __repr__  __eq__</text>
+<text x="810" y="174" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">__hash__  __class__</text>
+<line x1="320" y1="149" x2="355" y2="149" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<rect x="306.9" y="128.5" width="60.199999999999996" height="15.0" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="337" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">__class__</text>
+<line x1="635" y1="149" x2="670" y2="149" stroke="var(--dg-blue, #2563eb)" stroke-width="2" marker-end="url(#arblue)"/>
+<rect x="621.9" y="128.5" width="60.199999999999996" height="15.0" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="652" y="138" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-blue, #2563eb)">__bases__</text>
+<rect x="355" y="312" width="595" height="100" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="371" y="336" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">emp.department finds the CLASS attribute - emp.TAX too</text>
+<text x="371" y="360" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Reading walks the chain upwards; assignment writes to the INSTANCE and shadows the class attribute.</text>
+<text x="371" y="377" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Classic bug: `emp.TAX = 0.2` changes only emp. `Employee.TAX = 0.2` changes every instance.</text>
+<rect x="40" y="246" width="280" height="166" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="56" y="268" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Lookup algorithm</text>
+<text x="56" y="292" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1. data descriptors on the type</text>
+<text x="56" y="309" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">2. instance __dict__</text>
+<text x="56" y="326" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">3. non-data descriptors /</text>
+<text x="56" y="343" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">   class attributes (MRO order)</text>
+<text x="56" y="360" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">4. __getattr__ if defined</text>
+<text x="56" y="377" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">5. AttributeError</text>
+</svg>
+<figcaption>Instance, class and base class: three objects, two dicts, and the lookup order that resolves every attribute.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 430" width="990" height="430" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Multiple inheritance and MRO</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arblue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-blue, #2563eb)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+    <marker id="arviolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-violet, #7c3aed)"/></marker>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">The diamond problem, solved by C3 linearisation</text>
+<rect x="410" y="66" width="170" height="54" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="495.0" y="98.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">D</text>
+<rect x="200" y="176" width="170" height="54" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="285.0" y="208.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">B</text>
+<rect x="620" y="176" width="170" height="54" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="705.0" y="208.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">C</text>
+<rect x="410" y="288" width="170" height="54" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="495.0" y="320.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">A</text>
+<rect x="410" y="372" width="170" height="44" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="495.0" y="399.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="13" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">object</text>
+<line x1="435.0" y1="120" x2="285.0" y2="176" stroke="var(--dg-blue, #2563eb)" stroke-width="2" marker-end="url(#arblue)"/>
+<line x1="555.0" y1="120" x2="705.0" y2="176" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<line x1="265.0" y1="230" x2="435.0" y2="288" stroke="var(--dg-violet, #7c3aed)" stroke-width="2" marker-end="url(#arviolet)"/>
+<line x1="725.0" y1="230" x2="555.0" y2="288" stroke="var(--dg-violet, #7c3aed)" stroke-width="2" marker-end="url(#arviolet)"/>
+<line x1="495.0" y1="342" x2="495.0" y2="372" stroke="var(--dg-slate, #475569)" stroke-width="2" marker-end="url(#arslate)"/>
+<rect x="40" y="66" width="140" height="54" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="110" y="88" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">class D(B, C)</text>
+<text x="110" y="106" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">A defined once</text>
+<text x="660" y="84" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">D.__mro__</text>
+<rect x="660" y="96" width="52" height="30" rx="6" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="686" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">D</text>
+<rect x="720" y="96" width="52" height="30" rx="6" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="746" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">B</text>
+<line x1="712" y1="111" x2="720" y2="111" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="780" y="96" width="52" height="30" rx="6" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="806" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">C</text>
+<line x1="772" y1="111" x2="780" y2="111" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="840" y="96" width="52" height="30" rx="6" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="866" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">A</text>
+<line x1="832" y1="111" x2="840" y2="111" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="900" y="96" width="52" height="30" rx="6" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="926" y="116" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">object</text>
+<line x1="892" y1="111" x2="900" y2="111" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="640" y="146" width="330" height="116" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="656" y="168" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">super() follows the MRO, not &#x27;my parent&#x27;.</text>
+<text x="656" y="185" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">In D().hello() the call order is</text>
+<text x="656" y="202" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">D -&gt; B -&gt; C -&gt; A -&gt; object, and A runs</text>
+<text x="656" y="219" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">exactly ONCE even though B and C both</text>
+<text x="656" y="236" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">inherit from it.</text>
+<rect x="40" y="156" width="500" height="246" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="56" y="180" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Cooperative multiple inheritance</text>
+<text x="56" y="204" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class A:</text>
+<text x="56" y="221" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def hello(self):</text>
+<text x="56" y="238" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(&#x27;A&#x27;)</text>
+<text x="56" y="255" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class B(A):</text>
+<text x="56" y="272" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def hello(self):</text>
+<text x="56" y="289" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(&#x27;B&#x27;); super().hello()</text>
+<text x="56" y="306" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class C(A):</text>
+<text x="56" y="323" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def hello(self):</text>
+<text x="56" y="340" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(&#x27;C&#x27;); super().hello()</text>
+<text x="56" y="357" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class D(B, C):</text>
+<text x="56" y="374" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def hello(self):</text>
+<text x="56" y="391" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        print(&#x27;D&#x27;); super().hello()</text>
+<text x="56" y="392" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">D().hello()  -&gt;  D B C A   (not D B A C A)</text>
+</svg>
+<figcaption>The diamond problem and C3 linearisation: super() follows the MRO, so each class runs exactly once.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 400" width="990" height="400" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Inheritance vs composition</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Inheritance vs composition</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">&quot;Favour composition over inheritance&quot; - Design Patterns, 1994. It is still the best advice in OOP.</text>
+<rect x="22" y="66" width="468" height="250" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="22" y="66" width="468" height="30" rx="10" fill="var(--dg-amber, #d97706)"/>
+<rect x="22" y="84" width="468" height="12" rx="0" fill="var(--dg-amber, #d97706)"/>
+<text x="256" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">INHERITANCE  -  &#x27;is a&#x27;</text>
+<text x="42" y="118" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class SqlLogger(Logger):</text>
+<text x="42" y="136" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def log(self, msg):</text>
+<text x="42" y="154" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        self.conn.execute(...)</text>
+<text x="42" y="184" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-red, #dc2626)">- tight coupling: child knows parent&#x27;s internals</text>
+<text x="42" y="201" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-red, #dc2626)">- parent changes silently break every child</text>
+<text x="42" y="218" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-red, #dc2626)">- deep hierarchies become unreadable</text>
+<text x="42" y="235" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-red, #dc2626)">- the fragile base class problem</text>
+<text x="42" y="268" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Use it for genuine subtypes + polymorphism.</text>
+<text x="42" y="292" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">Keep hierarchies to 2-3 levels.</text>
+<rect x="500" y="66" width="468" height="250" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="500" y="66" width="468" height="30" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="500" y="84" width="468" height="12" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="734" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">COMPOSITION  -  &#x27;has a&#x27;</text>
+<text x="520" y="118" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">class OrderService:</text>
+<text x="520" y="136" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    def __init__(self, logger: Logger):</text>
+<text x="520" y="154" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">        self._logger = logger   # injected</text>
+<text x="520" y="184" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-green, #059669)">+ swap the collaborator without touching the class</text>
+<text x="520" y="201" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-green, #059669)">+ trivially testable: pass a fake/stub logger</text>
+<text x="520" y="218" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-green, #059669)">+ no hidden parent state, no MRO surprises</text>
+<text x="520" y="235" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-green, #059669)">+ smaller, focused classes (Single Responsibility)</text>
+<text x="520" y="268" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">This is what Dependency Injection means.</text>
+<text x="520" y="292" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">Frameworks (FastAPI, Django) are built on it.</text>
+<rect x="22" y="330" width="946" height="56" rx="10" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="40" y="354" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">Rule of thumb</text>
+<text x="40" y="374" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Inherit to BE something (a subtype users will treat polymorphically). Compose to USE something (a collaborator you might replace).</text>
+</svg>
+<figcaption>Inheritance (&quot;is a&quot;) vs composition (&quot;has a&quot;), and why design patterns say favour the second.</figcaption></figure>
+
+<h2 id="95-going-deeper">9.5 Going deeper</h2>
+<h3 id="951-self-demystified">9.5.1 <code>self</code>, demystified</h3>
+<p><code>obj.method(x)</code> is sugar for <code>type(obj).method(obj, x)</code>. Functions are
+<strong>descriptors</strong>: accessing one through an instance calls its <code>__get__</code>, which
+returns a <em>bound method</em> with <code>self</code> pre-filled. Therefore <code>self</code> is a
+convention (you could name it anything — don&rsquo;t) and methods can be called
+unbound: <code>Account.deposit(a, 50)</code> works.</p>
+<h3 id="952-the-lookup-algorithm-precisely">9.5.2 The lookup algorithm, precisely</h3>
+<p>For <code>obj.attr</code>:</p>
+<ol>
+<li><strong>data descriptors</strong> on <code>type(obj)</code> (properties, slots) — they win over the
+   instance dict;</li>
+<li><code>obj.__dict__["attr"]</code>;</li>
+<li><strong>non-data descriptors / plain class attributes</strong> walking the MRO;</li>
+<li><code>__getattr__</code> (note: only called when normal lookup <em>fails</em>);</li>
+<li><code>AttributeError</code>.</li>
+</ol>
+<p>Assignment <code>obj.attr = v</code> always writes to <code>obj.__dict__</code> (unless a data
+descriptor&rsquo;s <code>__set__</code> intercepts it — which is how <code>property</code> setters and
+<code>__slots__</code> work). This explains the classic surprise: setting an instance
+attribute <em>shadows</em> a class attribute for that object only.</p>
+<h3 id="953-method-kinds-and-when-each-earns-its-place">9.5.3 Method kinds, and when each earns its place</h3>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Decorator</th>
+<th>Receives</th>
+<th>Use for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>instance</td>
+<td>(none)</td>
+<td><code>self</code></td>
+<td>behaviour using/producing state</td>
+</tr>
+<tr>
+<td>class</td>
+<td><code>@classmethod</code></td>
+<td><code>cls</code></td>
+<td>alternative constructors, subclass-aware factories</td>
+</tr>
+<tr>
+<td>static</td>
+<td><code>@staticmethod</code></td>
+<td>nothing</td>
+<td>a function that belongs to the namespace (rare; prefer module function)</td>
+</tr>
+<tr>
+<td>property</td>
+<td><code>@property</code></td>
+<td><code>self</code></td>
+<td>computed/validated attribute, keeps <code>obj.x</code> syntax</td>
+</tr>
+</tbody>
+</table>
+<p>If a <code>@staticmethod</code> never touches the class, reviewers ask why it isn&rsquo;t a
+module-level function (it usually should be).</p>
+<h3 id="954-the-dunder-protocols-the-real-oop-surface">9.5.4 The dunder protocols (the real OOP surface)</h3>
+<table>
+<thead>
+<tr>
+<th>Protocol</th>
+<th>Methods</th>
+<th>Unlocks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>representation</td>
+<td><code>__repr__</code>, <code>__str__</code>, <code>__format__</code></td>
+<td><code>repr()</code>, <code>print()</code>, f-strings</td>
+</tr>
+<tr>
+<td>comparison</td>
+<td><code>__eq__</code>, <code>__lt__</code> (+<code>@total_ordering</code>)</td>
+<td><code>==</code>, <code>sorted()</code>, <code>min/max</code></td>
+</tr>
+<tr>
+<td>hashing</td>
+<td><code>__hash__</code> (with <code>__eq__</code>)</td>
+<td>dict keys, sets</td>
+</tr>
+<tr>
+<td>collections</td>
+<td><code>__len__</code>, <code>__getitem__</code>, <code>__setitem__</code>, <code>__contains__</code>, <code>__iter__</code></td>
+<td><code>len</code>, indexing, <code>in</code>, <code>for</code></td>
+</tr>
+<tr>
+<td>callables</td>
+<td><code>__call__</code></td>
+<td><code>obj(...)</code> — strategies, decorators-as-classes</td>
+</tr>
+<tr>
+<td>context</td>
+<td><code>__enter__</code>, <code>__exit__</code></td>
+<td><code>with obj:</code></td>
+</tr>
+<tr>
+<td>arithmetic</td>
+<td><code>__add__</code>, <code>__mul__</code>, …</td>
+<td>operators (module 03)</td>
+</tr>
+<tr>
+<td>attribute</td>
+<td><code>__getattr__</code>, <code>__setattr__</code>, <code>__getattribute__</code></td>
+<td>proxies, lazy loading</td>
+</tr>
+<tr>
+<td>lifecycle</td>
+<td><code>__new__</code>, <code>__init__</code>, <code>__del__</code>, <code>__init_subclass__</code></td>
+<td>construction &amp; subclass hooks</td>
+</tr>
+</tbody>
+</table>
+<p><code>__repr__</code> deserves special discipline: <strong>unambiguous, ideally eval-able</strong>
+(<code>Account('ada', 150.0)</code>) — it is what appears in every traceback, log line
+and debugger session. <code>__str__</code> is the human face.</p>
+<p>The equality/hash contract: if you define <code>__eq__</code>, Python sets <code>__hash__ =
+None</code> unless you define it too; equal objects must hash equally. Frozen
+value objects get both for free from <code>@dataclass(frozen=True)</code>.</p>
+<h3 id="955-inheritance-mro-super-mixins">9.5.5 Inheritance: MRO, <code>super()</code>, mixins</h3>
+<p>The MRO is the C3 linearisation of the inheritance graph —
+<code>Klass.__mro__</code> shows it. <code>super()</code> means <em>&ldquo;next in the MRO&rdquo;</em>, not &ldquo;my parent&rdquo;,
+which is what makes cooperative multiple inheritance work: every class in a
+diamond calls <code>super().__init__(…)</code> and each runs exactly once. <strong>Mixins</strong> are
+small single-purpose bases composed this way (<code>LoggingMixin</code>,
+<code>SerializationMixin</code>); rules: name them <code>…Mixin</code>, never instantiate them
+alone, keep <code>__init__</code> signatures compatible via <code>**kwargs</code>.</p>
+<p>Prefer <strong>composition</strong> when the relationship is &ldquo;uses&rdquo;, inheritance when it is
+genuinely &ldquo;is a&rdquo; <em>and</em> callers will treat subclasses polymorphically (figure
+§9.4).</p>
+<h3 id="956-abstract-base-classes-vs-protocols">9.5.6 Abstract base classes vs Protocols</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Repository</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>                      <span class="c1"># nominal: must subclass</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span> <span class="o">...</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SupportsClose</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>              <span class="c1"># structural: duck typing, checked</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+
+<p>ABCs suit frameworks that own the hierarchy (instantiation of an incomplete
+subclass raises <code>TypeError</code>); Protocols suit libraries accepting <em>any</em> object
+with the right shape — checked duck typing without forcing inheritance
+(module 14).</p>
+<h3 id="957-dataclasses-the-record-generator">9.5.7 dataclasses: the record generator</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Point</span><span class="p">:</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">y</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Generates <code>__init__</code>, <code>__repr__</code>, <code>__eq__</code> (+ordering, +<code>__hash__</code> when
+frozen), from the annotations. Options that matter: <code>frozen</code> (immutable →
+hashable → thread-safe), <code>slots</code> (memory), <code>kw_only</code> (signature stability),
+<code>order</code>, <code>eq=False</code> (keep identity semantics), <code>default_factory</code> for
+mutables. <code>dataclasses.asdict/replace/fields</code> complete the toolkit;
+<code>replace</code> is the immutable &ldquo;copy with changes&rdquo;.</p>
+<h3 id="958-descriptors-the-machinery-behind-property">9.5.8 Descriptors: the machinery behind property</h3>
+<p>An object with <code>__get__</code>/<code>__set__</code>/<code>__delete__</code> is a descriptor; with <code>__set__</code>
+it is a <em>data</em> descriptor and outranks instance dicts. <code>property</code>,
+<code>staticmethod</code>, <code>classmethod</code>, <code>__slots__</code> and Django/SQLAlchemy columns are
+all descriptors. A validated-field framework in 15 lines:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Checked</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__set_name__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"_"</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">check</span> <span class="o">=</span> <span class="n">check</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">objtype</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">Checked</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="p">(</span><span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="p">())</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">"empty"</span><span class="p">))</span>
+                   <span class="k">if</span> <span class="ow">not</span> <span class="n">v</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+<p>(You will build a cleaner version in this module&rsquo;s industry exercise.)</p>
+<h3 id="959-__init_subclass__-registration-without-metaclasses">9.5.9 <code>__init_subclass__</code>: registration without metaclasses</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Plugin</span><span class="p">:</span>
+    <span class="n">_registry</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init_subclass__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init_subclass__</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="n">Plugin</span><span class="o">.</span><span class="n">_registry</span><span class="p">[</span><span class="n">name</span> <span class="ow">or</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
+</code></pre></div>
+
+<p>Every subclass registers itself at class-creation time — the lightweight
+plugin mechanism that replaced most metaclass use. Reach for a metaclass
+(<code>class Meta(type)</code>) only when you must control class <em>creation</em> itself;
+prefer <code>__init_subclass__</code> or a class decorator first.</p>
+<h2 id="96-industry-level">9.6 Industry level</h2>
+<h3 id="modelling-rules-teams-enforce">Modelling rules teams enforce</h3>
+<ol>
+<li><strong>Entities vs value objects</strong> (module 02): entities compare by identity,
+   value objects are frozen dataclasses compared by value.</li>
+<li><strong>No god objects</strong>: a class that needs an <code>and</code> in its name needs splitting
+   (Single Responsibility).</li>
+<li><strong>Inject collaborators</strong> through <code>__init__</code> (module 07) — the constructor
+   signature <em>is</em> the dependency graph.</li>
+<li><strong>Properties for invariants, not for ceremony</strong>: validate on write, but
+   keep them O(1) and side-effect-free; heavy computation belongs in methods.</li>
+<li><strong><code>__repr__</code> in every model class</strong> — production debugging lives and dies
+   by it.</li>
+<li><strong>Enums for state</strong>, not strings: <code>OrderState.PAID</code> makes illegal values
+   unrepresentable and <code>match</code> exhaustive (module 05).</li>
+<li><strong>Prefer Protocol over ABC at library boundaries</strong>; ABC inside your own
+   framework where you own the hierarchy.</li>
+</ol>
+<h3 id="the-modern-class-toolbox-in-order-of-preference">The modern class toolbox, in order of preference</h3>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>First choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plain record / DTO</td>
+<td><code>@dataclass(frozen=True, slots=True)</code></td>
+</tr>
+<tr>
+<td>Record with validation</td>
+<td><code>pydantic.BaseModel</code> (parses + validates at the edge)</td>
+</tr>
+<tr>
+<td>Fixed alternative values</td>
+<td><code>enum.Enum</code> / <code>IntFlag</code></td>
+</tr>
+<tr>
+<td>Shared behaviour across unrelated classes</td>
+<td>mixin or composition</td>
+</tr>
+<tr>
+<td>Interface for your framework</td>
+<td><code>ABC</code> + <code>@abstractmethod</code></td>
+</tr>
+<tr>
+<td>Interface for others&rsquo; objects</td>
+<td><code>typing.Protocol</code></td>
+</tr>
+<tr>
+<td>Per-field validation rules</td>
+<td>descriptors or pydantic</td>
+</tr>
+<tr>
+<td>Subclass registration</td>
+<td><code>__init_subclass__</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="solid-translated">SOLID, translated</h3>
+<ul>
+<li><strong>S</strong>ingle responsibility: one reason to change per class.</li>
+<li><strong>O</strong>pen/closed: extend via new subclasses/plugins, not by editing
+  dispatch chains (<code>__init_subclass__</code>, entry points).</li>
+<li><strong>L</strong>iskov: a subclass must honour the base contract (preconditions no
+  stricter, postconditions no weaker) — violating it breaks every caller.</li>
+<li><strong>I</strong>nterface segregation: small Protocols (<code>SupportsRead</code>, <code>SupportsClose</code>)
+  over one fat ABC.</li>
+<li><strong>D</strong>ependency inversion: depend on Protocols, inject implementations.</li>
+</ul>
+<h2 id="97-comparison-tables">9.7 Comparison tables</h2>
+<p><strong><code>__str__</code> vs <code>__repr__</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>__str__</code></th>
+<th><code>__repr__</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>audience</td>
+<td>end users</td>
+<td>developers / logs / debugger</td>
+</tr>
+<tr>
+<td>goal</td>
+<td>readable</td>
+<td>unambiguous, ideally eval-able</td>
+</tr>
+<tr>
+<td>fallback</td>
+<td><code>__repr__</code></td>
+<td><code>&lt;obj at 0x…&gt;</code> if missing</td>
+</tr>
+<tr>
+<td>used by</td>
+<td><code>print</code>, <code>str()</code>, f-string <code>{}</code></td>
+<td><code>repr()</code>, REPL, tracebacks, <code>{!r}</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>ABC vs Protocol:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>ABC</th>
+<th>Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>relationship</td>
+<td>nominal (must inherit)</td>
+<td>structural (shape matches)</td>
+</tr>
+<tr>
+<td>enforcement</td>
+<td>runtime (<code>TypeError</code> on instantiate)</td>
+<td>static (mypy/pyright)</td>
+</tr>
+<tr>
+<td>retrofitting existing classes</td>
+<td>requires editing them</td>
+<td>free</td>
+</tr>
+<tr>
+<td>best for</td>
+<td>frameworks you own</td>
+<td>libraries accepting anything</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Inheritance vs composition:</strong> see figure §9.4; summary — inherit to <em>be</em>,
+compose to <em>use</em>; composition wins for testability and change isolation.</p>
+<h2 id="98-mistakes-gotchas">9.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">Mutable class attributes are shared</p>
+<p><code>class C: items = []</code> gives ONE list to all instances. Use
+<code>field(default_factory=list)</code> / create in <code>__init__</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Defining <code>__eq__</code> silently kills <code>__hash__</code></p>
+<p>Your model stops working as a dict key. Define <code>__hash__</code> consistently or use
+<code>@dataclass(frozen=True)</code>.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>__init__</code> returning a value</p>
+<p><code>TypeError: __init__() should return None</code>. Construction customisation belongs
+in <code>__new__</code> or a classmethod factory.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Forgetting <code>super().__init__()</code> in a subclass</p>
+<p>Base state silently missing; attribute errors appear far from the cause. In
+multiple inheritance, forgetting it breaks the whole cooperative chain.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Property name collides with its backing field</p>
+<p><code>self.x = …</code> inside a <code>@property def x</code> recurses forever. Store in <code>self._x</code>.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Deep hierarchies</p>
+<p>Beyond ~3 levels, MRO surprises and fragile-base-class bugs dominate. Flatten
+with mixins/composition.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title"><code>isinstance</code> chains instead of polymorphism</p>
+<p><code>if isinstance(x, A)… elif isinstance(x, B)…</code> defeats extensibility; give the
+classes the method (or use <code>singledispatch</code>).</p>
+</div>
+<h2 id="99-interview-questions">9.9 Interview questions</h2>
+<ol>
+<li><strong>Where does <code>self</code> come from?</strong> — bound-method creation via the descriptor
+   protocol; it is the instance passed as first argument.</li>
+<li><strong>Class vs instance attribute?</strong> — shared on the type vs per-object in
+   <code>__dict__</code>; assignment shadows, never edits the class copy.</li>
+<li><strong>What is the MRO?</strong> — C3 linearisation; <code>K.__mro__</code>; <code>super()</code> walks it.</li>
+<li><strong><code>__str__</code> vs <code>__repr__</code>?</strong> — human vs developer; repr should be
+   unambiguous.</li>
+<li><strong>Why does defining <code>__eq__</code> remove hashing?</strong> — the contract (equal ⇒
+   same hash) can&rsquo;t be assumed; Python opts out safely.</li>
+<li><strong>dataclass vs dict?</strong> — named, typed, immutable-able, comparable,
+   self-documenting fields vs stringly-typed bag.</li>
+<li><strong>ABC vs Protocol?</strong> — nominal/runtime vs structural/static.</li>
+<li><strong>How do you make an object usable in <code>for</code>, <code>len</code>, <code>in</code>?</strong> — implement
+   <code>__iter__</code>/<code>__len__</code>/<code>__contains__</code> (or just <code>__iter__</code> and <code>__len__</code>).</li>
+<li><strong>What is a descriptor?</strong> — an object with <code>__get__</code>/<code>__set__</code>; the
+   mechanism behind property, slots, methods.</li>
+</ol>
+<h2 id="910-practice-exercises">9.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-09-a</span></div><p>Implement <code>Temperature</code> storing Celsius internally with <code>.celsius</code> and
+<code>.fahrenheit</code> properties (both settable, validated ≥ −273.15, raising
+<code>ValueError</code>), plus <code>Stack</code> with <code>push/pop/peek/__len__</code> and a custom
+<code>EmptyStack</code> error.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/09_oop/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-09-b</span></div><p>Implement <code>BankAccount</code> with <code>deposit/withdraw</code> (raising <code>Overdrawn</code> on
+insufficient funds), an audit <code>.history</code>, <code>__repr__</code>, equality by account
+number, and a <code>from_dict</code> classmethod; plus <code>SortedCollection</code> implementing
+<code>__len__</code>, <code>__iter__</code>, <code>__contains__</code>, <code>__getitem__</code> (slices included) over an
+always-sorted internal list.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/09_oop/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-09-c</span></div><p>Build (1) a plugin framework: base class <code>Plugin</code> whose
+<code>__init_subclass__</code> registers subclasses by a <code>name</code> kwarg or class name,
+rejecting duplicates, with <code>Plugin.get(name)</code> and an abstract <code>run()</code>;
+(2) a descriptor <code>Validated</code> supporting type + predicate checks with clear
+error messages, used to declare a <code>User</code> class whose invalid assignments raise
+<code>ValueError</code> <em>at assignment time</em>; (3) <code>EventBus</code> with
+<code>subscribe(event, handler)</code> / <code>emit(event, payload)</code> where handlers may be
+functions <strong>or any callable object</strong>, errors in one handler not stopping the
+others.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/09_oop/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/09_oop/solution.py)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Validated</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Descriptor: validates on every assignment."""</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">predicate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">"invalid value"</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">predicate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">type_</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="n">message</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__set_name__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"_</span><span class="si">{</span><span class="n">owner</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">public</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">objtype</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">type_</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">predicate</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">predicate</span><span class="p">(</span><span class="n">value</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">public</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2"> (got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">)"</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Plugin</span><span class="p">:</span>
+    <span class="n">_registry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init_subclass__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init_subclass__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">Plugin</span><span class="o">.</span><span class="n">_registry</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"duplicate plugin name: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">Plugin</span><span class="o">.</span><span class="n">_registry</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
+</code></pre></div></details>
+<h2 id="911-cheatsheet">9.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>New class</td>
+<td><code>class Name:</code> + <code>__init__(self, …)</code></td>
+</tr>
+<tr>
+<td>Shared constant</td>
+<td>class attribute</td>
+</tr>
+<tr>
+<td>Per-object state</td>
+<td><code>self.x = …</code> in <code>__init__</code></td>
+</tr>
+<tr>
+<td>Computed/validated attribute</td>
+<td><code>@property</code> (+ <code>.setter</code>)</td>
+</tr>
+<tr>
+<td>Alternative constructor</td>
+<td><code>@classmethod def from_x(cls, …)</code></td>
+</tr>
+<tr>
+<td>Namespace-only helper</td>
+<td><code>@staticmethod</code> (or module function)</td>
+</tr>
+<tr>
+<td>Debug text</td>
+<td><code>__repr__</code></td>
+</tr>
+<tr>
+<td>Human text</td>
+<td><code>__str__</code></td>
+</tr>
+<tr>
+<td>Value equality</td>
+<td><code>__eq__</code> (+ <code>__hash__</code> or frozen dataclass)</td>
+</tr>
+<tr>
+<td>Ordering</td>
+<td><code>__lt__</code> + <code>@functools.total_ordering</code></td>
+</tr>
+<tr>
+<td><code>len</code>/<code>in</code>/<code>for</code>/<code>[]</code></td>
+<td><code>__len__</code> / <code>__contains__</code> / <code>__iter__</code> / <code>__getitem__</code></td>
+</tr>
+<tr>
+<td><code>with</code> support</td>
+<td><code>__enter__</code> / <code>__exit__</code></td>
+</tr>
+<tr>
+<td>Record</td>
+<td><code>@dataclass(frozen=True, slots=True)</code></td>
+</tr>
+<tr>
+<td>Fixed choices</td>
+<td><code>enum.Enum</code></td>
+</tr>
+<tr>
+<td>Framework interface</td>
+<td><code>ABC</code> + <code>@abstractmethod</code></td>
+</tr>
+<tr>
+<td>Structural interface</td>
+<td><code>typing.Protocol</code></td>
+</tr>
+<tr>
+<td>Subclass hook/registry</td>
+<td><code>__init_subclass__</code></td>
+</tr>
+<tr>
+<td>Cooperative init in MI</td>
+<td><code>super().__init__(**kwargs)</code> everywhere</td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="08-modules-packages.html"><span>&larr; previous</span><strong>Modules, packages & the import system</strong></a><a class="next" href="10-files-io.html"><span>next &rarr;</span><strong>Files & I/O: paths, encodings, context managers, streams</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#91-definition">9.1 Definition</a></li>
+<li><a href="#92-syntax">9.2 Syntax</a></li>
+<li><a href="#93-first-examples">9.3 First examples</a></li>
+<li><a href="#94-the-picture">9.4 The picture</a></li>
+<li><a href="#95-going-deeper">9.5 Going deeper</a><ul>
+<li><a href="#951-self-demystified">9.5.1 self, demystified</a></li>
+<li><a href="#952-the-lookup-algorithm-precisely">9.5.2 The lookup algorithm, precisely</a></li>
+<li><a href="#953-method-kinds-and-when-each-earns-its-place">9.5.3 Method kinds, and when each earns its place</a></li>
+<li><a href="#954-the-dunder-protocols-the-real-oop-surface">9.5.4 The dunder protocols (the real OOP surface)</a></li>
+<li><a href="#955-inheritance-mro-super-mixins">9.5.5 Inheritance: MRO, super(), mixins</a></li>
+<li><a href="#956-abstract-base-classes-vs-protocols">9.5.6 Abstract base classes vs Protocols</a></li>
+<li><a href="#957-dataclasses-the-record-generator">9.5.7 dataclasses: the record generator</a></li>
+<li><a href="#958-descriptors-the-machinery-behind-property">9.5.8 Descriptors: the machinery behind property</a></li>
+<li><a href="#959-__init_subclass__-registration-without-metaclasses">9.5.9 __init_subclass__: registration without metaclasses</a></li>
+</ul>
+</li>
+<li><a href="#96-industry-level">9.6 Industry level</a><ul>
+<li><a href="#modelling-rules-teams-enforce">Modelling rules teams enforce</a></li>
+<li><a href="#the-modern-class-toolbox-in-order-of-preference">The modern class toolbox, in order of preference</a></li>
+<li><a href="#solid-translated">SOLID, translated</a></li>
+</ul>
+</li>
+<li><a href="#97-comparison-tables">9.7 Comparison tables</a></li>
+<li><a href="#98-mistakes-gotchas">9.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#99-interview-questions">9.9 Interview questions</a></li>
+<li><a href="#910-practice-exercises">9.10 Practice exercises</a></li>
+<li><a href="#911-cheatsheet">9.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testing with pytest: fixtures, parametrisation, mocks &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link active" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">32 min</span><span class="chip tag">pytest</span><span class="chip tag">fixtures</span><span class="chip tag">mocks</span><span class="chip tag">coverage</span><span class="chip tag">tdd</span></div>
+      <h1 id="15-testing-with-pytest">15. Testing with pytest</h1>
+<blockquote>
+<p>A test suite is an executable specification and a regression net. Its value
+is proportional to how much developers trust it — which is a property of
+speed, clarity and stability, not of line count.</p>
+</blockquote>
+<h2 id="151-definition">15.1 Definition</h2>
+<p><strong>Plain version.</strong> A test is a function that runs code and complains if the
+behaviour is wrong; pytest finds and runs them for you.</p>
+<p><strong>Precise version.</strong> pytest <strong>collects</strong> <code>test_*.py</code> files and <code>test_*</code>
+functions (and <code>Test*</code> classes), <strong>rewrites <code>assert</code> statements</strong> at import so
+failures show real values, resolves each test&rsquo;s <strong>fixtures</strong> as a dependency
+graph (setup → yield → teardown), applies <strong>marks</strong> (skip/xfail/parametrize)
+and reports pass/fail/error with durations and coverage when asked. One
+command — <code>pytest -q</code> — is the project&rsquo;s definition of &ldquo;it works&rdquo;.</p>
+<h2 id="152-syntax">15.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_total_includes_vat</span><span class="p">():</span>                 <span class="c1"># plain function, plain assert</span>
+    <span class="k">assert</span> <span class="n">with_vat</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">==</span> <span class="mf">118.0</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_missing_sku_raises</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">ItemNotFound</span><span class="p">)</span> <span class="k">as</span> <span class="n">excinfo</span><span class="p">:</span>
+        <span class="n">catalog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"nope"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="s2">"nope"</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">excinfo</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">"score,grade"</span><span class="p">,</span> <span class="p">[(</span><span class="mi">95</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">),</span> <span class="p">(</span><span class="mi">85</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">),</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="s2">"F"</span><span class="p">)])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_grading</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">grade</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">grade_of</span><span class="p">(</span><span class="n">score</span><span class="p">)</span> <span class="o">==</span> <span class="n">grade</span>
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cart</span><span class="p">():</span>                                    <span class="c1"># setup + teardown</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">Cart</span><span class="p">()</span>
+    <span class="n">c</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"book"</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">c</span>                                    <span class="c1"># value handed to the test</span>
+    <span class="n">c</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>                                  <span class="c1"># teardown, always runs</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_cart_total</span><span class="p">(</span><span class="n">cart</span><span class="p">):</span>                     <span class="c1"># fixture by parameter name</span>
+    <span class="k">assert</span> <span class="n">cart</span><span class="o">.</span><span class="n">total</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">price_of</span><span class="p">(</span><span class="s2">"book"</span><span class="p">)</span>
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">"win32"</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">"posix paths"</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">slow</span>                              <span class="c1"># custom mark, selectable: -m slow</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_big_import</span><span class="p">():</span> <span class="o">...</span>
+</code></pre></div>
+
+<h2 id="153-first-examples">15.3 First examples</h2>
+<p><strong>Example 1 — arrange / act / assert.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_withdraw_reduces_balance</span><span class="p">():</span>
+    <span class="n">account</span> <span class="o">=</span> <span class="n">Account</span><span class="p">(</span><span class="s2">"ada"</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>      <span class="c1"># arrange</span>
+    <span class="n">account</span><span class="o">.</span><span class="n">withdraw</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>               <span class="c1"># act</span>
+    <span class="k">assert</span> <span class="n">account</span><span class="o">.</span><span class="n">balance</span> <span class="o">==</span> <span class="mi">70</span>       <span class="c1"># assert</span>
+</code></pre></div>
+
+<p><strong>Example 2 — tmp_path and monkeypatch (built-in fixtures).</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_config_roundtrip</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">monkeypatch</span><span class="p">):</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">"app.json"</span>        <span class="c1"># isolated directory per test</span>
+    <span class="n">monkeypatch</span><span class="o">.</span><span class="n">setenv</span><span class="p">(</span><span class="s2">"APP_ENV"</span><span class="p">,</span> <span class="s2">"test"</span><span class="p">)</span>
+    <span class="n">write_config</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">read_config</span><span class="p">(</span><span class="n">cfg</span><span class="p">)[</span><span class="s2">"env"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"test"</span>
+</code></pre></div>
+
+<p><strong>Example 3 — capturing output.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_cli_prints_summary</span><span class="p">(</span><span class="n">capsys</span><span class="p">):</span>
+    <span class="n">main</span><span class="p">([</span><span class="s2">"report"</span><span class="p">])</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">capsys</span><span class="o">.</span><span class="n">readouterr</span><span class="p">()</span><span class="o">.</span><span class="n">out</span>
+    <span class="k">assert</span> <span class="s2">"rows=42"</span> <span class="ow">in</span> <span class="n">out</span>
+</code></pre></div>
+
+<h2 id="154-the-picture">15.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 400" width="990" height="400" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The test pyramid</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">The test pyramid - and why the shape matters</text>
+<path d="M 265.0,66 L 445.0,66 L 445.0,128 L 265.0,128" stroke="var(--dg-red, #dc2626)" stroke-width="2" fill="var(--dg-redbg, #fee2e2)" stroke-linecap="round"/>
+<text x="355.0" y="94" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">E2E / UI</text>
+<text x="355.0" y="114" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">few, slow, brittle, expensive</text>
+<text x="523.0" y="100" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">selenium, playwright - a handful of critical journeys</text>
+<path d="M 165.0,136 L 545.0,136 L 585.0,198 L 125.0,198" stroke="var(--dg-amber, #d97706)" stroke-width="2" fill="var(--dg-amberbg, #fef3c7)" stroke-linecap="round"/>
+<text x="355.0" y="164" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Integration</text>
+<text x="355.0" y="184" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">some, moderate speed</text>
+<text x="623.0" y="170" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">real database / HTTP client against a test server</text>
+<path d="M 45.0,206 L 665.0,206 L 705.0,268 L 5.0,268" stroke="var(--dg-green, #059669)" stroke-width="2" fill="var(--dg-greenbg, #d1fae5)" stroke-linecap="round"/>
+<text x="355.0" y="234" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">Unit</text>
+<text x="355.0" y="254" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">many, milliseconds, precise</text>
+<text x="743.0" y="240" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">one function or class; no I/O, no network</text>
+<rect x="40" y="292" width="440" height="92" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="56" y="314" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">The 80/15/5 shape</text>
+<text x="56" y="336" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Mostly unit tests: fast feedback, they tell you WHERE it broke.</text>
+<text x="56" y="352" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">A thin integration layer proves the seams really connect.</text>
+<text x="56" y="368" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">A few E2E tests prove the product works for a real user.</text>
+<rect x="500" y="292" width="450" height="92" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="516" y="314" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">The ice-cream anti-pattern</text>
+<text x="516" y="336" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Teams that invert the pyramid end up with thousands of slow,</text>
+<text x="516" y="352" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">flaky E2E tests, a 40-minute CI run and no trust in green.</text>
+<text x="516" y="368" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">If a test needs a database to test arithmetic, it is misplaced.</text>
+</svg>
+<figcaption>The test pyramid: many fast unit tests, some integration, few E2E - and the ice-cream anti-pattern that inverts it.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 372" width="990" height="372" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>How pytest runs a test</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Anatomy of a pytest run</text>
+<rect x="43.0" y="70" width="168" height="100" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="43.0" y="70" width="168" height="28" rx="10" fill="var(--dg-blue, #2563eb)"/>
+<rect x="43.0" y="88" width="168" height="10" rx="0" fill="var(--dg-blue, #2563eb)"/>
+<text x="127.0" y="89" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">1. collect</text>
+<text x="127.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">find test_*.py and</text>
+<text x="127.0" y="141" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">test_* functions</text>
+<rect x="227.0" y="70" width="168" height="100" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="227.0" y="70" width="168" height="28" rx="10" fill="var(--dg-violet, #7c3aed)"/>
+<rect x="227.0" y="88" width="168" height="10" rx="0" fill="var(--dg-violet, #7c3aed)"/>
+<text x="311.0" y="89" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">2. setup fixtures</text>
+<text x="311.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">resolve the dependency</text>
+<text x="311.0" y="141" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">graph, run yields&#x27; head</text>
+<line x1="211.0" y1="120.0" x2="227.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="411.0" y="70" width="168" height="100" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="411.0" y="70" width="168" height="28" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="411.0" y="88" width="168" height="10" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="495.0" y="89" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">3. run test</text>
+<text x="495.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">call the function,</text>
+<text x="495.0" y="141" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">assert statements</text>
+<line x1="395.0" y1="120.0" x2="411.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="595.0" y="70" width="168" height="100" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="595.0" y="70" width="168" height="28" rx="10" fill="var(--dg-amber, #d97706)"/>
+<rect x="595.0" y="88" width="168" height="10" rx="0" fill="var(--dg-amber, #d97706)"/>
+<text x="679.0" y="89" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">4. teardown</text>
+<text x="679.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">run code after yield,</text>
+<text x="679.0" y="141" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">close resources</text>
+<line x1="579.0" y1="120.0" x2="595.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="779.0" y="70" width="168" height="100" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<rect x="779.0" y="70" width="168" height="28" rx="10" fill="var(--dg-cyan, #0891b2)"/>
+<rect x="779.0" y="88" width="168" height="10" rx="0" fill="var(--dg-cyan, #0891b2)"/>
+<text x="863.0" y="89" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">5. report</text>
+<text x="863.0" y="126" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">pass / fail / xfail,</text>
+<text x="863.0" y="141" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">coverage, durations</text>
+<line x1="763.0" y1="120.0" x2="779.0" y2="120.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="43.0" y="196" width="442" height="152" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="59.0" y="218" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Fixtures are dependency injection</text>
+<text x="59.0" y="242" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">@pytest.fixture</text>
+<text x="59.0" y="259" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">def db(tmp_path):            # fixture using a fixture</text>
+<text x="59.0" y="276" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    conn = sqlite3.connect(tmp_path / &#x27;t.db&#x27;)</text>
+<text x="59.0" y="293" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    yield conn               # value handed to the test</text>
+<text x="59.0" y="310" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    conn.close()             # teardown, always runs</text>
+<rect x="501.0" y="196" width="442" height="152" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="517.0" y="218" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">Scopes control how often a fixture runs</text>
+<rect x="517.0" y="240" width="64.0" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="549.0" y="253.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">function</text>
+<text x="631.0" y="254" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">default - fresh per test</text>
+<rect x="517.0" y="264" width="100.0" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="567.0" y="277.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">class / module</text>
+<text x="631.0" y="278" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">shared within a group</text>
+<rect x="517.0" y="288" width="58.0" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="546.0" y="301.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">session</text>
+<text x="631.0" y="302" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">once per pytest run</text>
+<rect x="517.0" y="312" width="58.0" height="19" rx="9.5" fill="var(--dg-green, #059669)"/>
+<text x="546.0" y="325.1" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" font-style="normal" fill="var(--dg-bg, #ffffff)">package</text>
+<text x="631.0" y="326" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">once per package</text>
+</svg>
+<figcaption>Anatomy of a pytest run: collect, resolve fixtures, run, teardown, report.</figcaption></figure>
+
+<h2 id="155-going-deeper">15.5 Going deeper</h2>
+<h3 id="1551-assert-rewriting-why-failures-are-readable">15.5.1 Assert rewriting: why failures are readable</h3>
+<p>pytest imports test modules through its own loader and rewrites bare
+<code>assert</code> into introspecting code, so <code>assert total == expected</code> prints both
+values and their diff on failure — no <code>self.assertEqual</code> ceremony. This is why
+plain <code>assert</code> (and <code>pytest.raises</code>, <code>pytest.approx</code>) is the house style.</p>
+<h3 id="1552-fixtures-dependency-injection-not-globals">15.5.2 Fixtures: dependency injection, not globals</h3>
+<p>A fixture is requested by <strong>parameter name</strong>; pytest resolves transitive
+dependencies, caches per scope, and runs teardown in reverse order:</p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Recreated</th>
+<th>Use for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>function</code> (default)</td>
+<td>every test</td>
+<td>anything mutable</td>
+</tr>
+<tr>
+<td><code>class</code> / <code>module</code></td>
+<td>per class/module</td>
+<td>expensive-but-shared setup</td>
+</tr>
+<tr>
+<td><code>package</code></td>
+<td>per package</td>
+<td>db schema per test-package</td>
+</tr>
+<tr>
+<td><code>session</code></td>
+<td>once per run</td>
+<td>server process, docker container</td>
+</tr>
+</tbody>
+</table>
+<p><code>conftest.py</code> makes fixtures visible to a directory subtree without imports.
+Rules that keep suites sane: fixtures provide <strong>environment</strong> (db, files,
+config), not <strong>behaviour</strong>; prefer small composable fixtures
+(<code>db</code> → <code>migrated_db</code> → <code>seeded_db</code>); never mutate a session-scoped object in
+a test.</p>
+<h3 id="1553-parametrisation-and-ids">15.5.3 Parametrisation and ids</h3>
+<p>One behaviour, many cases — without copy-paste:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">"raw,expected"</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">pytest</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">"1,2"</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"simple"</span><span class="p">),</span>
+    <span class="n">pytest</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">'"a,b",2'</span><span class="p">,</span> <span class="p">(</span><span class="s2">"a,b"</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"quoted-comma"</span><span class="p">),</span>
+    <span class="n">pytest</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="p">(),</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"empty"</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_parse_row</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span> <span class="o">...</span>
+</code></pre></div>
+
+<p><code>id=</code> turns cases into readable names in the report and lets you run one case:
+<code>pytest -k quoted-comma</code>. Parametrised cases are <strong>separate tests</strong>: one
+failure doesn&rsquo;t hide the others.</p>
+<h3 id="1554-the-doubles-taxonomy-know-the-words-use-the-right-one">15.5.4 The doubles taxonomy (know the words, use the right one)</h3>
+<table>
+<thead>
+<tr>
+<th>Double</th>
+<th>What it is</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dummy</td>
+<td>passed but never used</td>
+<td>satisfying a signature</td>
+</tr>
+<tr>
+<td>stub</td>
+<td>canned answers</td>
+<td>controlling inputs</td>
+</tr>
+<tr>
+<td>spy</td>
+<td>records calls</td>
+<td>verifying interactions</td>
+</tr>
+<tr>
+<td>fake</td>
+<td>working but simplified impl (in-memory db)</td>
+<td>replacing infrastructure</td>
+</tr>
+<tr>
+<td>mock</td>
+<td>expects calls, fails otherwise</td>
+<td>verifying protocol with the outside world</td>
+</tr>
+</tbody>
+</table>
+<p><code>unittest.mock</code> provides the machinery:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">unittest</span><span class="w"> </span><span class="kn">import</span> <span class="n">mock</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_retries_then_succeeds</span><span class="p">():</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">Mock</span><span class="p">()</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">fetch</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="p">[</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">fetch_with_retry</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">attempts</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"payload"</span>
+    <span class="k">assert</span> <span class="n">client</span><span class="o">.</span><span class="n">fetch</span><span class="o">.</span><span class="n">call_count</span> <span class="o">==</span> <span class="mi">3</span>
+</code></pre></div>
+
+<p>and <code>mock.patch("module.name")</code> replaces an attribute <strong>for the duration of
+the with-block/decorator</strong>. <code>monkeypatch</code> is pytest&rsquo;s safer, auto-undoing
+cousin for attributes, env vars and dict entries.</p>
+<p><strong>Mock at boundaries only</strong> (network, clock, RNG, filesystem when unavoidable).
+Mocking your own classes couples tests to implementation and breaks on
+refactors — the classic &ldquo;tests green, product broken&rdquo; cause.</p>
+<h3 id="1555-time-randomness-and-other-hidden-inputs">15.5.5 Time, randomness, and other hidden inputs</h3>
+<p>Anything non-deterministic must be injected:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_token_expiry</span><span class="p">(</span><span class="n">clock</span><span class="p">):</span>          <span class="c1"># clock fixture -&gt; controllable time</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">issue</span><span class="p">(</span><span class="n">now</span><span class="o">=</span><span class="n">clock</span><span class="p">)</span>
+    <span class="n">clock</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">31</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">expired</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="n">clock</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Same for <code>random.Random(seed)</code> instances and filesystem clocks. A test that
+sleeps &ldquo;to be safe&rdquo; is a flaky test waiting for a slow CI runner.</p>
+<h3 id="1556-coverage-and-what-it-cannot-tell-you">15.5.6 Coverage, and what it cannot tell you</h3>
+<p><code>pytest --cov=src --cov-report=term-missing</code> shows executed lines; add
+<code>--cov-branch</code> for branch coverage. Coverage finds <strong>untested paths</strong>, not
+bad tests: 100 % coverage with no assertions is worthless. Teams set a floor
+(e.g. 90 %) in CI and review <em>diff coverage</em> on PRs — new code must be tested
+even when legacy isn&rsquo;t.</p>
+<h3 id="1557-beyond-example-based-tests">15.5.7 Beyond example-based tests</h3>
+<ul>
+<li><strong>property-based</strong> (<code>hypothesis</code>): generate thousands of inputs and assert
+  invariants (&ldquo;parse then render is identity&rdquo;) — ideal for parsers, codecs,
+  serializers;</li>
+<li><strong>snapshot/golden</strong>: store expected output, review diffs — great for
+  rendered text, dangerous for volatile data;</li>
+<li><strong>contract tests</strong>: provider/consumer agree on a schema (pact, schemathesis
+  for OpenAPI);</li>
+<li><strong>mutation testing</strong> (<code>mutmut</code>): flips operators in your code and checks the
+  suite notices — measures test <em>quality</em>, not coverage.</li>
+</ul>
+<h2 id="156-industry-level">15.6 Industry level</h2>
+<h3 id="the-habits-of-a-trusted-suite">The habits of a trusted suite</h3>
+<ol>
+<li><strong>Fast or dead</strong>: unit suite under ~10 s; slow tests marked and run in a
+   nightly/parallel job (<code>pytest -n auto</code> with xdist).</li>
+<li><strong>Deterministic</strong>: no wall clock, no network, no ordering, no shared
+   state; <code>random.seed</code> via injected <code>Random</code>.</li>
+<li><strong>One behaviour per test</strong>, named <code>test_&lt;unit&gt;_&lt;scenario&gt;_&lt;expectation&gt;</code>:
+   <code>test_withdraw_over_balance_raises_overdrawn</code>.</li>
+<li><strong>Arrange-Act-Assert</strong>, no logic in tests (no loops/ifs building
+   expectations — parametrise instead).</li>
+<li><strong>Failures point at the cause</strong>: assert on the specific value/exception
+   message, not <code>assert not errored</code>.</li>
+<li><strong>Fixtures for environment, factories for data</strong> (<code>make_user(**over)</code>).</li>
+<li><strong>Delete obsolete tests</strong>: a test that can&rsquo;t fail is maintenance cost.</li>
+<li><strong>TDD where design is unclear</strong>: red → green → refactor keeps tests
+   behaviour-focused by construction.</li>
+</ol>
+<h3 id="structuring-a-growing-suite">Structuring a growing suite</h3>
+<div class="codehilite"><pre><span></span><code>tests/
+    conftest.py            # shared fixtures: db, client, factories
+    unit/                  # no I/O, milliseconds
+    integration/           # real db / http against test server
+    e2e/                   # a handful of journeys, marked slow
+</code></pre></div>
+
+<p>CI runs unit on every push, integration on PR, e2e nightly. The pyramid is a
+<em>cost</em> model: an E2E failure costs 20 minutes of debugging to locate; a unit
+failure costs 20 seconds.</p>
+<h3 id="reviewing-a-test-pr">Reviewing a test PR</h3>
+<ul>
+<li>does it fail when the behaviour breaks? (mutate the code mentally)</li>
+<li>does it test behaviour, not implementation (private names, call counts of
+  internal helpers)?</li>
+<li>are the cases parametrised rather than copy-pasted?</li>
+<li>does the name tell the story without reading the body?</li>
+<li>any sleeps, network, today(), or global mutation?</li>
+</ul>
+<h2 id="157-comparison-tables">15.7 Comparison tables</h2>
+<p><strong>pytest vs unittest:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>pytest</th>
+<th>unittest</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>assertions</td>
+<td>bare <code>assert</code> (rewritten)</td>
+<td><code>self.assertX</code> methods</td>
+</tr>
+<tr>
+<td>fixtures</td>
+<td>functions + DI by name</td>
+<td>setUp/tearDown methods</td>
+</tr>
+<tr>
+<td>parametrisation</td>
+<td>decorator, first-class</td>
+<td>subTest (weaker)</td>
+</tr>
+<tr>
+<td>plugins</td>
+<td>huge ecosystem</td>
+<td>stdlib-only</td>
+</tr>
+<tr>
+<td>running unittest suites</td>
+<td>yes (compatible)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>When to reach for which double:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Reach for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>in-memory replacement of a DB</td>
+<td>fake (dict-backed repo)</td>
+</tr>
+<tr>
+<td>canned API responses</td>
+<td>stub (<code>Mock(return_value=…)</code> / <code>side_effect=[…]</code>)</td>
+</tr>
+<tr>
+<td>verify an email was sent</td>
+<td>spy/mock with <code>assert_called_once_with</code></td>
+</tr>
+<tr>
+<td>control &ldquo;now&rdquo;</td>
+<td>injected clock fixture</td>
+</tr>
+<tr>
+<td>silence a dependency</td>
+<td><code>monkeypatch.setattr</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Marks cheat-sheet:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Mark</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@pytest.mark.skip(reason=…)</code></td>
+<td>never run</td>
+</tr>
+<tr>
+<td><code>@pytest.mark.skipif(cond, reason=…)</code></td>
+<td>conditional</td>
+</tr>
+<tr>
+<td><code>@pytest.mark.xfail(reason=…, strict=True)</code></td>
+<td>expected failure (strict: passing fails!)</td>
+</tr>
+<tr>
+<td><code>@pytest.mark.parametrize(...)</code></td>
+<td>case matrix</td>
+</tr>
+<tr>
+<td>custom <code>-m name</code></td>
+<td>selection: <code>pytest -m "not slow"</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="158-mistakes-gotchas">15.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">Asserting on truthiness</p>
+<p><code>assert result</code> passes for <code>"wrong text"</code>. Assert the exact value.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Shared mutable fixture state</p>
+<p>A module-scoped list mutated by tests → order-dependent failures. Scope
+fixtures to <code>function</code> unless you truly share.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Mocking what you own</p>
+<p>Tests that mirror implementation break on every refactor. Mock the boundary
+(network/clock), fake the interior.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>Mock</code> auto-creates attributes</p>
+<p>A typo&rsquo;d method returns a Mock instead of failing. Use <code>spec=RealClass</code> or
+<code>autospec=True</code> to get attribute checking.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Floats without approx</p>
+<p><code>assert 0.1 + 0.2 == 0.3</code> fails. <code>pytest.approx(0.3)</code>.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Sleeping in tests</p>
+<p><code>time.sleep(0.5)</code> &ldquo;to let it settle&rdquo; is flakiness by design. Inject clocks or
+use condition waits with timeouts.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Coverage as the goal</p>
+<p>Chasing 100 % produces assertion-free tests. Chase <em>behaviours</em> and use
+coverage to find blind spots.</p>
+</div>
+<h2 id="159-interview-questions">15.9 Interview questions</h2>
+<ol>
+<li><strong>How does pytest find tests?</strong> — collection rules: <code>test_*.py</code> files,
+   <code>test_*</code> functions, <code>Test*</code> classes without <code>__init__</code>.</li>
+<li><strong>Fixture scopes and when to widen them?</strong> — function default; widen only
+   for expensive, read-only setup.</li>
+<li><strong>stub vs mock vs fake?</strong> — canned answers / call expectations / working
+   simplified implementation.</li>
+<li><strong>How do you test code that calls <code>datetime.now()</code>?</strong> — inject a clock;
+   never assert against real time.</li>
+<li><strong>What does <code>xfail(strict=True)</code> mean?</strong> — the test is expected to fail;
+   if it passes, the suite fails (time to remove the mark).</li>
+<li><strong>Why parametrise instead of looping inside a test?</strong> — independent cases,
+   readable ids, one failure doesn&rsquo;t mask the rest.</li>
+<li><strong>How do you keep a suite fast?</strong> — pyramid, marks, xdist, no I/O in unit
+   tests, session-scoped expensive fixtures.</li>
+</ol>
+<h2 id="1510-practice-exercises">15.10 Practice exercises</h2>
+<p>The exercise pack for this module is meta on purpose: you build the <em>machinery</em>
+pytest gives you, which is the fastest way to understand it.</p>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-15-a</span></div><p>Implement <code>approx(a, b, rel=1e-9, abs_tol=1e-12)</code>; <code>raises(exc_type)</code> as a
+context manager exposing <code>.value</code>; and <code>collect(module)</code> returning the
+<code>test_*</code> callables of a module in definition order.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/15_testing/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-15-b</span></div><p>Implement <code>run(module)</code> — a mini pytest: executes collected tests, returns
+<code>{"passed": [...], "failed": {name: exception}, "errors": …}</code> where a test that
+raises <code>SkipTest</code> (your exception) lands in <code>"skipped"</code>. Add a <code>Spy</code> double:
+records <code>(args, kwargs)</code> per call in <code>.calls</code>, returns <code>.result</code> or replays
+<code>.side_effect</code> list (raising <code>StopIteration</code>-style <code>ExhaustedSideEffect</code> when
+empty), and supports <code>.call_count</code> and <code>.called_with(*a, **kw)</code>.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/15_testing/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-15-c</span></div><p>Extend the mini runner with <strong>fixtures</strong>: a <code>fixture</code> decorator registering
+functions by name (supporting fixture-of-fixture via parameter names and
+generator teardown via <code>yield</code>), and a <code>parametrize(argnames, cases)</code> decorator
+expanding one test into N named cases in the <code>run</code> report
+(<code>"test_x[simple]"</code>). Unknown fixture name → <code>FixtureError</code> at run time.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/15_testing/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/15_testing/solution.py)</span>
+<span class="n">FIXTURES</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">fixture</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+    <span class="n">FIXTURES</span><span class="p">[</span><span class="n">fn</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span>
+    <span class="k">return</span> <span class="n">fn</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">teardowns</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">FIXTURES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">FixtureError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown fixture: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">_resolve</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">teardowns</span><span class="p">)</span>
+              <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="p">}</span>
+    <span class="n">gen</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isgenerator</span><span class="p">(</span><span class="n">gen</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>
+        <span class="n">teardowns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">gen</span>
+    <span class="n">cache</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">value</span>
+</code></pre></div></details>
+<h2 id="1511-cheatsheet">15.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Run suite</td>
+<td><code>pytest -q</code>, <code>pytest tests/unit -q</code></td>
+</tr>
+<tr>
+<td>One test / case</td>
+<td><code>pytest path::test_name</code>, <code>-k expr</code></td>
+</tr>
+<tr>
+<td>Stop at first failure</td>
+<td><code>-x</code>; verbose failures <code>-vv</code></td>
+</tr>
+<tr>
+<td>Show prints</td>
+<td><code>-s</code></td>
+</tr>
+<tr>
+<td>Expected failure</td>
+<td><code>@pytest.mark.xfail(strict=True)</code></td>
+</tr>
+<tr>
+<td>Skip</td>
+<td><code>skip</code> / <code>skipif(cond, reason=…)</code></td>
+</tr>
+<tr>
+<td>Cases</td>
+<td><code>@pytest.mark.parametrize(…, ids=[…])</code></td>
+</tr>
+<tr>
+<td>Setup/teardown</td>
+<td><code>@pytest.fixture</code> with <code>yield</code></td>
+</tr>
+<tr>
+<td>Shared fixtures</td>
+<td><code>tests/conftest.py</code></td>
+</tr>
+<tr>
+<td>Temp files</td>
+<td><code>tmp_path</code> fixture</td>
+</tr>
+<tr>
+<td>Env/attr patching</td>
+<td><code>monkeypatch.setenv / setattr</code></td>
+</tr>
+<tr>
+<td>Mock boundary</td>
+<td><code>unittest.mock.Mock(spec=…)</code>, <code>patch</code></td>
+</tr>
+<tr>
+<td>Exceptions</td>
+<td><code>pytest.raises(E) as ei</code></td>
+</tr>
+<tr>
+<td>Floats</td>
+<td><code>pytest.approx(x)</code></td>
+</tr>
+<tr>
+<td>Output</td>
+<td><code>capsys.readouterr()</code></td>
+</tr>
+<tr>
+<td>Coverage</td>
+<td><code>pytest --cov=src --cov-branch --cov-report=term-missing</code></td>
+</tr>
+<tr>
+<td>Parallel</td>
+<td><code>pytest -n auto</code> (xdist)</td>
+</tr>
+<tr>
+<td>Select marks</td>
+<td><code>pytest -m "not slow"</code></td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="14-type-hints.html"><span>&larr; previous</span><strong>Type hints & static analysis: mypy, protocols, generics</strong></a><a class="next" href="16-concurrency.html"><span>next &rarr;</span><strong>Concurrency: threads, processes, asyncio and the GIL</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#151-definition">15.1 Definition</a></li>
+<li><a href="#152-syntax">15.2 Syntax</a></li>
+<li><a href="#153-first-examples">15.3 First examples</a></li>
+<li><a href="#154-the-picture">15.4 The picture</a></li>
+<li><a href="#155-going-deeper">15.5 Going deeper</a><ul>
+<li><a href="#1551-assert-rewriting-why-failures-are-readable">15.5.1 Assert rewriting: why failures are readable</a></li>
+<li><a href="#1552-fixtures-dependency-injection-not-globals">15.5.2 Fixtures: dependency injection, not globals</a></li>
+<li><a href="#1553-parametrisation-and-ids">15.5.3 Parametrisation and ids</a></li>
+<li><a href="#1554-the-doubles-taxonomy-know-the-words-use-the-right-one">15.5.4 The doubles taxonomy (know the words, use the right one)</a></li>
+<li><a href="#1555-time-randomness-and-other-hidden-inputs">15.5.5 Time, randomness, and other hidden inputs</a></li>
+<li><a href="#1556-coverage-and-what-it-cannot-tell-you">15.5.6 Coverage, and what it cannot tell you</a></li>
+<li><a href="#1557-beyond-example-based-tests">15.5.7 Beyond example-based tests</a></li>
+</ul>
+</li>
+<li><a href="#156-industry-level">15.6 Industry level</a><ul>
+<li><a href="#the-habits-of-a-trusted-suite">The habits of a trusted suite</a></li>
+<li><a href="#structuring-a-growing-suite">Structuring a growing suite</a></li>
+<li><a href="#reviewing-a-test-pr">Reviewing a test PR</a></li>
+</ul>
+</li>
+<li><a href="#157-comparison-tables">15.7 Comparison tables</a></li>
+<li><a href="#158-mistakes-gotchas">15.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#159-interview-questions">15.9 Interview questions</a></li>
+<li><a href="#1510-practice-exercises">15.10 Practice exercises</a></li>
+<li><a href="#1511-cheatsheet">15.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

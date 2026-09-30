@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exceptions &amp; error handling design &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link active" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Beginner → Industry</span><span class="chip read">28 min</span><span class="chip tag">exceptions</span><span class="chip tag">try</span><span class="chip tag">raise</span><span class="chip tag">logging</span><span class="chip tag">design</span></div>
+      <h1 id="11-exceptions-error-handling">11. Exceptions &amp; error handling</h1>
+<blockquote>
+<p>An exception is not a failure of your program; it is your program
+<em>reporting</em> a failure. The quality of that report — and of the decision to
+catch or propagate — separates professional code from guesswork.</p>
+</blockquote>
+<h2 id="111-definition">11.1 Definition</h2>
+<p><strong>Plain version.</strong> <code>try</code> runs risky code; <code>except</code> handles specific problems;
+<code>finally</code> always cleans up.</p>
+<p><strong>Precise version.</strong> An exception is an object (instance of a <code>BaseException</code>
+subclass) <em>raised</em> with <code>raise</code>, propagated up the call stack until a matching
+<code>except</code> clause catches it; if none matches, the interpreter prints a
+<strong>traceback</strong> and exits. Matching is by <code>isinstance</code>: <code>except ValueError</code> also
+catches subclasses. While unwinding, <code>finally</code> blocks run, context managers
+exit, and the exception can be inspected, transformed, chained or suppressed.
+Exceptions are for <strong>exceptional</strong> control flow — expected branches belong in
+<code>if</code>.</p>
+<h2 id="112-syntax">11.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>                 <span class="c1"># the ONE thing that can fail</span>
+<span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>             <span class="c1"># catch specific, bind the instance</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"bad number </span><span class="si">%r</span><span class="s2">: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># tuple = several types</span>
+    <span class="o">...</span>
+<span class="k">else</span><span class="p">:</span>                                 <span class="c1"># ONLY if try did not raise</span>
+    <span class="n">persist</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<span class="k">finally</span><span class="p">:</span>                              <span class="c1"># ALWAYS: cleanup on every path</span>
+    <span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"amount must be positive"</span><span class="p">)</span>            <span class="c1"># raise</span>
+<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"…"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">original_exc</span>                <span class="c1"># explicit chaining</span>
+<span class="k">raise</span>                                                  <span class="c1"># re-raise current</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AppError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>            <span class="c1"># custom hierarchy root</span>
+<span class="w">    </span><span class="sd">"""Base for every error this application raises."""</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NotFound</span><span class="p">(</span><span class="n">AppError</span><span class="p">):</span> <span class="o">...</span>
+</code></pre></div>
+
+<h2 id="113-first-examples">11.3 First examples</h2>
+<p><strong>Example 1 — look-before-you-leap vs ask-forgiveness.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># LBYL: race-prone and noisy</span>
+<span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+<span class="c1"># EAFP: idiomatic Python</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+<span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">default</span>
+<span class="c1"># ...or simply d.get(key, default) when a default is genuinely fine</span>
+</code></pre></div>
+
+<p><strong>Example 2 — <code>else</code> keeps the try block honest.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+    <span class="o">...</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>     <span class="c1"># a JSON error must NOT be swallowed above</span>
+</code></pre></div>
+
+<p><strong>Example 3 — chaining tells the true story.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">ConfigError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"config at </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> is not valid JSON"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+<span class="c1"># traceback shows BOTH: ConfigError ... __cause__ ... JSONDecodeError</span>
+</code></pre></div>
+
+<h2 id="114-the-picture">11.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 500" width="990" height="500" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>The exception hierarchy</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Exception hierarchy - catch specific, not broad</text>
+<rect x="390" y="58" width="210" height="40" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="495.0" y="80.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">BaseException</text>
+<rect x="60" y="136" width="190" height="40" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="155.0" y="158.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">SystemExit</text>
+<rect x="270" y="136" width="190" height="40" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="365.0" y="158.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">KeyboardInterrupt</text>
+<rect x="480" y="136" width="190" height="40" rx="10" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6"/>
+<text x="575.0" y="158.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">GeneratorExit</text>
+<rect x="700" y="136" width="210" height="44" rx="10" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<text x="805.0" y="155.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">Exception</text>
+<text x="805.0" y="172.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">catch THIS family</text>
+<line x1="495" y1="98" x2="155" y2="136" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="495" y1="98" x2="365" y2="136" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="495" y1="98" x2="575" y2="136" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<line x1="495" y1="98" x2="805" y2="136" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.5" marker-end="url(#arline)"/>
+<rect x="40" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="104.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">ArithmeticError</text>
+<line x1="805" y1="180" x2="104" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="218" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="282.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">LookupError</text>
+<line x1="805" y1="180" x2="282" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="396" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="460.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">OSError</text>
+<line x1="805" y1="180" x2="460" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="574" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="638.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">ValueError</text>
+<line x1="805" y1="180" x2="638" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="706" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="770.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">TypeError</text>
+<line x1="805" y1="180" x2="770" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="828" y="222" width="128" height="36" rx="10" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<text x="892.0" y="242.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">AttributeError</text>
+<line x1="805" y1="180" x2="892" y2="222" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" marker-end="url(#arline)"/>
+<rect x="40" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="96.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">ZeroDivisionError</text>
+<line x1="104" y1="258" x2="96" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="156" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="212.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">OverflowError</text>
+<line x1="104" y1="258" x2="212" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="218" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="274.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">IndexError</text>
+<line x1="282" y1="258" x2="274" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="334" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="390.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">KeyError</text>
+<line x1="282" y1="258" x2="390" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="338" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="394.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">FileNotFoundError</text>
+<line x1="460" y1="258" x2="394" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="454" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="510.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">PermissionError</text>
+<line x1="460" y1="258" x2="510" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="338" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="394.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">ConnectionError</text>
+<line x1="460" y1="258" x2="394" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="454" y="296" width="112" height="32" rx="10" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<text x="510.0" y="314.0" text-anchor="middle" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">TimeoutError</text>
+<line x1="460" y1="258" x2="510" y2="296" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.2" marker-end="url(#arline)"/>
+<rect x="40" y="356" width="450" height="128" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="56" y="380" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">GOOD</text>
+<text x="56" y="402" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">try:</text>
+<text x="56" y="419" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    data = json.loads(raw)</text>
+<text x="56" y="436" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">except json.JSONDecodeError as exc:</text>
+<text x="56" y="453" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    logger.warning(&#x27;bad payload&#x27;, exc_info=exc)</text>
+<rect x="510" y="356" width="440" height="128" rx="10" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<text x="526" y="380" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">AVOID</text>
+<text x="526" y="402" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">try:</text>
+<text x="526" y="419" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    data = json.loads(raw)</text>
+<text x="526" y="436" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">except:            # catches SystemExit too!</text>
+<text x="526" y="453" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">    pass             # the silent bug factory</text>
+</svg>
+<figcaption>The hierarchy: BaseException at the top, the SystemExit/KeyboardInterrupt branch you must not catch, and the Exception family you handle.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 452" width="990" height="452" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>try / except / else / finally</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <filter id="dgShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.13"/></filter>
+    <marker id="arslate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-slate, #475569)"/></marker>
+    <marker id="arred" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-red, #dc2626)"/></marker>
+    <marker id="argreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-green, #059669)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Which block actually runs?</text>
+<rect x="395" y="50" width="200" height="40" rx="8" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="495.0" y="67.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">try: block</text>
+<text x="495.0" y="84.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">the risky work</text>
+<line x1="495" y1="90" x2="495" y2="118" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<path d="M 495.0,118 L 575,158.0 L 495.0,198 L 415,158.0" stroke="var(--dg-amber, #d97706)" stroke-width="1.8" fill="var(--dg-amberbg, #fef3c7)" stroke-linecap="round"/>
+<text x="495.0" y="162.0" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">exception?</text>
+<line x1="415" y1="158" x2="250" y2="158" stroke="var(--dg-red, #dc2626)" stroke-width="2" marker-end="url(#arred)"/>
+<rect x="316.43" y="137.55" width="27.139999999999997" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="330" y="148" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-red, #dc2626)">yes</text>
+<rect x="90" y="130" width="160" height="58" rx="8" fill="var(--dg-redbg, #fee2e2)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="170.0" y="156.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">except:</text>
+<text x="170.0" y="173.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">handle it here</text>
+<line x1="575" y1="158" x2="720" y2="158" stroke="var(--dg-green, #059669)" stroke-width="2" marker-end="url(#argreen)"/>
+<rect x="637.62" y="137.55" width="20.759999999999998" height="16.5" rx="4" fill="var(--dg-bg, #ffffff)"/>
+<text x="648" y="148" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">no</text>
+<rect x="720" y="130" width="170" height="58" rx="8" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="805.0" y="156.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">else:</text>
+<text x="805.0" y="173.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">ONLY if try succeeded</text>
+<path d="M 170,188 L 170,250 L 400,250" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+<path d="M 805,188 L 805,250 L 600,250" stroke="var(--dg-slate, #475569)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+<line x1="495" y1="198" x2="495" y2="228" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="380" y="228" width="230" height="46" rx="8" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="495.0" y="248.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">finally:</text>
+<text x="495.0" y="265.05" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">ALWAYS runs - cleanup</text>
+<line x1="495" y1="274" x2="495" y2="306" stroke="var(--dg-slate, #475569)" stroke-width="1.8" marker-end="url(#arslate)"/>
+<rect x="400" y="306" width="190" height="38" rx="19" fill="var(--dg-slatebg, #e2e8f0)" stroke="var(--dg-slate, #475569)" stroke-width="1.6" filter="url(#dgShadow)"/>
+<text x="495.0" y="329.5" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" font-style="normal" fill="var(--dg-ink, #0f172a)">continue / propagate</text>
+<rect x="60" y="300" width="300" height="128" rx="10" fill="var(--dg-panel2, #eef2f7)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="76" y="322" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-slate, #475569)">Ordering guarantees</text>
+<text x="76" y="346" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">try -&gt; except|else -&gt; finally</text>
+<text x="76" y="363" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">finally runs even if a `return`,</text>
+<text x="76" y="380" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">`break` or `continue` sits in try,</text>
+<text x="76" y="397" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">and even if except re-raises.</text>
+<text x="76" y="414" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Never put business logic in finally.</text>
+<rect x="660" y="300" width="300" height="128" rx="10" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<text x="676" y="322" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Why else exists</text>
+<text x="676" y="346" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">Keep the try block SMALL: only the</text>
+<text x="676" y="363" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">line that can fail. Put the code that</text>
+<text x="676" y="380" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">must NOT be protected in else, so it</text>
+<text x="676" y="397" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">cannot be accidentally swallowed by</text>
+<text x="676" y="414" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">your own except clause.</text>
+</svg>
+<figcaption>Which block runs when: try -&gt; except or else -&gt; finally, on every path including return and re-raise.</figcaption></figure>
+
+<h2 id="115-going-deeper">11.5 Going deeper</h2>
+<h3 id="1151-the-hierarchy-and-the-two-branches-you-must-not-catch">11.5.1 The hierarchy, and the two branches you must not catch</h3>
+<p><code>BaseException</code> splits into the <em>system</em> branch (<code>SystemExit</code>,
+<code>KeyboardInterrupt</code>, <code>GeneratorExit</code>) and <code>Exception</code>. A bare <code>except:</code> (or
+<code>except BaseException:</code>) swallows Ctrl-C and interpreter shutdown — which is
+why linters treat it as an error. Catch <code>Exception</code> at worst, specific types
+by preference.</p>
+<h3 id="1152-matching-ordering-and-the-tuple-rule">11.5.2 Matching, ordering, and the tuple rule</h3>
+<p>Clauses are tested <strong>top to bottom</strong>; the first match wins. Therefore put
+subclasses before bases (<code>except FileNotFoundError</code> before <code>except OSError</code>),
+otherwise the base hides them. One <code>except (A, B)</code> tuple beats two identical
+bodies. The bound name (<code>as exc</code>) is deleted at the end of the clause — keep a
+reference if you need it later.</p>
+<h3 id="1153-finally-semantics-you-can-rely-on">11.5.3 <code>finally</code> semantics you can rely on</h3>
+<p><code>finally</code> runs on every exit path: normal completion, exception, <code>return</code>,
+<code>break</code>, <code>continue</code>. A <code>return</code> inside <code>finally</code> <strong>discards</strong> an in-flight
+exception (and linters scream). Use <code>finally</code> only for cleanup; prefer <code>with</code>
+when a context manager exists, because it cannot be forgotten or mis-ordered.</p>
+<h3 id="1154-chaining-from-from-none-and-implicit-context">11.5.4 Chaining: <code>from</code>, <code>from None</code>, and implicit context</h3>
+<ul>
+<li><code>raise X from Y</code> sets <code>__cause__</code> = Y (&ldquo;direct cause&rdquo;);</li>
+<li>raising inside an <code>except</code> without <code>from</code> sets <code>__context__</code> (&ldquo;during
+  handling of…&rdquo;), which tracebacks also show;</li>
+<li><code>raise X from None</code> suppresses the original — use when the original is
+  noise (e.g. converting <code>KeyError</code> to your <code>NotFound</code>).</li>
+</ul>
+<p>Tracebacks read bottom-up through the chain; good chains make incidents
+debuggable in one screen.</p>
+<h3 id="1155-custom-hierarchies-the-one-decision-that-scales">11.5.5 Custom hierarchies: the one decision that scales</h3>
+<p>Every project of more than one module deserves a root error:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ShopError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Base class for every error the shop application raises."""</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CatalogError</span><span class="p">(</span><span class="n">ShopError</span><span class="p">):</span> <span class="o">...</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ItemNotFound</span><span class="p">(</span><span class="n">CatalogError</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sku</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no item with sku </span><span class="si">{</span><span class="n">sku</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sku</span> <span class="o">=</span> <span class="n">sku</span>          <span class="c1"># structured data, not just a message</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PricingError</span><span class="p">(</span><span class="n">ShopError</span><span class="p">):</span> <span class="o">...</span>
+</code></pre></div>
+
+<p>Callers can now catch <code>ShopError</code> (anything from us) or <code>ItemNotFound</code>
+(precisely), and HTTP/CLI layers map families to exit codes or status codes in
+one place. Carry <strong>attributes</strong>, not only message strings: machines read
+fields, humans read messages.</p>
+<h3 id="1156-exceptions-vs-return-codes-vs-assertions">11.5.6 Exceptions vs return codes vs assertions</h3>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>expected alternative outcome</td>
+<td>return value / <code>Optional</code> / sentinel</td>
+</tr>
+<tr>
+<td>violated program invariant (bug)</td>
+<td><code>assert</code> (disabled under <code>-O</code>!) or raise</td>
+</tr>
+<tr>
+<td>violated input contract</td>
+<td>raise <code>ValueError</code>/<code>TypeError</code></td>
+</tr>
+<tr>
+<td>external world said no (file, network)</td>
+<td>raise domain error, retry or surface</td>
+</tr>
+<tr>
+<td>&ldquo;cannot happen&rdquo; branch</td>
+<td><code>raise AssertionError</code>/<code>TypeError</code> — never <code>pass</code></td>
+</tr>
+</tbody>
+</table>
+<p>Assertions are development-time documentation; never use them for validation
+of external input (they vanish with <code>python -O</code>).</p>
+<h3 id="1157-logging-exceptions-properly">11.5.7 Logging exceptions properly</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
+    <span class="n">process</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">PaymentError</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"payment failed for order </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">order</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>   <span class="c1"># includes traceback</span>
+    <span class="k">raise</span>
+</code></pre></div>
+
+<p><code>logger.exception</code> (or <code>exc_info=True</code>) captures the traceback at the point of
+failure. Logging <em>and re-raising</em> is correct when the layer adds context;
+logging <em>and swallowing</em> is how incidents become invisible.</p>
+<h3 id="1158-retries-timeouts-and-the-outside-world">11.5.8 Retries, timeouts and the outside world</h3>
+<p>Network errors deserve a policy, not a bare except: which exceptions are
+retryable (<code>TimeoutError</code>, <code>ConnectionError</code>), how many attempts, backoff and
+jitter (module 07), and an overall deadline. Libraries like <code>tenacity</code>
+encode this; the principle is: <strong>catch narrow, retry bounded, surface
+clearly</strong>.</p>
+<h2 id="116-industry-level">11.6 Industry level</h2>
+<h3 id="the-error-handling-review-checklist">The error-handling review checklist</h3>
+<ol>
+<li><strong>Catch narrow.</strong> <code>except Exception</code> only at deliberate boundaries (CLI
+   main, worker loop, request handler).</li>
+<li><strong>Never bare <code>except:</code></strong> and never <code>except BaseException</code> outside
+   top-level supervisors.</li>
+<li><strong>No empty except bodies.</strong> At minimum log with context; a <code>pass</code> is a
+   bug report waiting to be filed.</li>
+<li><strong>Transform at boundaries.</strong> Internal errors become API/CLI errors there,
+   with <code>from</code> chaining preserved or deliberately cut.</li>
+<li><strong>Fail fast and loud in dev, gracefully in prod.</strong> Same code path,
+   different handlers at the edge.</li>
+<li><strong>Structured fields on exceptions</strong> (ids, paths, codes) so logs are
+   queryable.</li>
+<li><strong><code>finally</code>/<code>with</code> for resources</strong>; transactions rolled back in
+   <code>__exit__</code>/except.</li>
+</ol>
+<h3 id="the-boundary-pattern">The boundary pattern</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">run</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">ShopError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>            <span class="c1"># our fault, explained</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"</span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">2</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>              <span class="c1"># the world's fault</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"I/O failure: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">3</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>                   <span class="c1"># the unknown: full traceback, non-zero</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"unhandled error"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">1</span>
+</code></pre></div>
+
+<p>One place maps exceptions to exit codes; everything inside just raises.</p>
+<h3 id="warnings-are-not-exceptions">Warnings are not exceptions</h3>
+<p><code>DeprecationWarning</code>, <code>UserWarning</code> etc. travel through the <code>warnings</code> module:
+visible in tests/CI (<code>-W error::DeprecationWarning</code>), silent by default in
+production. Emit with <code>warnings.warn(..., stacklevel=2)</code> so the report points
+at the <em>caller</em>.</p>
+<h2 id="117-comparison-tables">11.7 Comparison tables</h2>
+<p><strong>Block semantics:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>Runs when</th>
+<th>Skipped when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>try</code></td>
+<td>always</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>except T</code></td>
+<td>a <code>T</code> (or subclass) raised in try</td>
+<td>no matching raise</td>
+</tr>
+<tr>
+<td><code>else</code></td>
+<td>try completed without raise</td>
+<td>any raise in try</td>
+</tr>
+<tr>
+<td><code>finally</code></td>
+<td><strong>every path</strong> (incl. return/break)</td>
+<td>never (except process death)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Raise styles:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>raise E("msg")</code></td>
+<td>new exception</td>
+</tr>
+<tr>
+<td><code>raise</code></td>
+<td>re-raise current</td>
+</tr>
+<tr>
+<td><code>raise E from C</code></td>
+<td><code>__cause__ = C</code> (&ldquo;direct cause&rdquo;)</td>
+</tr>
+<tr>
+<td><code>raise E from None</code></td>
+<td>hide the original</td>
+</tr>
+<tr>
+<td>(implicit, inside except)</td>
+<td><code>__context__</code> set automatically</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Choosing the built-in:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Meaning</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>wrong type of argument</td>
+<td><code>TypeError</code></td>
+</tr>
+<tr>
+<td>wrong value of argument</td>
+<td><code>ValueError</code></td>
+</tr>
+<tr>
+<td>missing key / index</td>
+<td><code>KeyError</code> / <code>IndexError</code></td>
+</tr>
+<tr>
+<td>missing attribute</td>
+<td><code>AttributeError</code></td>
+</tr>
+<tr>
+<td>I/O problem</td>
+<td><code>OSError</code> (+ subclasses: <code>FileNotFoundError</code>, <code>PermissionError</code>, <code>TimeoutError</code>)</td>
+</tr>
+<tr>
+<td>unsupported operation</td>
+<td><code>NotImplementedError</code> / <code>RuntimeError</code></td>
+</tr>
+<tr>
+<td>broken protocol/state</td>
+<td>your domain error</td>
+</tr>
+</tbody>
+</table>
+<h2 id="118-mistakes-gotchas">11.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">Bare <code>except:</code></p>
+<p>Catches <code>KeyboardInterrupt</code> and <code>SystemExit</code> too. Use <code>except Exception:</code> at
+boundaries, specific types elsewhere.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>except (A, B):</code> written as <code>except A, B:</code></p>
+<p>Python 2 syntax; in Py3 <code>except A, B</code> is a syntax error — good — but
+<code>except (A, B)</code> vs two clauses changes ordering semantics.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Catching the base before the subclass</p>
+<p><code>except OSError</code> above <code>except FileNotFoundError</code> makes the second clause dead
+code.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>return</code> inside <code>finally</code></p>
+<p>Silently discards the active exception. Cleanup only.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Swallowing and continuing</p>
+<p><code>except: pass</code> turns a crash into corrupted state discovered hours later. Log
+or re-raise.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title"><code>assert</code> for input validation</p>
+<p><code>python -O</code> removes asserts. Validate with explicit raises.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Exception as control flow for expected cases</p>
+<p>Raising for &ldquo;user not found&rdquo; in a hot lookup loop costs ~µs per raise and
+reads badly; return <code>None</code>/<code>Optional</code> or use a sentinel (but keep exceptions
+for contract violations).</p>
+</div>
+<h2 id="119-interview-questions">11.9 Interview questions</h2>
+<ol>
+<li><strong><code>else</code> vs <code>finally</code>?</strong> — else only on success of try; finally on every
+   path.</li>
+<li><strong>What does <code>except ValueError</code> catch?</strong> — ValueError and all subclasses.</li>
+<li><strong><code>raise X from Y</code> vs implicit chaining?</strong> — explicit <code>__cause__</code> vs
+   automatic <code>__context__</code>; <code>from None</code> hides the original.</li>
+<li><strong>Why not bare <code>except:</code>?</strong> — swallows SystemExit/KeyboardInterrupt; hides
+   bugs.</li>
+<li><strong>How do you design an error hierarchy?</strong> — one app root, families per
+   subsystem, structured attributes, mapped to exit/status codes at the edge.</li>
+<li><strong>EAFP vs LBYL?</strong> — try/except is idiomatic and race-free; LBYL when the
+   check is cheaper or the failure is expected.</li>
+<li><strong>Where should <code>except Exception</code> appear?</strong> — at deliberate boundaries
+   (main, worker, handler), nowhere else.</li>
+</ol>
+<h2 id="1110-practice-exercises">11.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-11-a</span></div><p>Implement <code>safe_int(text, default=None)</code> (ValueError/TypeError → default),
+<code>divide(a, b)</code> raising <code>ValueError</code> for non-numerics and a custom
+<code>DivisionError</code> for zero divisors, and <code>first_existing(paths)</code> returning the
+first readable path or raising <code>FileNotFoundError</code> listing all tried paths.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/11_exceptions/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-11-b</span></div><p>Implement <code>parse_config(text)</code> raising <code>ConfigError(line_number, reason)</code>
+(subclass of ValueError) for malformed <code>key=value</code> lines, with the line number
+as an attribute; <code>retry_on(exc_types, attempts, delay=0)</code> decorator; and
+<code>guarded_get(mapping, key, transform)</code> where a transform failure is chained
+with <code>from</code> into a <code>TransformError</code> carrying the original key.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/11_exceptions/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-11-c</span></div><p>Build a tiny error-handling framework: <code>ErrorMapper</code> where
+<code>.map(exc_type, handler)</code> registers converters and <code>.run(fn, *a, **kw)</code>
+executes fn, converting raised exceptions through the <strong>MRO</strong> (most specific
+registered wins) and re-raising unmapped ones unchanged; plus
+<code>suppressed(*exc_types, on_suppressed=callback)</code> context manager recording
+what it swallowed (the anti-pattern, implemented deliberately so you can see
+exactly what information is lost).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/11_exceptions/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/11_exceptions/solution.py)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ErrorMapper</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">[</span><span class="n">exc_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">handler</span>
+        <span class="k">return</span> <span class="n">handler</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">:</span>        <span class="c1"># most specific first</span>
+                <span class="n">handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">handler</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+            <span class="k">raise</span>
+</code></pre></div></details>
+<h2 id="1111-cheatsheet">11.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Handle one risk</td>
+<td><code>try:</code> + narrow <code>except T as e:</code></td>
+</tr>
+<tr>
+<td>Success-only step</td>
+<td><code>else:</code></td>
+</tr>
+<tr>
+<td>Cleanup always</td>
+<td><code>finally:</code> (or <code>with</code>)</td>
+</tr>
+<tr>
+<td>Re-raise</td>
+<td>bare <code>raise</code></td>
+</tr>
+<tr>
+<td>Convert with context</td>
+<td><code>raise DomainError(...) from exc</code></td>
+</tr>
+<tr>
+<td>Hide noise</td>
+<td><code>raise DomainError(...) from None</code></td>
+</tr>
+<tr>
+<td>Custom family</td>
+<td>root <code>class AppError(Exception)</code> + subclasses with fields</td>
+</tr>
+<tr>
+<td>Missing-key tolerance</td>
+<td><code>d.get(k, default)</code> / <code>setdefault</code></td>
+</tr>
+<tr>
+<td>Optional success</td>
+<td><code>next((… ), None)</code> or return <code>None</code></td>
+</tr>
+<tr>
+<td>Log with traceback</td>
+<td><code>logger.exception(...)</code> / <code>exc_info=True</code></td>
+</tr>
+<tr>
+<td>Deprecate an API</td>
+<td><code>warnings.warn(..., DeprecationWarning, stacklevel=2)</code></td>
+</tr>
+<tr>
+<td>Retry policy</td>
+<td>bounded attempts + backoff on narrow exception types</td>
+</tr>
+<tr>
+<td>Exit-code mapping</td>
+<td>one <code>main()</code> boundary, nowhere else</td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="10-files-io.html"><span>&larr; previous</span><strong>Files & I/O: paths, encodings, context managers, streams</strong></a><a class="next" href="12-iteration-generators.html"><span>next &rarr;</span><strong>Iteration protocol, comprehensions & generators</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#111-definition">11.1 Definition</a></li>
+<li><a href="#112-syntax">11.2 Syntax</a></li>
+<li><a href="#113-first-examples">11.3 First examples</a></li>
+<li><a href="#114-the-picture">11.4 The picture</a></li>
+<li><a href="#115-going-deeper">11.5 Going deeper</a><ul>
+<li><a href="#1151-the-hierarchy-and-the-two-branches-you-must-not-catch">11.5.1 The hierarchy, and the two branches you must not catch</a></li>
+<li><a href="#1152-matching-ordering-and-the-tuple-rule">11.5.2 Matching, ordering, and the tuple rule</a></li>
+<li><a href="#1153-finally-semantics-you-can-rely-on">11.5.3 finally semantics you can rely on</a></li>
+<li><a href="#1154-chaining-from-from-none-and-implicit-context">11.5.4 Chaining: from, from None, and implicit context</a></li>
+<li><a href="#1155-custom-hierarchies-the-one-decision-that-scales">11.5.5 Custom hierarchies: the one decision that scales</a></li>
+<li><a href="#1156-exceptions-vs-return-codes-vs-assertions">11.5.6 Exceptions vs return codes vs assertions</a></li>
+<li><a href="#1157-logging-exceptions-properly">11.5.7 Logging exceptions properly</a></li>
+<li><a href="#1158-retries-timeouts-and-the-outside-world">11.5.8 Retries, timeouts and the outside world</a></li>
+</ul>
+</li>
+<li><a href="#116-industry-level">11.6 Industry level</a><ul>
+<li><a href="#the-error-handling-review-checklist">The error-handling review checklist</a></li>
+<li><a href="#the-boundary-pattern">The boundary pattern</a></li>
+<li><a href="#warnings-are-not-exceptions">Warnings are not exceptions</a></li>
+</ul>
+</li>
+<li><a href="#117-comparison-tables">11.7 Comparison tables</a></li>
+<li><a href="#118-mistakes-gotchas">11.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#119-interview-questions">11.9 Interview questions</a></li>
+<li><a href="#1110-practice-exercises">11.10 Practice exercises</a></li>
+<li><a href="#1111-cheatsheet">11.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

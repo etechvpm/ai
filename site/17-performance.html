@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Performance: profiling, caching and complexity-first optimisation &middot; Python, From Zero to Industry</title>
+<meta name="description" content="Deep, visual Python course notes: definitions, syntax, examples, industry-level detail, comparison tables, diagrams and auto-checked exercises.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/pygments.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Toggle navigation">&#9776;</button>
+  <a class="brand" href="index.html">
+    <span class="logo">Py</span>
+    <span class="brand-txt">Python&nbsp;&middot;&nbsp;From&nbsp;Zero&nbsp;to&nbsp;Industry</span>
+  </a>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the notes&hellip;  ( / )" autocomplete="off">
+    <div id="search-results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9790;</button>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"><div class="side-group"><a class="side-link home" href="index.html">Course home</a></div>
+<div class="side-group"><div class="side-title">Modules</div>
+<a class="side-link" href="01-python-and-how-it-runs.html"><span class="num">01</span><span class="ttl">How Python runs: source to bytecode to VM</span></a>
+<a class="side-link" href="02-variables-types-memory.html"><span class="num">02</span><span class="ttl">Variables, types &amp; the memory model</span></a>
+<a class="side-link" href="03-operators-expressions.html"><span class="num">03</span><span class="ttl">Operators &amp; expressions: what the symbols really do</span></a>
+<a class="side-link" href="04-strings-text.html"><span class="num">04</span><span class="ttl">Strings &amp; text: Unicode, slicing, formatting, performance</span></a>
+<a class="side-link" href="05-control-flow.html"><span class="num">05</span><span class="ttl">Control flow: branching, looping, and match</span></a>
+<a class="side-link" href="06-data-structures.html"><span class="num">06</span><span class="ttl">Data structures: list, tuple, dict, set and friends</span></a>
+<a class="side-link" href="07-functions.html"><span class="num">07</span><span class="ttl">Functions: signatures, scope, closures, first-class everything</span></a>
+<a class="side-link" href="08-modules-packages.html"><span class="num">08</span><span class="ttl">Modules, packages &amp; the import system</span></a>
+<a class="side-link" href="09-oop.html"><span class="num">09</span><span class="ttl">Object-oriented Python: classes, protocols, dataclasses</span></a>
+<a class="side-link" href="10-files-io.html"><span class="num">10</span><span class="ttl">Files &amp; I/O: paths, encodings, context managers, streams</span></a>
+<a class="side-link" href="11-exceptions.html"><span class="num">11</span><span class="ttl">Exceptions &amp; error handling design</span></a>
+<a class="side-link" href="12-iteration-generators.html"><span class="num">12</span><span class="ttl">Iteration protocol, comprehensions &amp; generators</span></a>
+<a class="side-link" href="13-decorators-closures.html"><span class="num">13</span><span class="ttl">Closures &amp; decorators: cross-cutting behaviour</span></a>
+<a class="side-link" href="14-type-hints.html"><span class="num">14</span><span class="ttl">Type hints &amp; static analysis: mypy, protocols, generics</span></a>
+<a class="side-link" href="15-testing.html"><span class="num">15</span><span class="ttl">Testing with pytest: fixtures, parametrisation, mocks</span></a>
+<a class="side-link" href="16-concurrency.html"><span class="num">16</span><span class="ttl">Concurrency: threads, processes, asyncio and the GIL</span></a>
+<a class="side-link active" href="17-performance.html"><span class="num">17</span><span class="ttl">Performance: profiling, caching and complexity-first optimisation</span></a>
+<a class="side-link" href="18-packaging-ci.html"><span class="num">18</span><span class="ttl">Packaging, environments &amp; CI/CD: pyproject to PyPI</span></a>
+<a class="side-link" href="19-cheatsheets.html"><span class="num">19</span><span class="ttl">Cheatsheets: the whole course on a few screens</span></a>
+</div></aside>
+  <main class="main">
+    <article class="page">
+      <div class="page-meta"><span class="chip lvl">Intermediate → Industry</span><span class="chip read">33 min</span><span class="chip tag">profiling</span><span class="chip tag">big-o</span><span class="chip tag">caching</span><span class="chip tag">memory</span><span class="chip tag">optimisation</span></div>
+      <h1 id="17-performance-profiling">17. Performance &amp; profiling</h1>
+<blockquote>
+<p>Rule zero: <strong>measure</strong>. Rule one: fix the algorithm before the constant
+factor. Rule two: an optimisation you cannot show a before/after number for
+is a rumour.</p>
+</blockquote>
+<h2 id="171-definition">17.1 Definition</h2>
+<p><strong>Plain version.</strong> Making code fast and light — but only the parts that are
+actually slow, and only after proving it.</p>
+<p><strong>Precise version.</strong> Performance work has three layers:
+1. <strong>complexity</strong> — how cost grows with input size (big-O): the only layer
+   that changes the <em>shape</em> of the problem;
+2. <strong>constant factors</strong> — CPython-level costs (lookups, allocation, bytecode)
+   that give 1.5–10× on the same complexity;
+3. <strong>architecture</strong> — caching, batching, indexing, parallelism: removing work
+   entirely.</p>
+<p>Profiling is the measurement discipline: <code>time.perf_counter</code> / <code>timeit</code> for
+micro-benchmarks, <code>cProfile</code>/<code>py-spy</code> for &ldquo;where does the time go&rdquo;,
+<code>tracemalloc</code> for &ldquo;where does the memory go&rdquo;.</p>
+<h2 id="172-syntax">17.2 Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span><span class="o">,</span><span class="w"> </span><span class="nn">timeit</span><span class="o">,</span><span class="w"> </span><span class="nn">cProfile</span><span class="o">,</span><span class="w"> </span><span class="nn">pstats</span><span class="o">,</span><span class="w"> </span><span class="nn">tracemalloc</span><span class="o">,</span><span class="w"> </span><span class="nn">functools</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">();</span> <span class="n">work</span><span class="p">();</span> <span class="n">dt</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>   <span class="c1"># wall clock</span>
+
+<span class="n">timeit</span><span class="o">.</span><span class="n">timeit</span><span class="p">(</span><span class="s2">"f(x)"</span><span class="p">,</span> <span class="n">setup</span><span class="o">=</span><span class="s2">"from mod import f; x = data"</span><span class="p">,</span>
+              <span class="n">number</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="nb">globals</span><span class="p">())</span>                      <span class="c1"># micro-bench</span>
+<span class="n">timeit</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>                           <span class="c1"># take min</span>
+
+<span class="n">cProfile</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main()"</span><span class="p">,</span> <span class="s2">"out.prof"</span><span class="p">)</span>                                 <span class="c1"># whole run</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">cProfile</span> <span class="o">-</span><span class="n">s</span> <span class="n">cumtime</span> <span class="n">script</span><span class="o">.</span><span class="n">py</span>                            <span class="c1"># CLI, sorted</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pstats</span> <span class="n">out</span><span class="o">.</span><span class="n">prof</span>                                          <span class="c1"># browse</span>
+
+<span class="n">tracemalloc</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="n">work</span><span class="p">()</span>
+<span class="n">snapshot</span> <span class="o">=</span> <span class="n">tracemalloc</span><span class="o">.</span><span class="n">take_snapshot</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">stat</span> <span class="ow">in</span> <span class="n">snapshot</span><span class="o">.</span><span class="n">statistics</span><span class="p">(</span><span class="s2">"lineno"</span><span class="p">)[:</span><span class="mi">10</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">stat</span><span class="p">)</span>                                                    <span class="c1"># top allocators</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>                                                 <span class="c1"># bytes (shallow)</span>
+
+<span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span>          <span class="c1"># or @functools.cache (unbounded)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">expensive</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span> <span class="o">...</span>
+<span class="n">expensive</span><span class="o">.</span><span class="n">cache_info</span><span class="p">()</span>                      <span class="c1"># hits/misses/size</span>
+<span class="n">expensive</span><span class="o">.</span><span class="n">cache_clear</span><span class="p">()</span>
+</code></pre></div>
+
+<h2 id="173-first-examples">17.3 First examples</h2>
+<p><strong>Example 1 — the O(n²) → O(n) win (1000× on 100k items).</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_duplicates_slow</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>            <span class="c1"># O(n²): `in` scans the list</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">[:</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">items</span><span class="p">))</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">has_duplicates_fast</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>            <span class="c1"># O(n): set membership is O(1)</span>
+    <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+
+<p><strong>Example 2 — strings: join beats <code>+=</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">slow</span> <span class="o">=</span> <span class="s2">""</span>
+<span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">:</span> <span class="n">slow</span> <span class="o">+=</span> <span class="n">part</span>            <span class="c1"># O(n²): new string each time</span>
+<span class="n">fast</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>                       <span class="c1"># O(n): one allocation</span>
+</code></pre></div>
+
+<p><strong>Example 3 — caching a pure function.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">n</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">fib</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">fib</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+<span class="c1"># fib(35): 2.6 s -&gt; 0.00002 s</span>
+</code></pre></div>
+
+<h2 id="174-the-picture">17.4 The picture</h2>
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 472" width="990" height="472" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Growth of complexity classes</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-ink, #0f172a)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">How cost grows with input size n</text>
+<text x="495" y="46" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Same algorithm, different n. The gap between O(n) and O(n²) is what turns 1 s into 3 hours.</text>
+<line x1="90" y1="330" x2="610" y2="330" stroke="var(--dg-ink, #0f172a)" stroke-width="1.8" marker-end="url(#arink)"/>
+<line x1="90" y1="330" x2="90" y2="100" stroke="var(--dg-ink, #0f172a)" stroke-width="1.8" marker-end="url(#arink)"/>
+<text x="624" y="335" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">n</text>
+<text x="78" y="90" text-anchor="end" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">work</text>
+<path d="M 90.0,316.2 L 98.66666666666667,316.2 L 107.33333333333333,316.2 L 116.0,316.2 L 124.66666666666666,316.2 L 133.33333333333331,316.2 L 142.0,316.2 L 150.66666666666666,316.2 L 159.33333333333331,316.2 L 168.0,316.2 L 176.66666666666666,316.2 L 185.33333333333331,316.2 L 194.0,316.2 L 202.66666666666669,316.2 L 211.33333333333331,316.2 L 220.0,316.2 L 228.66666666666666,316.2 L 237.33333333333334,316.2 L 246.0,316.2 L 254.66666666666666,316.2 L 263.3333333333333,316.2 L 272.0,316.2 L 280.66666666666663,316.2 L 289.33333333333337,316.2 L 298.0,316.2 L 306.6666666666667,316.2 L 315.33333333333337,316.2 L 324.0,316.2 L 332.66666666666663,316.2 L 341.33333333333337,316.2 L 350.0,316.2 L 358.6666666666667,316.2 L 367.3333333333333,316.2 L 376.0,316.2 L 384.6666666666667,316.2 L 393.33333333333337,316.2 L 402.0,316.2 L 410.6666666666667,316.2 L 419.3333333333333,316.2 L 428.0,316.2 L 436.66666666666663,316.2 L 445.3333333333333,316.2 L 454.0,316.2 L 462.6666666666667,316.2 L 471.3333333333333,316.2 L 480.0,316.2 L 488.6666666666667,316.2 L 497.3333333333333,316.2 L 506.0,316.2 L 514.6666666666667,316.2 L 523.3333333333334,316.2 L 532.0,316.2 L 540.6666666666667,316.2 L 549.3333333333333,316.2 L 558.0,316.2 L 566.6666666666666,316.2 L 575.3333333333333,316.2 L 584.0,316.2 L 592.6666666666667,316.2 L 601.3333333333333,316.2 L 610.0,316.2" stroke="var(--dg-green, #059669)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,307.0 L 98.66666666666667,301.85676052059415 L 107.33333333333333,297.3449950675963 L 116.0,293.3264611232846 L 124.66666666666666,289.7038664437569 L 133.33333333333331,286.4061390039764 L 142.0,283.3797769888559 L 150.66666666666666,280.58349561206836 L 159.33333333333331,277.98476913859486 L 168.0,275.5575159238567 L 176.66666666666666,273.2805010670311 L 185.33333333333331,271.1362052480688 L 194.0,269.1100054477334 L 202.66666666666669,267.1895697310564 L 211.33333333333331,265.3644022971275 L 220.0,263.6254961346274 L 228.66666666666666,261.96506411630617 L 237.33333333333334,260.37632819166646 L 246.0,258.85335223687343 L 254.66666666666666,257.39090814257133 L 263.3333333333333,255.98436751078805 L 272.0,254.62961329987206 L 280.66666666666663,253.32296716465777 L 289.33333333333337,252.06112926064412 L 298.0,250.8411280313822 L 306.6666666666667,249.66027805588698 L 315.33333333333337,248.5161444517098 L 324.0,247.4065126470285 L 332.66666666666663,246.32936257838435 L 341.33333333333337,245.28284655858872 L 350.0,244.26527020562594 L 358.6666666666667,243.27507593817273 L 367.3333333333333,242.31082863407266 L 376.0,241.3712031202826 L 384.6666666666667,240.45497322060302 L 393.33333333333337,239.56100213406216 L 402.0,238.68823395454496 L 410.6666666666667,237.83568617298448 L 419.3333333333333,237.00244302859335 L 428.0,236.18764959631187 L 436.66666666666663,235.39050651476447 L 445.3333333333333,234.6102652732223 L 454.0,233.8462239879201 L 462.6666666666667,233.09772360799397 L 471.3333333333333,232.36414449964388 L 480.0,231.6449033641586 L 488.6666666666667,230.9394504513945 L 497.3333333333333,230.24726703535862 L 506.0,229.56786312285635 L 514.6666666666667,228.9007753698503 L 523.3333333333334,228.24556518333725 L 532.0,227.6018169892686 L 540.6666666666667,226.96913664938288 L 549.3333333333333,226.34715001184708 L 558.0,225.7355015823608 L 566.6666666666666,225.13385330390452 L 575.3333333333333,224.54188343464475 L 584.0,223.9592855146709 L 592.6666666666667,223.3857674132564 L 601.3333333333333,222.8210504492289 L 610.0,222.26486857781913" stroke="var(--dg-cyan, #0891b2)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,316.2 L 98.66666666666667,314.59 L 107.33333333333333,312.98 L 116.0,311.37 L 124.66666666666666,309.76 L 133.33333333333331,308.15 L 142.0,306.54 L 150.66666666666666,304.93 L 159.33333333333331,303.32 L 168.0,301.71 L 176.66666666666666,300.1 L 185.33333333333331,298.49 L 194.0,296.88 L 202.66666666666669,295.27 L 211.33333333333331,293.65999999999997 L 220.0,292.05 L 228.66666666666666,290.44 L 237.33333333333334,288.83 L 246.0,287.22 L 254.66666666666666,285.61 L 263.3333333333333,284.0 L 272.0,282.39 L 280.66666666666663,280.78000000000003 L 289.33333333333337,279.17 L 298.0,277.56 L 306.6666666666667,275.95 L 315.33333333333337,274.34000000000003 L 324.0,272.73 L 332.66666666666663,271.12 L 341.33333333333337,269.51 L 350.0,267.9 L 358.6666666666667,266.28999999999996 L 367.3333333333333,264.68 L 376.0,263.07 L 384.6666666666667,261.46000000000004 L 393.33333333333337,259.85 L 402.0,258.24 L 410.6666666666667,256.63 L 419.3333333333333,255.02 L 428.0,253.41 L 436.66666666666663,251.8 L 445.3333333333333,250.19 L 454.0,248.57999999999998 L 462.6666666666667,246.97 L 471.3333333333333,245.36 L 480.0,243.75 L 488.6666666666667,242.14 L 497.3333333333333,240.53000000000003 L 506.0,238.92000000000002 L 514.6666666666667,237.31 L 523.3333333333334,235.7 L 532.0,234.09 L 540.6666666666667,232.48000000000002 L 549.3333333333333,230.87 L 558.0,229.26 L 566.6666666666666,227.65 L 575.3333333333333,226.04 L 584.0,224.43 L 592.6666666666667,222.82 L 601.3333333333333,221.21 L 610.0,219.60000000000002" stroke="var(--dg-blue, #2563eb)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,316.2 L 98.66666666666667,316.0781225904011 L 107.33333333333333,315.74241796613285 L 116.0,315.22794989129886 L 124.66666666666666,314.5605601393032 L 133.33333333333331,313.7599751461257 L 142.0,312.8416828075683 L 150.66666666666666,311.8181262862719 L 159.33333333333331,310.6994959842528 L 168.0,309.49427363180365 L 176.66666666666666,308.20961728618846 L 185.33333333333331,306.8516407367767 L 194.0,305.4256207686113 L 202.66666666666669,303.93615388450655 L 211.33333333333331,302.387276828881 L 220.0,300.7825606752791 L 228.66666666666666,299.12518526835674 L 237.33333333333334,297.4179988373813 L 246.0,295.66356625872146 L 254.66666666666666,293.86420851787807 L 263.3333333333333,292.0220352688929 L 272.0,290.13897192197345 L 280.66666666666663,288.216782351143 L 289.33333333333337,286.2570880643013 L 298.0,284.26138449229745 L 306.6666666666667,282.2310549136724 L 315.33333333333337,280.16738242517806 L 324.0,278.07156028628117 L 332.66666666666663,275.94470090231016 L 341.33333333333337,273.7878436611924 L 350.0,271.6019617995134 L 358.6666666666667,269.3879684424773 L 367.3333333333333,267.1467219374164 L 376.0,264.8790305804154 L 384.6666666666667,262.5856568193443 L 393.33333333333337,260.2673210033191 L 402.0,257.9247047377362 L 410.6666666666667,255.55845389505492 L 419.3333333333333,253.1691813240814 L 428.0,250.75746929431932 L 436.66666666666663,248.32387170679144 L 445.3333333333333,245.868916098392 L 454.0,243.3931054631749 L 462.6666666666667,240.8969199108835 L 471.3333333333333,238.38081818039868 L 480.0,235.84523902353698 L 488.6666666666667,233.29060247271303 L 497.3333333333333,230.71731100433075 L 506.0,228.12575060835036 L 514.6666666666667,225.51629177325225 L 523.3333333333334,222.88929039455712 L 532.0,220.24508861413892 L 540.6666666666667,217.5840155967649 L 549.3333333333333,214.90638824959473 L 558.0,212.21251188975572 L 566.6666666666666,209.5026808645743 L 575.3333333333333,206.7771791285672 L 584.0,204.03628078087934 L 592.6666666666667,201.2802505664851 L 601.3333333333333,198.509344344144 L 610.0,195.72380952380954" stroke="var(--dg-amber, #d97706)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,316.2 L 98.66666666666667,316.13930555555555 L 107.33333333333333,315.95722222222224 L 116.0,315.65375 L 124.66666666666666,315.2288888888889 L 133.33333333333331,314.6826388888889 L 142.0,314.015 L 150.66666666666666,313.2259722222222 L 159.33333333333331,312.31555555555553 L 168.0,311.28375 L 176.66666666666666,310.1305555555556 L 185.33333333333331,308.85597222222225 L 194.0,307.46 L 202.66666666666669,305.9426388888889 L 211.33333333333331,304.3038888888889 L 220.0,302.54375 L 228.66666666666666,300.6622222222222 L 237.33333333333334,298.65930555555553 L 246.0,296.535 L 254.66666666666666,294.28930555555553 L 263.3333333333333,291.9222222222222 L 272.0,289.43375000000003 L 280.66666666666663,286.8238888888889 L 289.33333333333337,284.09263888888887 L 298.0,281.24 L 306.6666666666667,278.2659722222222 L 315.33333333333337,275.17055555555555 L 324.0,271.95375 L 332.66666666666663,268.61555555555555 L 341.33333333333337,265.1559722222222 L 350.0,261.575 L 358.6666666666667,257.8726388888889 L 367.3333333333333,254.04888888888888 L 376.0,250.10375 L 384.6666666666667,246.03722222222223 L 393.33333333333337,241.84930555555553 L 402.0,237.54000000000002 L 410.6666666666667,233.10930555555555 L 419.3333333333333,228.55722222222224 L 428.0,223.88375000000002 L 436.66666666666663,219.0888888888889 L 445.3333333333333,214.17263888888888 L 454.0,209.13500000000005 L 462.6666666666667,203.9759722222222 L 471.3333333333333,198.6955555555556 L 480.0,193.29375000000002 L 488.6666666666667,187.77055555555555 L 497.3333333333333,182.12597222222223 L 506.0,176.35999999999996 L 514.6666666666667,170.4726388888889 L 523.3333333333334,164.4638888888889 L 532.0,158.33375 L 540.6666666666667,152.0822222222222 L 549.3333333333333,145.70930555555557 L 558.0,139.21500000000003 L 566.6666666666666,132.5993055555556 L 575.3333333333333,125.86222222222224 L 584.0,119.00375000000003 L 592.6666666666667,112.0238888888889 L 601.3333333333333,104.92263888888891 L 610.0,100.0" stroke="var(--dg-red, #dc2626)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<path d="M 90.0,325.4 L 98.66666666666667,325.137969898677 L 107.33333333333333,324.85713298969335 L 116.0,324.55613944334397 L 124.66666666666666,324.233542547972 L 133.33333333333331,323.8877917564157 L 142.0,323.51722523337475 L 150.66666666666666,323.1200618678751 L 159.33333333333331,322.694392712441 L 168.0,322.23817180782646 L 176.66666666666666,321.74920634920636 L 185.33333333333331,321.2251461465604 L 194.0,320.66347232859306 L 202.66666666666669,320.0614852358943 L 211.33333333333331,319.4162914451503 L 220.0,318.7247898620377 L 228.66666666666666,317.98365681595584 L 237.33333333333334,317.18933008495657 L 246.0,316.3379917740883 L 254.66666666666666,315.42554996485933 L 263.3333333333333,314.44761904761907 L 272.0,313.39949864232716 L 280.66666666666663,312.2761510063925 L 289.33333333333337,311.07217682099486 L 298.0,309.7817892395069 L 306.6666666666667,308.39878607328177 L 315.33333333333337,306.916519981118 L 324.0,305.3278665191195 L 332.66666666666663,303.62518989738305 L 341.33333333333337,301.800306278925 L 350.0,299.84444444444443 L 358.6666666666667,297.7482036338606 L 367.3333333333333,295.50150836199134 L 376.0,293.0935599911961 L 384.6666666666667,290.5127848282202 L 393.33333333333337,287.74677849576995 L 402.0,284.78224631144235 L 410.6666666666667,281.6049393874453 L 419.3333333333333,278.19958614397245 L 428.0,274.5498189070563 L 436.66666666666663,270.6380952380952 L 445.3333333333333,266.44561361692763 L 454.0,261.9522230731891 L 462.6666666666667,257.1363263315985 L 471.3333333333333,251.97477600564685 L 480.0,246.44276334074618 L 488.6666666666667,240.513698972091 L 497.3333333333333,234.15908512409692 L 506.0,227.34837863715114 L 514.6666666666667,220.04884416331896 L 523.3333333333334,212.22539682539684 L 532.0,203.84043358306167 L 540.6666666666667,194.85365249558447 L 549.3333333333333,185.22185901240346 L 558.0,174.89875836049993 L 566.6666666666666,163.83473303069874 L 575.3333333333333,151.97660429338845 L 584.0,139.2673765974003 L 592.6666666666667,125.6459636235088 L 601.3333333333333,111.04689467584444 L 610.0,100.0" stroke="var(--dg-violet, #7c3aed)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<rect x="656" y="108" width="26" height="4" rx="2" fill="var(--dg-green, #059669)"/>
+<text x="692" y="116" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">O(1)</text>
+<rect x="656" y="134" width="26" height="4" rx="2" fill="var(--dg-cyan, #0891b2)"/>
+<text x="692" y="142" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">O(log n)</text>
+<rect x="656" y="160" width="26" height="4" rx="2" fill="var(--dg-blue, #2563eb)"/>
+<text x="692" y="168" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">O(n)</text>
+<rect x="656" y="186" width="26" height="4" rx="2" fill="var(--dg-amber, #d97706)"/>
+<text x="692" y="194" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">O(n log n)</text>
+<rect x="656" y="212" width="26" height="4" rx="2" fill="var(--dg-red, #dc2626)"/>
+<text x="692" y="220" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-red, #dc2626)">O(n²)</text>
+<rect x="656" y="238" width="26" height="4" rx="2" fill="var(--dg-violet, #7c3aed)"/>
+<text x="692" y="246" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">O(2ⁿ)</text>
+<text x="692" y="144" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">dict lookup, list index</text>
+<text x="692" y="170" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">binary search, sortedcontainers</text>
+<text x="692" y="196" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">sum(), linear scan</text>
+<text x="692" y="222" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">sorted(), merge sort</text>
+<text x="692" y="248" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">nested loops, bubble sort</text>
+<text x="692" y="274" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">naive subsets, recursive fib</text>
+<rect x="90" y="348" width="800" height="28" rx="6" fill="var(--dg-slate, #475569)"/>
+<rect x="90" y="370" width="800" height="6" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="100" y="366.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">n</text>
+<text x="250" y="366.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">O(n)</text>
+<text x="400" y="366.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">O(n²)</text>
+<text x="640" y="366.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">O(2ⁿ)</text>
+<rect x="90" y="376" width="800" height="26" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="100" y="393.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">10</text>
+<text x="250" y="393.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">10 ops</text>
+<text x="400" y="393.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">100 ops</text>
+<text x="640" y="393.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,024 ops</text>
+<rect x="90" y="402" width="800" height="26" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="100" y="419.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,000</text>
+<text x="250" y="419.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,000 ops</text>
+<text x="400" y="419.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,000,000 ops</text>
+<text x="640" y="419.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">10³⁰⁰ ops</text>
+<rect x="90" y="428" width="800" height="26" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="100" y="445.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">1,000,000</text>
+<text x="250" y="445.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">10⁶ ops</text>
+<text x="400" y="445.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">10¹² ops (~31 years)</text>
+<text x="640" y="445.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">heat death of the universe</text>
+<rect x="90" y="348" width="800" height="106" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<line x1="240" y1="376" x2="240" y2="454" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="390" y1="376" x2="390" y2="454" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="630" y1="376" x2="630" y2="454" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+</svg>
+<figcaption>Growth curves: O(1), O(log n), O(n), O(n log n), O(n^2), O(2^n) - and where each becomes unusable.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 448" width="990" height="448" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>A professional optimisation workflow</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+  <defs>
+    <marker id="arline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--dg-line, #cbd5e1)"/></marker>
+  </defs>
+<text x="495" y="28" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">Make it work → make it right → make it fast</text>
+<rect x="21.0" y="66" width="148" height="116" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.6"/>
+<rect x="21.0" y="66" width="148" height="30" rx="10" fill="var(--dg-blue, #2563eb)"/>
+<rect x="21.0" y="86" width="148" height="10" rx="0" fill="var(--dg-blue, #2563eb)"/>
+<text x="95.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">1. measure first</text>
+<text x="95.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">time.perf_counter, cProfile,</text>
+<text x="95.0" y="139" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">py-spy, tracemalloc</text>
+<rect x="181.0" y="66" width="148" height="116" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.6"/>
+<rect x="181.0" y="66" width="148" height="30" rx="10" fill="var(--dg-violet, #7c3aed)"/>
+<rect x="181.0" y="86" width="148" height="10" rx="0" fill="var(--dg-violet, #7c3aed)"/>
+<text x="255.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">2. find the hotspot</text>
+<text x="255.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">usually ONE function holds</text>
+<text x="255.0" y="139" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">80% of the time</text>
+<line x1="169.0" y1="124.0" x2="181.0" y2="124.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="341.0" y="66" width="148" height="116" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<rect x="341.0" y="66" width="148" height="30" rx="10" fill="var(--dg-green, #059669)"/>
+<rect x="341.0" y="86" width="148" height="10" rx="0" fill="var(--dg-green, #059669)"/>
+<text x="415.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">3. fix the algorithm</text>
+<text x="415.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">O(n²) -&gt; O(n) with a set</text>
+<text x="415.0" y="139" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">or dict beats any micro-tuning</text>
+<line x1="329.0" y1="124.0" x2="341.0" y2="124.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="501.0" y="66" width="148" height="116" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-amber, #d97706)" stroke-width="1.6"/>
+<rect x="501.0" y="66" width="148" height="30" rx="10" fill="var(--dg-amber, #d97706)"/>
+<rect x="501.0" y="86" width="148" height="10" rx="0" fill="var(--dg-amber, #d97706)"/>
+<text x="575.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">4. change the data</text>
+<text x="575.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">right container, right layout,</text>
+<text x="575.0" y="139" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">generators instead of lists</text>
+<line x1="489.0" y1="124.0" x2="501.0" y2="124.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="661.0" y="66" width="148" height="116" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.6"/>
+<rect x="661.0" y="66" width="148" height="30" rx="10" fill="var(--dg-cyan, #0891b2)"/>
+<rect x="661.0" y="86" width="148" height="10" rx="0" fill="var(--dg-cyan, #0891b2)"/>
+<text x="735.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">5. micro-optimise</text>
+<text x="735.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">local vars, avoid attribute</text>
+<text x="735.0" y="139" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">lookups in hot loops</text>
+<line x1="649.0" y1="124.0" x2="661.0" y2="124.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<rect x="821.0" y="66" width="148" height="116" rx="10" fill="var(--dg-bg, #ffffff)" stroke="var(--dg-red, #dc2626)" stroke-width="1.6"/>
+<rect x="821.0" y="66" width="148" height="30" rx="10" fill="var(--dg-red, #dc2626)"/>
+<rect x="821.0" y="86" width="148" height="10" rx="0" fill="var(--dg-red, #dc2626)"/>
+<text x="895.0" y="86" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">6. parallelise / C</text>
+<text x="895.0" y="124" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">numpy, Cython, Rust ext,</text>
+<text x="895.0" y="139" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">multiprocessing, cache</text>
+<line x1="809.0" y1="124.0" x2="821.0" y2="124.0" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6" marker-end="url(#arline)"/>
+<line x1="21.0" y1="206" x2="969.0" y2="206" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="495" y="200" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">each step must be re-measured - and the benchmark must live in the test suite</text>
+<rect x="21.0" y="226" width="900" height="28" rx="6" fill="var(--dg-slate, #475569)"/>
+<rect x="21.0" y="248" width="900" height="6" rx="0" fill="var(--dg-slate, #475569)"/>
+<text x="31.0" y="244.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">change</text>
+<text x="411.0" y="244.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">typical gain</text>
+<text x="611.0" y="244.0" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="var(--dg-bg, #ffffff)">why it works</text>
+<rect x="21.0" y="254" width="900" height="25" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="31.0" y="270.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">swap `x in list` for `x in set`</text>
+<text x="411.0" y="270.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">10x - 1000x</text>
+<text x="611.0" y="270.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">algorithm / data structure</text>
+<rect x="21.0" y="279" width="900" height="25" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="31.0" y="295.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">build with a comprehension, not += in a loop</text>
+<text x="411.0" y="295.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">20 - 40%</text>
+<text x="611.0" y="295.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">avoid repeated allocation</text>
+<rect x="21.0" y="304" width="900" height="25" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="31.0" y="320.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">str.join(parts) instead of s += part</text>
+<text x="411.0" y="320.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">huge for many parts</text>
+<text x="611.0" y="320.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">strings are immutable</text>
+<rect x="21.0" y="329" width="900" height="25" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="31.0" y="345.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">@lru_cache on a pure, repeated function</text>
+<text x="411.0" y="345.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">100x on hits</text>
+<text x="611.0" y="345.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">trading memory for time</text>
+<rect x="21.0" y="354" width="900" height="25" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="31.0" y="370.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">hoist attribute lookup out of a tight loop</text>
+<text x="411.0" y="370.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">5 - 15%</text>
+<text x="611.0" y="370.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">LOAD_ATTR is slower than LOAD_FAST</text>
+<rect x="21.0" y="379" width="900" height="25" rx="0" fill="var(--dg-bg, #ffffff)"/>
+<text x="31.0" y="395.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">numpy vectorised op instead of a Python loop</text>
+<text x="411.0" y="395.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">50 - 200x</text>
+<text x="611.0" y="395.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">C loop, no interpreter overhead</text>
+<rect x="21.0" y="404" width="900" height="25" rx="0" fill="var(--dg-panel, #f8fafc)"/>
+<text x="31.0" y="420.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">generators for large/streaming data</text>
+<text x="411.0" y="420.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" font-style="normal" fill="var(--dg-green, #059669)">massive memory saving</text>
+<text x="611.0" y="420.5" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">never materialise what you scan once</text>
+<rect x="21.0" y="226" width="900" height="203" rx="6" fill="none" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.4"/>
+<line x1="401.0" y1="254" x2="401.0" y2="429" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+<line x1="601.0" y1="254" x2="601.0" y2="429" stroke="var(--dg-line, #cbd5e1)" stroke-width="1"/>
+</svg>
+<figcaption>The optimisation loop: profile, find the hot spot, fix complexity first, re-measure, keep or revert.</figcaption></figure>
+
+<figure class="diagram"><svg class="dg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 500" width="990" height="500" role="img" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto"><title>Storing a million numbers, four ways</title><style>text { font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif; }svg { color-scheme: light dark; }</style>
+<text x="495" y="30" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="700" font-style="normal" fill="var(--dg-ink, #0f172a)">The same 1,000,000 floats, stored four ways</text>
+<text x="495" y="50" text-anchor="middle" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" font-style="italic" fill="var(--dg-muted, #64748b)">Every Python object pays a boxing tax - the container you choose is a memory decision</text>
+<rect x="24" y="78" width="942" height="52" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="40" y="100" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">[x for x in data]</text>
+<text x="40" y="118" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">list of float objects</text>
+<rect x="330" y="90" width="65" height="18" rx="4" fill="var(--dg-bluebg, #dbeafe)" stroke="var(--dg-blue, #2563eb)" stroke-width="1.3"/>
+<text x="401" y="104" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-blue, #2563eb)">~40 B/item</text>
+<text x="493" y="104" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">40 MB for 1M</text>
+<text x="330" y="122" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">O(1) index, mutate anywhere</text>
+<text x="700" y="104" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.8" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">general purpose; 8 B pointer + 32 B boxed float</text>
+<rect x="24" y="140" width="942" height="52" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="40" y="162" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">[(x, y) for ...]</text>
+<text x="40" y="180" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">list of tuples</text>
+<rect x="330" y="152" width="104" height="18" rx="4" fill="var(--dg-cyanbg, #cffafe)" stroke="var(--dg-cyan, #0891b2)" stroke-width="1.3"/>
+<text x="440" y="166" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-cyan, #0891b2)">~64 B/item</text>
+<text x="532" y="166" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">64 MB for 1M</text>
+<text x="330" y="184" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">O(1) index, immutable items</text>
+<text x="700" y="166" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.8" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">records without attribute access</text>
+<rect x="24" y="202" width="942" height="52" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="40" y="224" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">Point(x=..., y=...)</text>
+<text x="40" y="242" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">objects with __dict__</text>
+<rect x="330" y="214" width="300" height="18" rx="4" fill="var(--dg-amberbg, #fef3c7)" stroke="var(--dg-amber, #d97706)" stroke-width="1.3"/>
+<text x="636" y="228" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-amber, #d97706)">~184 B/item</text>
+<text x="728" y="228" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">184 MB for 1M</text>
+<text x="330" y="246" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">attribute access, mutable</text>
+<text x="700" y="228" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.8" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">readable, but the dict costs ~104 B each</text>
+<rect x="24" y="264" width="942" height="52" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="40" y="286" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">@dataclass(slots=True)</text>
+<text x="40" y="304" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">__slots__ objects</text>
+<rect x="330" y="276" width="104" height="18" rx="4" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.3"/>
+<text x="440" y="290" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">~64 B/item</text>
+<text x="532" y="290" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">64 MB for 1M</text>
+<text x="330" y="308" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">attribute access, no dict</text>
+<text x="700" y="290" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.8" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">same ergonomics, ~2/3 less memory</text>
+<rect x="24" y="326" width="942" height="52" rx="8" fill="var(--dg-panel, #f8fafc)" stroke="var(--dg-line, #cbd5e1)" stroke-width="1.6"/>
+<text x="40" y="348" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="11.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">array.array(&#x27;d&#x27;) / np.array</text>
+<text x="40" y="366" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">unboxed C doubles</text>
+<rect x="330" y="338" width="13" height="18" rx="4" fill="var(--dg-violetbg, #ede9fe)" stroke="var(--dg-violet, #7c3aed)" stroke-width="1.3"/>
+<text x="349" y="352" text-anchor="start" font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'SF Mono', Menlo, monospace" font-size="10.5" font-weight="700" font-style="normal" fill="var(--dg-violet, #7c3aed)">~8 B/item</text>
+<text x="441" y="352" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-slate, #475569)">8 MB for 1M</text>
+<text x="330" y="370" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">vectorised, no per-item objects</text>
+<text x="700" y="352" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="9.8" font-weight="400" font-style="normal" fill="var(--dg-muted, #64748b)">numerics: 5x smaller AND far faster to loop in C</text>
+<rect x="24" y="396" width="942" height="84" rx="10" fill="var(--dg-greenbg, #d1fae5)" stroke="var(--dg-green, #059669)" stroke-width="1.6"/>
+<text x="40" y="418" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="var(--dg-green, #059669)">How to use this</text>
+<text x="40" y="440" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* millions of small objects is where memory goes, not the data itself (sys.getsizeof shows only the shallow size)</text>
+<text x="40" y="456" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* __slots__ / dataclass(slots=True) drops the instance __dict__; array / NumPy drops the boxing entirely</text>
+<text x="40" y="472" text-anchor="start" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="400" font-style="normal" fill="var(--dg-ink, #0f172a)">* speed follows memory: fewer bytes per item means fewer cache misses and, for NumPy, loops executed in C</text>
+</svg>
+<figcaption>Memory vs speed trade-offs: the same data as list of dicts, list of tuples, __slots__ objects and a NumPy array.</figcaption></figure>
+
+<h2 id="175-going-deeper">17.5 Going deeper</h2>
+<h3 id="1751-complexity-decides-everything-else">17.5.1 Complexity decides everything else</h3>
+<table>
+<thead>
+<tr>
+<th>Growth</th>
+<th>Name</th>
+<th>10⁶ items ≈</th>
+<th>Typical source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>O(1)</td>
+<td>constant</td>
+<td>instant</td>
+<td>dict/set lookup, index</td>
+</tr>
+<tr>
+<td>O(log n)</td>
+<td>logarithmic</td>
+<td>~20 steps</td>
+<td>bisect, balanced tree</td>
+</tr>
+<tr>
+<td>O(n)</td>
+<td>linear</td>
+<td>~0.05 s</td>
+<td>one pass, Counter</td>
+</tr>
+<tr>
+<td>O(n log n)</td>
+<td>linearithmic</td>
+<td>~1 s</td>
+<td><code>sorted</code>, merge sort</td>
+</tr>
+<tr>
+<td>O(n²)</td>
+<td>quadratic</td>
+<td><strong>11 days</strong></td>
+<td>nested loops, <code>x in list</code> in a loop</td>
+</tr>
+<tr>
+<td>O(2ⁿ)</td>
+<td>exponential</td>
+<td>forever</td>
+<td>naive recursion without memo</td>
+</tr>
+</tbody>
+</table>
+<p>Read the table bottom-up when debugging: the jump from quadratic to linear is
+worth more than any micro-trick. Standard fixes: <code>list</code> membership → <code>set</code>;
+repeated lookups in a nested loop → precompute a <code>dict</code> index; repeated
+recomputation → memoise; repeated scans for min/max/top-k → <code>heapq</code>
+(O(n log k)); repeated re-sorting → sort once, <code>bisect</code> after.</p>
+<h3 id="1752-reading-a-profile-without-fooling-yourself">17.5.2 Reading a profile without fooling yourself</h3>
+<p><code>cProfile</code> reports two columns that answer different questions:</p>
+<ul>
+<li><strong>tottime</strong>: time <em>in</em> the function, excluding callees → who burns CPU;</li>
+<li><strong>cumtime</strong>: including callees → which call path is expensive end-to-end.</li>
+</ul>
+<p>Sort by <code>tottime</code> to find the hot function, by <code>cumtime</code> to find the hot path.
+Remember the profiler&rsquo;s bias: it adds per-call overhead, so it exaggerates
+tiny frequently-called functions — and it does <strong>not</strong> show wall-clock waiting
+(I/O) clearly. For production-shaped truth use a <strong>sampling profiler</strong>:</p>
+<div class="codehilite"><pre><span></span><code>py-spy<span class="w"> </span>top<span class="w"> </span>--pid<span class="w"> </span><span class="m">1234</span><span class="w">          </span><span class="c1"># live, no code changes, no restart</span>
+py-spy<span class="w"> </span>record<span class="w"> </span>-o<span class="w"> </span>flame.svg<span class="w"> </span>--pid<span class="w"> </span><span class="m">1234</span><span class="w">      </span><span class="c1"># flamegraph for the PR</span>
+</code></pre></div>
+
+<p>Sampling is safe on a live process; <code>cProfile</code> is for your laptop.</p>
+<h3 id="1753-cpython-constant-factors-worth-knowing">17.5.3 CPython constant factors worth knowing</h3>
+<table>
+<thead>
+<tr>
+<th>Cost</th>
+<th>Relative note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>local variable lookup</td>
+<td>fastest (array index)</td>
+</tr>
+<tr>
+<td>global / builtin lookup</td>
+<td>dict lookup each access — hoist into locals</td>
+</tr>
+<tr>
+<td>attribute lookup (<code>obj.attr</code>)</td>
+<td>dict lookup + descriptor; bind once outside loops</td>
+</tr>
+<tr>
+<td>function call</td>
+<td>~50–100 ns; a tight loop of tiny calls is slower than inlined code</td>
+</tr>
+<tr>
+<td><code>list.append</code> in loop</td>
+<td>amortised O(1); prefer comprehension (no per-iteration lookup)</td>
+</tr>
+<tr>
+<td><code>str +=</code> in loop</td>
+<td>O(n²); use <code>"".join</code> or <code>io.StringIO</code></td>
+</tr>
+<tr>
+<td><code>x in list</code></td>
+<td>O(n); <code>x in set/dict</code> O(1)</td>
+</tr>
+<tr>
+<td>tuple vs list</td>
+<td>tuple smaller/faster to build; list needed for mutation</td>
+</tr>
+<tr>
+<td><code>sorted(key=f)</code></td>
+<td>calls <code>f</code> once per item (Schwartzian transform) — good</td>
+</tr>
+<tr>
+<td>generator expression</td>
+<td>saves memory, not CPU; <code>sum(x*x for x in …)</code> avoids the list</td>
+</tr>
+</tbody>
+</table>
+<p>Hoisting pattern in a hot loop:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">append</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">append</span>          <span class="c1"># bind the method ONCE</span>
+<span class="n">upper</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+    <span class="n">append</span><span class="p">(</span><span class="n">upper</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+</code></pre></div>
+
+<h3 id="1754-memory-where-the-bytes-go">17.5.4 Memory: where the bytes go</h3>
+<p>Every Python object carries overhead (~56 bytes for an empty object, ~184 for
+an empty dict in CPython 3.11). Millions of small objects is where memory goes
+— not the data itself. Levers:</p>
+<ul>
+<li><code>__slots__</code> on hot classes: instance <code>__dict__</code> (≈104 bytes) → fixed slots
+  (≈48 bytes total for a small object); also faster attribute access;</li>
+<li>tuples/<code>namedtuple</code>/<code>dataclass(slots=True)</code> instead of dicts per record;</li>
+<li><code>array.array</code> / NumPy for numeric columns: 8 bytes per float vs ~32 for a
+  boxed float in a list;</li>
+<li>generators/<code>itertools.islice</code> to stream instead of materialising;</li>
+<li>intern short strings implicitly (CPython does for identifiers) and reuse
+  constants;</li>
+<li>watch for accidental retention: module-level caches, closures over big
+  objects, tracebacks holding frames (a classic leak), <code>lru_cache</code> on methods
+  keeping <code>self</code> alive forever.</li>
+</ul>
+<p>Diagnose with <code>tracemalloc</code> snapshots diffed between two points, or
+<code>objgraph</code>/<code>gc.get_referrers</code> for &ldquo;who still holds this&rdquo;.</p>
+<h3 id="1755-caching-the-three-levels">17.5.5 Caching: the three levels</h3>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Scope</th>
+<th>Tool</th>
+<th>Failure mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>in-process</td>
+<td>one worker</td>
+<td><code>functools.cache</code>, dict, <code>cachetools.TTLCache</code></td>
+<td>stale across restarts, memory growth</td>
+</tr>
+<tr>
+<td>shared</td>
+<td>all workers</td>
+<td>Redis/Memcached</td>
+<td>network hop, serialization, stampede</td>
+</tr>
+<tr>
+<td>edge/client</td>
+<td>browser/CDN</td>
+<td>HTTP <code>ETag</code>, <code>Cache-Control</code></td>
+<td>invalidation complexity</td>
+</tr>
+</tbody>
+</table>
+<p><code>lru_cache</code> rules: arguments must be <strong>hashable</strong>; <code>maxsize=None</code> = unbounded
+(use <code>cache</code> deliberately, with a bound on the key space); on <strong>methods</strong> it
+caches <code>self</code> → leaks and couples instances (use <code>cached_property</code> for
+per-instance values, or cache a module-level function); check <code>cache_info()</code>
+hit rate before trusting it; invalidate explicitly when inputs change.</p>
+<h3 id="1756-the-real-world-hot-spots-in-order-of-typical-payoff">17.5.6 The real-world hot spots (in order of typical payoff)</h3>
+<ol>
+<li><strong>database</strong>: missing index, <code>SELECT *</code>, N+1 queries (one query per row →
+   batch/<code>JOIN</code>/<code>select_related</code>), unbounded result sets → paginate/stream;</li>
+<li><strong>network fan-out</strong>: serial calls → concurrent (module 16), plus
+   connection pooling and keep-alive;</li>
+<li><strong>serialization</strong>: JSON of huge payloads → field selection, compression,
+   binary formats;</li>
+<li><strong>algorithms</strong>: quadratic membership, repeated re-computation;</li>
+<li><strong>CPython micro-costs</strong>: only after 1–4, and only in genuinely hot loops.</li>
+</ol>
+<h3 id="1757-benchmarking-discipline">17.5.7 Benchmarking discipline</h3>
+<p><code>timeit</code> handles the traps for you: it disables GC, repeats, and reports the
+best of N (min, not mean — noise only ever adds time). Always put imports and
+data construction in <code>setup</code>, and pass the namespace via <code>globals=</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">timeit</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s2">"has_duplicates_fast(data)"</span><span class="p">,</span>
+              <span class="n">setup</span><span class="o">=</span><span class="s2">"data = list(range(100_000))"</span><span class="p">,</span>
+              <span class="nb">globals</span><span class="o">=</span><span class="nb">globals</span><span class="p">(),</span> <span class="n">number</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div>
+
+<p>For anything beyond one-liners use <strong>pytest-benchmark</strong> (statistics,
+comparison, CI history) or <strong>hyperfine</strong> for CLI timings, and keep a small
+<code>benchmarks/</code> suite so regressions show up in review, not in production.</p>
+<h2 id="176-industry-level">17.6 Industry level</h2>
+<h3 id="latency-is-a-distribution-not-a-number">Latency is a distribution, not a number</h3>
+<p>Report <strong>p50/p95/p99</strong> (and max): an &ldquo;average 40 ms&rdquo; endpoint with a p99 of
+4 s is broken for one user in a hundred. Track percentiles per endpoint, per
+dependency, and in your load tests. Tail latency usually comes from GC pauses,
+cache misses, cold connections, lock contention and noisy neighbours — each
+with a different fix.</p>
+<h3 id="performance-budgets-in-ci">Performance budgets in CI</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># pyproject.toml</span>
+<span class="k">[tool.pytest.ini_options]</span>
+<span class="n">markers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"bench: performance benchmarks"</span><span class="p">]</span>
+</code></pre></div>
+
+<p>Run a benchmark job on PRs that compares against the baseline branch and fails
+on a regression beyond, say, 10 %. Combine with: a smoke-profile of the hot
+path (<code>py-spy record</code> on a staging run), memory ceiling assertions for the
+batch jobs, and a load test (locust/k6) before releases. A budget you do not
+enforce is a wish.</p>
+<h3 id="the-optimisation-review-checklist">The optimisation review checklist</h3>
+<ul>
+<li>Is the algorithm the right complexity for the <em>expected</em> input size?</li>
+<li>Are there repeated computations that could be hoisted or cached?</li>
+<li>Any N+1 or serial I/O that could be batched/concurrent?</li>
+<li>Does it allocate per iteration what could be allocated once?</li>
+<li>Is memory bounded (streaming/generators, <code>maxsize</code> on caches)?</li>
+<li>Is there a benchmark proving the win, and a comment stating the intent?</li>
+</ul>
+<h3 id="when-python-itself-is-the-bottleneck">When Python itself is the bottleneck</h3>
+<p>Order of escalation: better algorithm → cache/batch → NumPy/vectorised C
+extensions → move the hot function to a compiled extension (Cython, mypyc,
+Rust via PyO3) → different runtime (PyPy) → different service (Go/Rust for
+that component) → more machines. Most teams never need step 4; almost all need
+steps 1–3.</p>
+<h2 id="177-comparison-tables">17.7 Comparison tables</h2>
+<p><strong>Technique payoff:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Technique</th>
+<th>Typical gain</th>
+<th>Risk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fix quadratic algorithm</td>
+<td>10–10 000×</td>
+<td>none</td>
+</tr>
+<tr>
+<td>batch DB/network calls</td>
+<td>5–100×</td>
+<td>more code, partial-failure handling</td>
+</tr>
+<tr>
+<td>cache pure results</td>
+<td>10–1000×</td>
+<td>staleness, memory</td>
+</tr>
+<tr>
+<td><code>set</code>/<code>dict</code> for lookups</td>
+<td>10–1000×</td>
+<td>hashing cost for big keys</td>
+</tr>
+<tr>
+<td>comprehension + hoisting</td>
+<td>1.2–3×</td>
+<td>readability if overdone</td>
+</tr>
+<tr>
+<td><code>__slots__</code></td>
+<td>memory −50 %, access +20 %</td>
+<td>no dynamic attrs</td>
+</tr>
+<tr>
+<td>NumPy vectorisation</td>
+<td>10–100×</td>
+<td>dependency, dtype care</td>
+</tr>
+<tr>
+<td>multiprocessing (CPU)</td>
+<td>≈ #cores</td>
+<td>pickling, complexity</td>
+</tr>
+<tr>
+<td>asyncio (I/O fan-out)</td>
+<td>≈ fan-out</td>
+<td>async discipline everywhere</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tool chooser:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Tool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>how long does this snippet take?</td>
+<td><code>timeit.repeat</code> / pytest-benchmark</td>
+</tr>
+<tr>
+<td>which function burns CPU?</td>
+<td><code>cProfile</code> (tottime)</td>
+</tr>
+<tr>
+<td>which path is slow end-to-end?</td>
+<td><code>cProfile</code> (cumtime) / tracing</td>
+</tr>
+<tr>
+<td>what is the live process doing?</td>
+<td><code>py-spy top</code> / <code>py-spy record</code> (flamegraph)</td>
+</tr>
+<tr>
+<td>where does memory go?</td>
+<td><code>tracemalloc</code> snapshot diff</td>
+</tr>
+<tr>
+<td>how big is this object?</td>
+<td><code>sys.getsizeof</code>, <code>pympler.asizeof</code> (deep)</td>
+</tr>
+<tr>
+<td>is it a DB problem?</td>
+<td>query logs / <code>EXPLAIN ANALYZE</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="178-mistakes-gotchas">17.8 Mistakes &amp; gotchas</h2>
+<div class="admonition gotcha">
+<p class="admonition-title">Optimising the wrong thing</p>
+<p>Profile first. The function that <em>looks</em> slow is rarely the one that is.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Wall-clock timing of tiny code</p>
+<p><code>time.time()</code> around one call measures noise (and GC). Use <code>timeit</code> with
+<code>repeat</code> and take the min.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>lru_cache</code> on a method</p>
+<p><code>self</code> becomes part of the key: instances are retained forever and per-instance
+state is shared through the cache. Use <code>cached_property</code> or a module function.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Unbounded caches</p>
+<p><code>functools.cache</code> on user-supplied keys is a memory leak and a DoS vector.
+Bound <code>maxsize</code>, or use a TTL/LRU cache with a ceiling.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title">Generators are not automatically faster</p>
+<p>They save memory and startup latency; per-item CPU cost is similar or higher.</p>
+</div>
+<div class="admonition gotcha">
+<p class="admonition-title"><code>in</code> on the wrong container</p>
+<p><code>x in big_list</code> inside a loop is the most common accidental quadratic in
+Python code review.</p>
+</div>
+<div class="admonition warn">
+<p class="admonition-title">Averages hide tails</p>
+<p>Never ship on mean latency. p95/p99 is what users feel.</p>
+</div>
+<h2 id="179-interview-questions">17.9 Interview questions</h2>
+<ol>
+<li><strong>How do you find why something is slow?</strong> — profile (<code>cProfile</code>/py-spy),
+   look at tottime vs cumtime, confirm the input size, then fix complexity.</li>
+<li><strong><code>list</code> vs <code>set</code> membership?</strong> — O(n) vs O(1) average (hashing).</li>
+<li><strong>Why is <code>"".join</code> faster than <code>+=</code>?</strong> — strings are immutable; <code>+=</code>
+   reallocates per step → quadratic.</li>
+<li><strong>tottime vs cumtime?</strong> — excluding vs including callees.</li>
+<li><strong>When do you use <code>__slots__</code>?</strong> — many small long-lived instances; saves
+   the instance dict, blocks dynamic attributes.</li>
+<li><strong>Risks of <code>lru_cache</code>?</strong> — hashability, unbounded growth, method/<code>self</code>
+   retention, staleness for impure functions.</li>
+<li><strong>How would you make an API 10× faster?</strong> — measure, then: index/batch the
+   DB, cache, concurrency for fan-out, only then micro-optimise.</li>
+<li><strong>What is a performance budget?</strong> — an enforced ceiling (latency percentile,
+   memory, benchmark delta) checked in CI.</li>
+</ol>
+<h2 id="1710-practice-exercises">17.10 Practice exercises</h2>
+<div class="exercise tier-beginner" data-tier="Beginner"><div class="ex-head"><span class="ex-tier">Beginner</span><span class="ex-id">ex-17-a</span></div><p>Implement <code>find_duplicates(items)</code> (one pass, order of first repeat),
+<code>frequent(words, k)</code> with <code>collections.Counter</code>, <code>join_lines(lines)</code> using
+<code>"".join</code>, and <code>flatten(pairs)</code> with a comprehension. The grader asserts
+correct results <strong>and</strong> that the implementations scale linearly by timing them
+against a 200 000-item input.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/17_performance/test_tasks.py</code></div></div>
+<div class="exercise tier-intermediate" data-tier="Intermediate"><div class="ex-head"><span class="ex-tier">Intermediate</span><span class="ex-id">ex-17-b</span></div><p>Implement <code>moving_average(values, window)</code> in O(n) using a <code>deque</code> running sum;
+<code>top_k(numbers, k)</code> with <code>heapq.nlargest</code>; a manual <code>LRUCache(capacity)</code> with
+<code>get/put/__len__</code> and correct eviction order (touch on hit); and <code>chunked(it,
+n)</code> as a lazy generator that never materialises the input.</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/17_performance/test_tasks.py</code></div></div>
+<div class="exercise tier-industry" data-tier="Industry"><div class="ex-head"><span class="ex-tier">Industry</span><span class="ex-id">ex-17-c</span></div><p>Implement <code>memoized(fn)</code> (your own LRU-with-stats wrapper: <code>.cache_info()</code>
+reporting hits/misses/size, <code>.cache_clear()</code>, thread-safe with a <code>Lock</code>), and
+<code>enrich_orders(orders, fetch_customers)</code> where <code>fetch_customers(ids: list) -&gt;
+dict</code> is an injected <strong>batch</strong> API — your code must call it at most once per
+unique id group and produce enriched rows, proving the N+1 problem is gone (the
+test counts calls).</p><div class="ex-file"><code>test_tasks.py</code> &middot; verify with <code>pytest exercises/17_performance/test_tasks.py</code></div></div>
+<details class="solution"><summary>Show worked solution</summary><div class="codehilite"><pre><span></span><code><span class="c1"># Reference core (full: exercises/17_performance/solution.py)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">enrich_orders</span><span class="p">(</span><span class="n">orders</span><span class="p">,</span> <span class="n">fetch_customers</span><span class="p">):</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">o</span><span class="p">[</span><span class="s2">"customer_id"</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">orders</span><span class="p">})</span>     <span class="c1"># unique, one batch</span>
+    <span class="n">customers</span> <span class="o">=</span> <span class="n">fetch_customers</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span> <span class="k">if</span> <span class="n">ids</span> <span class="k">else</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="p">[{</span><span class="o">**</span><span class="n">o</span><span class="p">,</span> <span class="s2">"customer"</span><span class="p">:</span> <span class="n">customers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">o</span><span class="p">[</span><span class="s2">"customer_id"</span><span class="p">])}</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">orders</span><span class="p">]</span>
+</code></pre></div></details>
+<h2 id="1711-cheatsheet">17.11 Cheatsheet</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>First move</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>slow with big inputs, fine with small</td>
+<td>complexity: find the nested scan / repeated work</td>
+</tr>
+<tr>
+<td>slow everywhere, CPU pinned</td>
+<td><code>cProfile</code> tottime → hot function</td>
+</tr>
+<tr>
+<td>slow in production only</td>
+<td><code>py-spy record</code> → flamegraph</td>
+</tr>
+<tr>
+<td>memory grows over time</td>
+<td><code>tracemalloc</code> snapshot diff; check caches/closures/tracebacks</td>
+</tr>
+<tr>
+<td>many small objects</td>
+<td><code>__slots__</code>, tuples, arrays/NumPy</td>
+</tr>
+<tr>
+<td>repeated identical calls</td>
+<td><code>lru_cache</code> (bounded)</td>
+</tr>
+<tr>
+<td><code>str</code> building in a loop</td>
+<td><code>"".join</code></td>
+</tr>
+<tr>
+<td>membership tests</td>
+<td><code>set</code>/<code>dict</code></td>
+</tr>
+<tr>
+<td>top-k / streaming min-max</td>
+<td><code>heapq.nlargest</code> / <code>nlargest(k)</code></td>
+</tr>
+<tr>
+<td>N+1 queries</td>
+<td>batch, join, prefetch</td>
+</tr>
+<tr>
+<td>serial network calls</td>
+<td>thread pool / asyncio (module 16)</td>
+</tr>
+<tr>
+<td>need proof</td>
+<td><code>timeit.repeat</code>, pytest-benchmark, before/after in the PR</td>
+</tr>
+</tbody>
+</table>
+      <nav class="pager"><a class="prev" href="16-concurrency.html"><span>&larr; previous</span><strong>Concurrency: threads, processes, asyncio and the GIL</strong></a><a class="next" href="18-packaging-ci.html"><span>next &rarr;</span><strong>Packaging, environments & CI/CD: pyproject to PyPI</strong></a></nav>
+      <footer class="foot">Python, From Zero to Industry &middot; editable Markdown sources live in <code>notes/</code>, figures regenerate with <code>python tools/make_diagrams.py</code>, this site rebuilds with <code>python tools/build_site.py</code>.</footer>
+    </article>
+    <aside class="toc-col">
+      <div class="toc-title">On this page</div>
+      <div class="toc"><div class="toc">
+<ul>
+<li><a href="#171-definition">17.1 Definition</a></li>
+<li><a href="#172-syntax">17.2 Syntax</a></li>
+<li><a href="#173-first-examples">17.3 First examples</a></li>
+<li><a href="#174-the-picture">17.4 The picture</a></li>
+<li><a href="#175-going-deeper">17.5 Going deeper</a><ul>
+<li><a href="#1751-complexity-decides-everything-else">17.5.1 Complexity decides everything else</a></li>
+<li><a href="#1752-reading-a-profile-without-fooling-yourself">17.5.2 Reading a profile without fooling yourself</a></li>
+<li><a href="#1753-cpython-constant-factors-worth-knowing">17.5.3 CPython constant factors worth knowing</a></li>
+<li><a href="#1754-memory-where-the-bytes-go">17.5.4 Memory: where the bytes go</a></li>
+<li><a href="#1755-caching-the-three-levels">17.5.5 Caching: the three levels</a></li>
+<li><a href="#1756-the-real-world-hot-spots-in-order-of-typical-payoff">17.5.6 The real-world hot spots (in order of typical payoff)</a></li>
+<li><a href="#1757-benchmarking-discipline">17.5.7 Benchmarking discipline</a></li>
+</ul>
+</li>
+<li><a href="#176-industry-level">17.6 Industry level</a><ul>
+<li><a href="#latency-is-a-distribution-not-a-number">Latency is a distribution, not a number</a></li>
+<li><a href="#performance-budgets-in-ci">Performance budgets in CI</a></li>
+<li><a href="#the-optimisation-review-checklist">The optimisation review checklist</a></li>
+<li><a href="#when-python-itself-is-the-bottleneck">When Python itself is the bottleneck</a></li>
+</ul>
+</li>
+<li><a href="#177-comparison-tables">17.7 Comparison tables</a></li>
+<li><a href="#178-mistakes-gotchas">17.8 Mistakes &amp; gotchas</a></li>
+<li><a href="#179-interview-questions">17.9 Interview questions</a></li>
+<li><a href="#1710-practice-exercises">17.10 Practice exercises</a></li>
+<li><a href="#1711-cheatsheet">17.11 Cheatsheet</a></li>
+</ul>
+</div>
+</div>
+    </aside>
+  </main>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>
